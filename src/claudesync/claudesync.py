@@ -108,8 +108,7 @@ def load_config():
         with open('config.json', 'r') as f:
             return json.load(f)
     except FileNotFoundError:
-        print("config.json not found. Please create it with your user_id and project_id.")
-        sys.exit(1)
+        return {}
     except json.JSONDecodeError:
         print("Invalid JSON in config.json. Please check the file format.")
         sys.exit(1)
@@ -120,26 +119,39 @@ def main():
     parser = argparse.ArgumentParser(description="Sync local files with Claude.ai projects.")
     parser.add_argument("--session-key", required=True, help="Session key for authentication")
     parser.add_argument("--watch-dir", required=True, help="Directory to watch for changes")
-    parser.add_argument("--user-id", default=config.get('user_id'), help="User ID for Claude API")
-    parser.add_argument("--project-id", default=config.get('project_id'), help="Project ID for Claude API")
+    parser.add_argument("--user-id", help="User ID for Claude API")
+    parser.add_argument("--project-id", help="Project ID for Claude API")
     parser.add_argument("--delete-all", action="store_true", help="Delete all documents in the project")
     parser.add_argument("--delay", type=int, default=5, help="Delay in seconds before uploading (default: 5)")
     args = parser.parse_args()
 
-    if not args.user_id or not args.project_id:
-        print("user_id and project_id must be provided in config.json or as command-line arguments.")
+    user_id = args.user_id or config.get('user_id')
+    project_id = args.project_id or config.get('project_id')
+
+    if not user_id or not project_id:
+        print("Error: user_id and project_id must be provided either in config.json or as command-line arguments.")
         sys.exit(1)
 
-    api_endpoint = f"https://claude.ai/api/organizations/{args.user_id}/projects/{args.project_id}/docs"
+    api_endpoint = f"https://claude.ai/api/organizations/{user_id}/projects/{project_id}/docs"
+
+    handler = FileUploadHandler(api_endpoint, args.session_key, args.watch_dir, args.delay)
 
     if args.delete_all:
-        handler = FileUploadHandler(api_endpoint, args.session_key, args.watch_dir)
         handler.delete_all_documents()
+        print("All documents deleted.")
         sys.exit(0)
     else:
         print(f"Watching directory: {args.watch_dir}")
         print(f"Upload delay: {args.delay} seconds")
-        watch_directory(args.watch_dir, api_endpoint, args.session_key, args.delay)
+        observer = Observer()
+        observer.schedule(handler, args.watch_dir, recursive=True)
+        observer.start()
+        try:
+            while True:
+                pass
+        except KeyboardInterrupt:
+            observer.stop()
+        observer.join()
 
 if __name__ == "__main__":
     main()

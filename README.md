@@ -3,29 +3,51 @@
 
 ClaudeSync is a Python tool that automatically synchronizes your local filesystem with Claude.ai projects.
 
+![illustration](screen.png)
+
 ## Installation
 
-You can install ClaudeSync using pip:
+Install ClaudeSync using pip:
 
 ```bash
 pip install claudesync
 ```
 
-## Setup
+## Configuration
 
-1. Create a `config.json` file in your working directory:
-   ```json
-   {
-       "user_id": "your-user-id-here",
-       "project_id": "your-project-id-here"
-   }
-   ```
+You have two options for configuring ClaudeSync:
 
-2. Ensure you have your Claude.ai session key ready.
+1. Command-line arguments (recommended for one-time use or testing)
+2. Configuration file (recommended for repeated use)
+
+### Option 1: Command-line Arguments
+
+Provide your user ID and project ID directly in the command:
+
+```bash
+claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch --user-id your-user-id --project-id your-project-id
+```
+
+### Option 2: Configuration File
+
+Create a `config.json` file in your working directory:
+
+```json
+{
+    "user_id": "your-user-id-here",
+    "project_id": "your-project-id-here"
+}
+```
+
+Then run ClaudeSync without the `--user-id` and `--project-id` arguments:
+
+```bash
+claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch
+```
 
 ## Usage
 
-After installation, you can use ClaudeSync as a command-line tool:
+### Basic Usage
 
 ```bash
 claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch
@@ -35,8 +57,8 @@ claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch
 
 - `--session-key`: Your Claude.ai session key (required)
 - `--watch-dir`: Directory to watch for changes (required)
-- `--user-id`: Override user ID from config
-- `--project-id`: Override project ID from config
+- `--user-id`: User ID for Claude API (optional if in config.json)
+- `--project-id`: Project ID for Claude API (optional if in config.json)
 - `--delete-all`: Delete all project documents
 - `--delay`: Delay in seconds before uploading (default: 5)
 
@@ -44,17 +66,12 @@ claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch
 
 Watch a directory and sync changes:
 ```bash
-claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch
-```
-
-Override config settings:
-```bash
-claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch --user-id different-user-id --project-id different-project-id
+claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch --user-id your-user-id --project-id your-project-id
 ```
 
 Delete all documents in the project:
 ```bash
-claudesync --session-key YOUR_SESSION_KEY --delete-all
+claudesync --session-key YOUR_SESSION_KEY --delete-all --user-id your-user-id --project-id your-project-id
 ```
 
 Set a custom delay for file uploads:
@@ -82,7 +99,16 @@ To contribute to ClaudeSync:
    ```
    pip install -r requirements.txt
    ```
-3. Make your changes and submit a pull request.
+3. Make your changes and test locally:
+   ```
+   python -m build
+   pip install dist/claudesync-0.1.1-py3-none-any.whl --force-reinstall
+   ```
+4. Run the locally installed version:
+   ```
+   claudesync --help
+   ```
+5. Submit a pull request with your changes.
 
 ## License
 
