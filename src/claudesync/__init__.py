@@ -1,0 +1,1 @@
+from .claudesync import main
