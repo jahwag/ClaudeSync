@@ -1,9 +1,18 @@
 # ClaudeSync
-[![Python Package](https://github.com/jahwag/ClaudeSync/actions/workflows/publish-to-pypi.yml/badge.svg)](https://github.com/jahwag/ClaudeSync/actions/workflows/publish-to-pypi.yml)
+[![GitHub Actions](https://github.com/jahwag/ClaudeSync/actions/workflows/publish-to-pypi.yml/badge.svg)](https://github.com/jahwag/ClaudeSync/actions/workflows/publish-to-pypi.yml)
 
-ClaudeSync is a Python tool that automatically synchronizes your local filesystem with Claude.ai projects.
+ClaudeSync is a Python tool that automates the synchronization of local files with Claude.ai Projects. It watches specified directories and automatically uploads modified files to your Claude.ai Project's knowledge base.
 
-![illustration](screen.png)
+Key features:
+- Monitors local directories for file changes
+- Automatically uploads new or modified files to Claude.ai Projects
+- Configurable delay to prevent excessive uploads during active editing
+- Supports both command-line arguments and config file for flexibility
+- Handles recursive directory watching
+
+Use ClaudeSync if you're working with Claude.ai Projects and want to keep your project's knowledge base updated with your local files without manual uploads.
+
+![Illustration](https://raw.githubusercontent.com/jahwag/ClaudeSync/master/screen.png)
 
 ## Installation
 
@@ -79,21 +88,13 @@ Set a custom delay for file uploads:
 claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch --delay 10
 ```
 
-## Features
-
-- Watch local directories for file changes
-- Automatically upload new or modified files to Claude.ai
-- Delete outdated versions of files in Claude.ai
-- Option to clear all documents in a Claude.ai project
-- Configurable delay to prevent frequent uploads during active editing
-
 ## Development
 
 To contribute to ClaudeSync:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/jahwag/claudesync.git
+   git clone https://github.com/yourusername/claudesync.git
    ```
 2. Install development dependencies:
    ```
@@ -102,13 +103,19 @@ To contribute to ClaudeSync:
 3. Make your changes and test locally:
    ```
    python -m build
-   pip install dist/claudesync-0.1.1-py3-none-any.whl --force-reinstall
+   pip install -e .
    ```
 4. Run the locally installed version:
    ```
    claudesync --help
    ```
-5. Submit a pull request with your changes.
+5. Remember to clean up after testing:
+   ```
+   pip uninstall claudesync
+   rm -rf dist build **/*.egg-info
+   ```
+6. Submit a pull request with your changes.
+
 
 ## License
 
