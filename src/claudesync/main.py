@@ -21,8 +21,9 @@ class ClaudeSyncTUI:
         self.observer = None
         self.handler = None
         self.scroll_position = 0
-        self.max_log_lines = 1000  # Increased for more history
-        self.auto_scroll = True  # New flag for automatic scrolling
+        self.max_log_lines = 1000
+        self.auto_scroll = True
+        self.is_syncing = False
 
     def setup(self):
         if not self.user_id:
@@ -39,14 +40,16 @@ class ClaudeSyncTUI:
         self.observer.schedule(self.handler, self.watch_dir, recursive=True)
 
     def initial_sync(self):
-        print("Please wait ...")
-        self.add_log_message("Performing initial synchronization...")
+        self.is_syncing = True
+        self.add_log_message("Starting initial synchronization...")
         for root, dirs, files in os.walk(self.watch_dir):
             for file in files:
                 file_path = os.path.join(root, file)
                 if not self.handler.should_ignore_file(file_path):
                     self.handler.upload_file(file_path)
+                    self.draw()  # Redraw the TUI after each file upload
         self.add_log_message("Initial synchronization completed.")
+        self.is_syncing = False
 
     def add_log_message(self, message):
         self.log_messages.append(message)
@@ -68,6 +71,9 @@ class ClaudeSyncTUI:
         print(f"Project ID: {self.project_id}")
         print(f"Auto-scroll: {'ON' if self.auto_scroll else 'OFF'}")
 
+        if self.is_syncing:
+            print(self.term.move_y(7) + self.term.red("Initial sync in progress..."))
+
         print(self.term.move_y(8) + self.term.black_on_skyblue(self.term.center('Recent Activity')))
 
         log_height = self.term.height - 12
@@ -79,6 +85,7 @@ class ClaudeSyncTUI:
 
     def run(self):
         with self.term.cbreak(), self.term.hidden_cursor():
+            self.draw()  # Initial draw before starting sync
             self.initial_sync()
             self.observer.start()
             while True:
