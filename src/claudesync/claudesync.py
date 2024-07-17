@@ -2,10 +2,9 @@ import time
 import os
 import argparse
 import sys
-import json
+import requests
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-import requests
 from threading import Timer
 
 class DebounceHandler:
@@ -91,48 +90,83 @@ class FileUploadHandler(FileSystemEventHandler):
         except Exception as e:
             print(f"Error processing file {file_path}: {str(e)}")
 
-def watch_directory(path, api_endpoint, session_key, delay):
-    observer = Observer()
-    handler = FileUploadHandler(api_endpoint, session_key, path, delay)
-    observer.schedule(handler, path, recursive=True)
-    observer.start()
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
+def fetch_user_id(session_key):
+    url = "https://claude.ai/api/bootstrap"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Referer': 'https://claude.ai/',
+        'Origin': 'https://claude.ai',
+        'Connection': 'keep-alive'
+    }
+    cookies = {'sessionKey': session_key}
 
-def load_config():
     try:
-        with open('config.json', 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return {}
-    except json.JSONDecodeError:
-        print("Invalid JSON in config.json. Please check the file format.")
+        response = requests.get(url, headers=headers, cookies=cookies)
+        response.raise_for_status()
+        data = response.json()
+        return data['account']['memberships'][0]['organization']['uuid']
+    except (requests.RequestException, KeyError, IndexError) as e:
+        print(f"Error fetching user ID: {str(e)}")
         sys.exit(1)
 
-def main():
-    config = load_config()
+def fetch_projects(user_id, session_key):
+    url = f"https://claude.ai/api/organizations/{user_id}/projects"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Referer': 'https://claude.ai/',
+        'Origin': 'https://claude.ai',
+        'Connection': 'keep-alive'
+    }
+    cookies = {'sessionKey': session_key, 'lastActiveOrg': user_id}
 
+    try:
+        response = requests.get(url, headers=headers, cookies=cookies)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        print(f"Error fetching projects: {str(e)}")
+        sys.exit(1)
+
+def select_project(projects):
+    print("Available projects:")
+    for i, project in enumerate(projects, 1):
+        print(f"{i}. {project['name']} (ID: {project['uuid']})")
+
+    while True:
+        try:
+            choice = int(input("Enter the number of the project you want to use: "))
+            if 1 <= choice <= len(projects):
+                return projects[choice - 1]['uuid']
+            else:
+                print("Invalid choice. Please try again.")
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+
+def main():
     parser = argparse.ArgumentParser(description="Sync local files with Claude.ai projects.")
     parser.add_argument("--session-key", required=True, help="Session key for authentication")
     parser.add_argument("--watch-dir", required=True, help="Directory to watch for changes")
-    parser.add_argument("--user-id", help="User ID for Claude API")
+    parser.add_argument("--user-id", help="User ID for Claude API (optional, will be fetched if not provided)")
     parser.add_argument("--project-id", help="Project ID for Claude API")
     parser.add_argument("--delete-all", action="store_true", help="Delete all documents in the project")
     parser.add_argument("--delay", type=int, default=5, help="Delay in seconds before uploading (default: 5)")
     args = parser.parse_args()
 
-    user_id = args.user_id or config.get('user_id')
-    project_id = args.project_id or config.get('project_id')
+    if not args.user_id:
+        print("User ID not provided. Fetching from Claude API...")
+        args.user_id = fetch_user_id(args.session_key)
+        print(f"User ID fetched: {args.user_id}")
 
-    if not user_id or not project_id:
-        print("Error: user_id and project_id must be provided either in config.json or as command-line arguments.")
-        sys.exit(1)
+    if not args.project_id:
+        print("Project ID not provided. Fetching available projects...")
+        projects = fetch_projects(args.user_id, args.session_key)
+        args.project_id = select_project(projects)
 
-    api_endpoint = f"https://claude.ai/api/organizations/{user_id}/projects/{project_id}/docs"
+    api_endpoint = f"https://claude.ai/api/organizations/{args.user_id}/projects/{args.project_id}/docs"
 
     handler = FileUploadHandler(api_endpoint, args.session_key, args.watch_dir, args.delay)
 
@@ -148,7 +182,7 @@ def main():
         observer.start()
         try:
             while True:
-                pass
+                time.sleep(1)
         except KeyboardInterrupt:
             observer.stop()
         observer.join()
