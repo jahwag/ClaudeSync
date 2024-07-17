@@ -164,3 +164,8 @@ cython_debug/
 
 **/*.egg-info
 __pycache__
+
+# claude
+claude.sync
+config.json
+claudesync.log

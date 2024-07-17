@@ -4,22 +4,23 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "claudesync"
-version = "0.2.7"
+version = "0.2.8"
 authors = [
     {name = "Jahziah Wagner", email = "jahziah.wagner+pypi@gmail.com"},
 ]
 description = "A tool to synchronize local files with Claude.ai projects"
+license = {file = "LICENSE"}
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "watchdog",
+    "Click",
     "requests",
-    "pathspec",
+    "watchdog",
 ]
 
 [project.urls]
@@ -27,7 +28,8 @@ dependencies = [
 "Bug Tracker" = "https://github.com/jahwag/claudesync/issues"
 
 [project.scripts]
-claudesync = "claudesync.main:main"
+claudesync = "claudesync.cli:cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["claudesync*"]
