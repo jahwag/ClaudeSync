@@ -18,6 +18,13 @@ class FileUploadHandler(FileSystemEventHandler):
         self.cookies = {'sessionKey': session_key, 'lastActiveOrg': api_endpoint.split("/")[4]}
         self.debouncer = DebounceHandler(delay)
         self.gitignore = load_gitignore(self.base_path)
+        self.log_callback = None
+
+    def log(self, message):
+        if self.log_callback:
+            self.log_callback(message)
+        else:
+            print(message)
 
     def on_modified(self, event):
         if not event.is_directory and not self.should_ignore_file(event.src_path):
@@ -79,6 +86,7 @@ class FileUploadHandler(FileSystemEventHandler):
                     self.delete_document(doc['uuid'])
             payload = {"file_name": file_name, "content": content}
             if self.api_request('POST', self.api_endpoint, json=payload):
-                print(f"Uploaded: {file_name}")
+                self.log(f"Uploaded: {file_name}")
         except Exception as e:
             print(f"Error processing file {file_path}: {str(e)}")
+
