@@ -20,12 +20,22 @@ class FileUploadHandler(FileSystemEventHandler):
         self.gitignore = load_gitignore(self.base_path)
 
     def on_modified(self, event):
-        if not event.is_directory and not should_ignore(self.gitignore, event.src_path, self.base_path):
+        if not event.is_directory and not self.should_ignore_file(event.src_path):
             self.debouncer.debounce(self.upload_file, event.src_path)
 
     def on_created(self, event):
-        if not event.is_directory and not should_ignore(self.gitignore, event.src_path, self.base_path):
+        if not event.is_directory and not self.should_ignore_file(event.src_path):
             self.debouncer.debounce(self.upload_file, event.src_path)
+
+    def should_ignore_file(self, file_path):
+        # Check if the file is in a hidden directory
+        rel_path = os.path.relpath(file_path, self.base_path)
+        path_parts = rel_path.split(os.path.sep)
+        if any(part.startswith('.') for part in path_parts[:-1]):
+            return True
+
+        # Check if the file should be ignored based on .gitignore
+        return should_ignore(self.gitignore, file_path, self.base_path)
 
     def api_request(self, method, url, **kwargs):
         try:
@@ -49,7 +59,7 @@ class FileUploadHandler(FileSystemEventHandler):
         print("All documents deleted.")
 
     def upload_file(self, file_path):
-        if not os.path.isfile(file_path) or should_ignore(self.gitignore, file_path, self.base_path):
+        if not os.path.isfile(file_path) or self.should_ignore_file(file_path):
             return
         if os.path.getsize(file_path) == 0:
             print(f"Skipping empty file: {file_path}")
