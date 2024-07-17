@@ -1,4 +1,10 @@
-# Changelog for v0.2.6
+# Changelog for v0.2.7
+
+- Backoff when rate limiting is suspected
+
+- Initial sync UI
+
+- Update CHANGELOG.md for v0.2.6
 
 - Store config in userhome
 
