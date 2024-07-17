@@ -1,5 +1,6 @@
 import os
 import mimetypes
+import time
 from watchdog.events import FileSystemEventHandler
 from .debounce import DebounceHandler
 from .gitignore_utils import load_gitignore, should_ignore
@@ -21,6 +22,10 @@ class FileUploadHandler(FileSystemEventHandler):
         self.gitignore = load_gitignore(self.base_path)
         self.log_callback = None
         self.max_file_size = max_file_size
+        self.backoff_time = 1
+        self.max_backoff_time = 60
+        self.session_expiration_time = 180  # 3 minutes
+        self.session_expiration_start = None
 
     def log(self, message):
         if self.log_callback:
@@ -57,37 +62,52 @@ class FileUploadHandler(FileSystemEventHandler):
         return should_ignore(self.gitignore, file_path, self.base_path)
 
     def api_request(self, method, url, **kwargs):
-        try:
-            response = requests.request(method, url, headers=self.headers, cookies=self.cookies, **kwargs)
-            response.raise_for_status()
-            return response.json() if response.text else None
-        except requests.RequestException as e:
-            print(f"API request error: {str(e)}")
-            return None
+        while True:
+            try:
+                response = requests.request(method, url, headers=self.headers, cookies=self.cookies, **kwargs)
+                if response.status_code == 403:
+                    if self.session_expiration_start is None:
+                        self.session_expiration_start = time.time()
+                    elif time.time() - self.session_expiration_start > self.session_expiration_time:
+                        self.log("Session key has likely expired. Please restart ClaudeSync with a new session key.")
+                        raise SystemExit(1)
+
+                    self.log(f"Received 403 error. Backing off for {self.backoff_time} seconds.")
+                    time.sleep(self.backoff_time)
+                    self.backoff_time = min(self.backoff_time * 2, self.max_backoff_time)
+                else:
+                    self.session_expiration_start = None
+                    self.backoff_time = 1
+                    response.raise_for_status()
+                    return response.json() if response.text else None
+            except requests.RequestException as e:
+                if response.status_code != 403:
+                    self.log(f"API request error: {str(e)}")
+                    return None
 
     def get_documents(self):
         return self.api_request('GET', self.api_endpoint) or []
 
     def delete_document(self, uuid):
         if self.api_request('DELETE', f"{self.api_endpoint}/{uuid}"):
-            print(f"Deleted document: {uuid}")
+            self.log(f"Deleted document: {uuid}")
 
     def delete_all_documents(self):
         for doc in self.get_documents():
             self.delete_document(doc['uuid'])
-        print("All documents deleted.")
+        self.log("All documents deleted.")
 
     def upload_file(self, file_path):
         if not os.path.isfile(file_path) or self.should_ignore_file(file_path):
             return
         if os.path.getsize(file_path) == 0:
-            print(f"Skipping empty file: {file_path}")
+            self.log(f"Skipping empty file: {file_path}")
             return
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
                 content = file.read()
             if not content.strip():
-                print(f"Skipping file with only whitespace: {file_path}")
+                self.log(f"Skipping file with only whitespace: {file_path}")
                 return
 
             rel_path = os.path.relpath(file_path, self.base_path)
@@ -100,4 +120,4 @@ class FileUploadHandler(FileSystemEventHandler):
             if self.api_request('POST', self.api_endpoint, json=payload):
                 self.log(f"Uploaded: {file_name}")
         except Exception as e:
-            print(f"Error processing file {file_path}: {str(e)}")
+            self.log(f"Error processing file {file_path}: {str(e)}")
