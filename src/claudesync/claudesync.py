@@ -7,6 +7,9 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from threading import Timer
 
+# Import the manual authentication function
+from manual_auth import get_session_key
+
 class DebounceHandler:
     def __init__(self, delay):
         self.delay = delay
@@ -148,13 +151,17 @@ def select_project(projects):
 
 def main():
     parser = argparse.ArgumentParser(description="Sync local files with Claude.ai projects.")
-    parser.add_argument("--session-key", required=True, help="Session key for authentication")
-    parser.add_argument("--watch-dir", required=True, help="Directory to watch for changes")
+    parser.add_argument("--session-key", help="Session key for authentication")
+    parser.add_argument("--watch-dir", default=".", help="Directory to watch for changes")
     parser.add_argument("--user-id", help="User ID for Claude API (optional, will be fetched if not provided)")
     parser.add_argument("--project-id", help="Project ID for Claude API")
     parser.add_argument("--delete-all", action="store_true", help="Delete all documents in the project")
     parser.add_argument("--delay", type=int, default=5, help="Delay in seconds before uploading (default: 5)")
     args = parser.parse_args()
+
+    if not args.session_key:
+        print("No session key provided. Please follow the instructions to obtain your session key.")
+        args.session_key = get_session_key()
 
     if not args.user_id:
         print("User ID not provided. Fetching from Claude API...")
