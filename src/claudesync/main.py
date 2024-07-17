@@ -36,6 +36,15 @@ class ClaudeSyncTUI:
         self.observer = Observer()
         self.observer.schedule(self.handler, self.watch_dir, recursive=True)
 
+    def initial_sync(self):
+        print("Performing initial synchronization...")
+        for root, dirs, files in os.walk(self.watch_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                if not self.handler.should_ignore_file(file_path):
+                    self.handler.upload_file(file_path)
+        print("Initial synchronization completed.")
+
     def add_log_message(self, message):
         self.log_messages.append(message)
         if len(self.log_messages) > 10:
@@ -58,6 +67,7 @@ class ClaudeSyncTUI:
 
     def run(self):
         with self.term.cbreak(), self.term.hidden_cursor():
+            self.initial_sync()  # Perform initial sync before starting the observer
             self.observer.start()
             while True:
                 self.draw()
