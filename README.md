@@ -89,12 +89,11 @@ claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch --delay 10
 ```
 
 ## Development
-
 To contribute to ClaudeSync:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/claudesync.git
+   git clone https://github.com/jahwag/claudesync.git
    ```
 2. Install development dependencies:
    ```

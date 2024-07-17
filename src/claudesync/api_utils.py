@@ -42,19 +42,21 @@ def fetch_projects(user_id, session_key):
         print(f"Error fetching projects: {str(e)}")
         sys.exit(1)
 
-
 def select_project(projects, user_id, session_key):
+    # Filter out archived projects
+    active_projects = [project for project in projects if project.get('archived_at') is None]
+
     print("Available projects:")
-    for i, project in enumerate(projects, 1):
+    for i, project in enumerate(active_projects, 1):
         print(f"{i}. {project['name']} (ID: {project['uuid']})")
-    print(f"{len(projects) + 1}. Create new project")
+    print(f"{len(active_projects) + 1}. Create new project")
 
     while True:
         try:
             choice = int(input("Enter the number of the project you want to use (or create new): "))
-            if 1 <= choice <= len(projects):
-                return projects[choice - 1]['uuid']
-            elif choice == len(projects) + 1:
+            if 1 <= choice <= len(active_projects):
+                return active_projects[choice - 1]['uuid']
+            elif choice == len(active_projects) + 1:
                 name = input("Enter the name for the new project: ")
                 description = input("Enter a description for the new project (optional): ")
                 new_project = create_project(user_id, session_key, name, description)
