@@ -6,6 +6,7 @@ import requests
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from threading import Timer
+import pathspec
 
 # Import the manual authentication function
 from manual_auth import get_session_key
@@ -29,7 +30,7 @@ class FileUploadHandler(FileSystemEventHandler):
     def __init__(self, api_endpoint, session_key, base_path, delay=5):
         self.api_endpoint = api_endpoint
         self.session_key = session_key
-        self.base_path = base_path
+        self.base_path = os.path.abspath(base_path)
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
             'Accept': '*/*', 'Accept-Language': 'en-US,en;q=0.5', 'Content-Type': 'application/json',
@@ -38,13 +39,43 @@ class FileUploadHandler(FileSystemEventHandler):
         }
         self.cookies = {'sessionKey': session_key, 'lastActiveOrg': api_endpoint.split("/")[4]}
         self.debouncer = DebounceHandler(delay)
+        self.gitignore = self.load_gitignore()
+
+    def load_gitignore(self):
+        spec_list = []
+        current_dir = self.base_path
+        while True:
+            gitignore_path = os.path.join(current_dir, '.gitignore')
+            if os.path.exists(gitignore_path):
+                with open(gitignore_path, 'r') as f:
+                    spec_list.append(pathspec.PathSpec.from_lines('gitwildmatch', f))
+
+            if os.path.exists(os.path.join(current_dir, '.git')):
+                # Stop if we've reached the root of the Git repository
+                break
+
+            parent_dir = os.path.dirname(current_dir)
+            if parent_dir == current_dir or parent_dir == self.base_path:
+                # Stop if we've reached the filesystem root or the base watched directory
+                break
+            current_dir = parent_dir
+
+        if spec_list:
+            return pathspec.PathSpec.from_path_specs(spec_list)
+        return None
+
+    def should_ignore(self, file_path):
+        if self.gitignore is None:
+            return False
+        rel_path = os.path.relpath(file_path, self.base_path)
+        return self.gitignore.match_file(rel_path)
 
     def on_modified(self, event):
-        if not event.is_directory:
+        if not event.is_directory and not self.should_ignore(event.src_path):
             self.debouncer.debounce(self.upload_file, event.src_path)
 
     def on_created(self, event):
-        if not event.is_directory:
+        if not event.is_directory and not self.should_ignore(event.src_path):
             self.debouncer.debounce(self.upload_file, event.src_path)
 
     def api_request(self, method, url, **kwargs):
@@ -69,7 +100,7 @@ class FileUploadHandler(FileSystemEventHandler):
         print("All documents deleted.")
 
     def upload_file(self, file_path):
-        if not os.path.isfile(file_path):
+        if not os.path.isfile(file_path) or self.should_ignore(file_path):
             return
         if os.path.getsize(file_path) == 0:
             print(f"Skipping empty file: {file_path}")

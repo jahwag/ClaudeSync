@@ -16,7 +16,7 @@ def get_session_key():
     try:
         webbrowser.open("https://claude.ai")
     except:
-        print("Unable to automatically open the browser. Please navigate to https://claude.ai manually.")
+        print("Unable to automatically open the browser. Please navigate to https://claude.ai manually. ")
 
     while True:
         session_key = input("Please enter your sessionKey value: ").strip()
