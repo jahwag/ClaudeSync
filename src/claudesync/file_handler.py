@@ -35,14 +35,13 @@ class FileUploadHandler(FileSystemEventHandler):
             self.debouncer.debounce(self.upload_file, event.src_path)
 
     def should_ignore_file(self, file_path):
-        # Check if the file is in a hidden directory
-        rel_path = os.path.relpath(file_path, self.base_path)
-        path_parts = rel_path.split(os.path.sep)
-        if any(part.startswith('.') for part in path_parts[:-1]):
-            return True
+            # Check if the file is in the .git directory
+            rel_path = os.path.relpath(file_path, self.base_path)
+            if rel_path.startswith('.git' + os.path.sep) or rel_path == '.git':
+                return True
 
-        # Check if the file should be ignored based on .gitignore
-        return should_ignore(self.gitignore, file_path, self.base_path)
+            # Check if the file should be ignored based on .gitignore
+            return should_ignore(self.gitignore, file_path, self.base_path)
 
     def api_request(self, method, url, **kwargs):
         try:
