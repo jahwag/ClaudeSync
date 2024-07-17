@@ -1,7 +1,7 @@
 import os
 from watchdog.events import FileSystemEventHandler
-from debounce import DebounceHandler
-from gitignore_utils import load_gitignore, should_ignore
+from .debounce import DebounceHandler
+from .gitignore_utils import load_gitignore, should_ignore
 import requests
 
 class FileUploadHandler(FileSystemEventHandler):

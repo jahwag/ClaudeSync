@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "claudesync"
-version = "0.2.4"
+version = "0.2.5"
 authors = [
     {name = "Jahziah Wagner", email = "jahziah.wagner+pypi@gmail.com"},
 ]
@@ -19,6 +19,7 @@ classifiers = [
 dependencies = [
     "watchdog",
     "requests",
+    "pathspec",
 ]
 
 [project.urls]
@@ -26,7 +27,7 @@ dependencies = [
 "Bug Tracker" = "https://github.com/jahwag/claudesync/issues"
 
 [project.scripts]
-claudesync = "claudesync.claudesync:main"
+claudesync = "claudesync.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

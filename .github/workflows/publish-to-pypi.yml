@@ -31,10 +31,10 @@ jobs:
       - name: Generate Changelog
         run: |
           CURRENT_TAG=$(git describe --tags --abbrev=0)
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${CURRENT_TAG}^)
+          FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD)
           echo "# Changelog for $CURRENT_TAG" > CHANGELOG.md
           echo "" >> CHANGELOG.md
-          git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:"- %s%n%b" >> CHANGELOG.md
+          git log ${FIRST_COMMIT}..${CURRENT_TAG} --pretty=format:"- %s%n%b" >> CHANGELOG.md
 
       - name: Commit and Push Changelog
         run: |

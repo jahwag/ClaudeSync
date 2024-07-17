@@ -5,10 +5,10 @@ import json
 import os
 import sys
 from watchdog.observers import Observer
-from file_handler import FileUploadHandler
-from api_utils import fetch_user_id, fetch_projects, select_project, create_project
+from .file_handler import FileUploadHandler
+from .api_utils import fetch_user_id, fetch_projects, select_project, create_project
 
-from manual_auth import get_session_key
+from .manual_auth import get_session_key
 
 class ClaudeSyncTUI:
     def __init__(self, session_key, watch_dir, user_id, project_id, delay):
