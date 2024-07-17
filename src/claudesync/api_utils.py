@@ -42,17 +42,51 @@ def fetch_projects(user_id, session_key):
         print(f"Error fetching projects: {str(e)}")
         sys.exit(1)
 
-def select_project(projects):
+
+def select_project(projects, user_id, session_key):
     print("Available projects:")
     for i, project in enumerate(projects, 1):
         print(f"{i}. {project['name']} (ID: {project['uuid']})")
+    print(f"{len(projects) + 1}. Create new project")
 
     while True:
         try:
-            choice = int(input("Enter the number of the project you want to use: "))
+            choice = int(input("Enter the number of the project you want to use (or create new): "))
             if 1 <= choice <= len(projects):
                 return projects[choice - 1]['uuid']
+            elif choice == len(projects) + 1:
+                name = input("Enter the name for the new project: ")
+                description = input("Enter a description for the new project (optional): ")
+                new_project = create_project(user_id, session_key, name, description)
+                print(f"New project created: {new_project['name']} (ID: {new_project['uuid']})")
+                return new_project['uuid']
             else:
                 print("Invalid choice. Please try again.")
         except ValueError:
             print("Invalid input. Please enter a number.")
+
+def create_project(user_id, session_key, name, description):
+    url = f"https://claude.ai/api/organizations/{user_id}/projects"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Referer': 'https://claude.ai/',
+        'Origin': 'https://claude.ai',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/json'
+    }
+    cookies = {'sessionKey': session_key, 'lastActiveOrg': user_id}
+    payload = {
+        "name": name,
+        "description": description,
+        "is_private": True
+    }
+
+    try:
+        response = requests.post(url, headers=headers, cookies=cookies, json=payload)
+        response.raise_for_status()
+        return response.json()
+    except requests.RequestException as e:
+        print(f"Error creating project: {str(e)}")
+        sys.exit(1)

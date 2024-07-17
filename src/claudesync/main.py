@@ -4,6 +4,15 @@ import time
 from watchdog.observers import Observer
 
 from file_handler import FileUploadHandler
+from api_utils import fetch_user_id, fetch_projects, select_project, create_project
+from manual_auth import get_session_key
+
+import argparse
+import sys
+import time
+from watchdog.observers import Observer
+
+from file_handler import FileUploadHandler
 from api_utils import fetch_user_id, fetch_projects, select_project
 from manual_auth import get_session_key
 
@@ -29,7 +38,7 @@ def main():
     if not args.project_id:
         print("Project ID not provided. Fetching available projects...")
         projects = fetch_projects(args.user_id, args.session_key)
-        args.project_id = select_project(projects)
+        args.project_id = select_project(projects, args.user_id, args.session_key)
 
     api_endpoint = f"https://claude.ai/api/organizations/{args.user_id}/projects/{args.project_id}/docs"
 
