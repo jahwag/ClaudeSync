@@ -5,10 +5,9 @@ import json
 import os
 import sys
 from watchdog.observers import Observer
+from .manual_auth import get_session_key, get_or_update_config_value, get_config, save_config
 from .file_handler import FileUploadHandler
-from .api_utils import fetch_user_id, fetch_projects, select_project, create_project
-
-from .manual_auth import get_session_key
+from .api_utils import fetch_user_id, fetch_projects, select_project
 
 class ClaudeSyncTUI:
     def __init__(self, session_key, watch_dir, user_id, project_id, delay):
@@ -21,6 +20,9 @@ class ClaudeSyncTUI:
         self.log_messages = []
         self.observer = None
         self.handler = None
+        self.scroll_position = 0
+        self.max_log_lines = 1000  # Increased for more history
+        self.auto_scroll = True  # New flag for automatic scrolling
 
     def setup(self):
         if not self.user_id:
@@ -37,18 +39,24 @@ class ClaudeSyncTUI:
         self.observer.schedule(self.handler, self.watch_dir, recursive=True)
 
     def initial_sync(self):
-        print("Performing initial synchronization...")
+        print("Please wait ...")
+        self.add_log_message("Performing initial synchronization...")
         for root, dirs, files in os.walk(self.watch_dir):
             for file in files:
                 file_path = os.path.join(root, file)
                 if not self.handler.should_ignore_file(file_path):
                     self.handler.upload_file(file_path)
-        print("Initial synchronization completed.")
+        self.add_log_message("Initial synchronization completed.")
 
     def add_log_message(self, message):
         self.log_messages.append(message)
-        if len(self.log_messages) > 10:
+        if len(self.log_messages) > self.max_log_lines:
             self.log_messages.pop(0)
+        if self.auto_scroll:
+            self.scroll_to_bottom()
+
+    def scroll_to_bottom(self):
+        self.scroll_position = max(0, len(self.log_messages) - (self.term.height - 11))
 
     def draw(self):
         print(self.term.clear())
@@ -58,49 +66,87 @@ class ClaudeSyncTUI:
         print(f"Upload delay: {self.delay} seconds")
         print(f"User ID: {self.user_id}")
         print(f"Project ID: {self.project_id}")
+        print(f"Auto-scroll: {'ON' if self.auto_scroll else 'OFF'}")
 
-        print(self.term.move_y(7) + self.term.black_on_skyblue(self.term.center('Recent Activity')))
-        for i, message in enumerate(self.log_messages):
-            print(self.term.move_y(9 + i) + message)
+        print(self.term.move_y(8) + self.term.black_on_skyblue(self.term.center('Recent Activity')))
 
-        print(self.term.move_y(20) + "Press 'q' to quit")
+        log_height = self.term.height - 12
+        visible_logs = self.log_messages[self.scroll_position:self.scroll_position + log_height]
+        for i, message in enumerate(visible_logs):
+            print(self.term.move_y(10 + i) + message)
+
+        print(self.term.move_y(self.term.height - 1) + "Press 'q' to quit, 'j'/'k' to scroll, 'a' to toggle auto-scroll")
 
     def run(self):
         with self.term.cbreak(), self.term.hidden_cursor():
-            self.initial_sync()  # Perform initial sync before starting the observer
+            self.initial_sync()
             self.observer.start()
             while True:
                 self.draw()
-                inp = self.term.inkey(timeout=1)
+                inp = self.term.inkey(timeout=0.1)
                 if inp == 'q':
                     break
+                elif inp == 'j':
+                    self.auto_scroll = False
+                    self.scroll_position = min(len(self.log_messages) - 1, self.scroll_position + 1)
+                elif inp == 'k':
+                    self.auto_scroll = False
+                    self.scroll_position = max(0, self.scroll_position - 1)
+                elif inp == 'a':
+                    self.auto_scroll = not self.auto_scroll
+                    if self.auto_scroll:
+                        self.scroll_to_bottom()
+
         self.observer.stop()
         self.observer.join()
+
 
 def main():
     parser = argparse.ArgumentParser(description="Sync local files with Claude.ai projects.")
     parser.add_argument("--session-key", help="Session key for authentication")
     parser.add_argument("--watch-dir", default=".", help="Directory to watch for changes")
-    parser.add_argument("--user-id", help="User ID for Claude API (optional, will be fetched if not provided)")
+    parser.add_argument("--user-id", help="User ID for Claude API")
     parser.add_argument("--project-id", help="Project ID for Claude API")
-    parser.add_argument("--delay", type=int, default=5, help="Delay in seconds before uploading (default: 5)")
+    parser.add_argument("--delay", type=int, help="Delay in seconds before uploading")
     args = parser.parse_args()
 
-    # Load config from file if it exists
-    config = {}
-    if os.path.exists('config.json'):
-        with open('config.json', 'r') as f:
-            config = json.load(f)
+    config = get_config()
 
-    # If session key is not provided, use the manual input method
-    session_key = args.session_key
-    if not session_key:
-        session_key = get_session_key()
+    # Get or update session key
+    session_key = args.session_key or get_session_key()
 
-    watch_dir = args.watch_dir
+    # Get or update watch directory
+    watch_dir = args.watch_dir or get_or_update_config_value('watch_dir', "Enter the directory to watch", ".")
+
+    # Get or fetch user ID
     user_id = args.user_id or config.get('user_id')
+    if not user_id:
+        print("Fetching user ID...")
+        user_id = fetch_user_id(session_key)
+        config['user_id'] = user_id
+        save_config(config)
+        print(f"User ID fetched and stored: {user_id}")
+
+    # Get or select project ID
     project_id = args.project_id or config.get('project_id')
-    delay = args.delay
+    if not project_id:
+        print("No project ID found. Fetching projects...")
+        projects = fetch_projects(user_id, session_key)
+        project_id = select_project(projects, user_id, session_key)
+        config['project_id'] = project_id
+        save_config(config)
+        print(f"Project ID selected and stored: {project_id}")
+    else:
+        use_stored = input(f"Found stored project ID: {project_id}. Use it? (y/n): ").strip().lower()
+        if use_stored != 'y':
+            projects = fetch_projects(user_id, session_key)
+            project_id = select_project(projects, user_id, session_key)
+            config['project_id'] = project_id
+            save_config(config)
+            print(f"New project ID selected and stored: {project_id}")
+
+    # Get or update delay
+    delay = args.delay or int(get_or_update_config_value('delay', "Enter the delay in seconds before uploading", "5"))
 
     tui = ClaudeSyncTUI(session_key, watch_dir, user_id, project_id, delay)
     tui.setup()
