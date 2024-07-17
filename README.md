@@ -1,108 +1,68 @@
 # ClaudeSync
+
 [![GitHub Actions](https://github.com/jahwag/ClaudeSync/actions/workflows/publish-to-pypi.yml/badge.svg)](https://github.com/jahwag/ClaudeSync/actions/workflows/publish-to-pypi.yml)
 
-ClaudeSync is a Python tool that automates the synchronization of local files with Claude.ai Projects. It watches specified directories and automatically uploads modified files to your Claude.ai Project's knowledge base.
+ClaudeSync is a powerful tool designed to seamlessly synchronize your local files with [Claude.ai](https://www.anthropic.com/claude) projects.
 
-Key features:
-- Monitors local directories for file changes
-- Automatically uploads new or modified files to Claude.ai Projects
-- Configurable delay to prevent excessive uploads during active editing
-- Supports both command-line arguments and config file for flexibility
-- Handles recursive directory watching
-- User-friendly Terminal User Interface (TUI)
+## 🤖 What is Claude.ai?
 
-Use ClaudeSync if you're working with Claude.ai Projects and want to keep your project's knowledge base updated with your local files without manual uploads.
+[Claude.ai](https://www.anthropic.com/claude) is an advanced AI assistant created by Anthropic, capable of engaging in various tasks including analysis, coding, and creative writing. ClaudeSync bridges the gap between your local development environment and Claude.ai's knowledge base.
 
-![Illustration](https://raw.githubusercontent.com/jahwag/ClaudeSync/master/screen.png)
+## 🚀 Key Features
 
-## Installation
+- **Real-time synchronization** with Claude.ai projects
+- **User-friendly Terminal User Interface (TUI)**
+- **Automatic handling** of file creation, modification, and deletion
+- **Intelligent file filtering** based on .gitignore rules
+- **Configurable sync delay** to optimize performance
+- **Seamless integration** with your existing workflow
 
-Install ClaudeSync using pip:
+## 🖼️ Screenshots
 
+<table>
+  <tr>
+    <td><img src="https://raw.githubusercontent.com/jahwag/ClaudeSync/master/screen1.png" alt="ClaudeSync Interface" width="400"/></td>
+    <td><img src="https://raw.githubusercontent.com/jahwag/ClaudeSync/master/screen2.png" alt="ClaudeSync in Action" width="400"/></td>
+  </tr>
+</table>
+
+## 🚀 Quick Start
+
+1. **Install ClaudeSync:**
+   ```bash
+   pip install claudesync
+   ```
+
+2. **Run ClaudeSync:**
+   ```bash
+   claudesync
+   ```
+
+   That's it! ClaudeSync will guide you through obtaining your session key and selecting your project. It will then start syncing your current directory with your Claude.ai project.
+
+## 🛠️ Advanced Usage
+
+For more options and advanced configurations, run:
 ```bash
-pip install claudesync
+claudesync --help
 ```
 
-## Configuration
+## 🤝 Contributing
 
-You have two options for configuring ClaudeSync:
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
 
-1. Command-line arguments (recommended for one-time use or testing)
-2. Configuration file (recommended for repeated use)
+## 📄 License
 
-### Option 1: Command-line Arguments
+This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
 
-Provide your session key and watch directory directly in the command:
-
-```bash
-claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch
-```
-
-### Option 2: Configuration File
-
-Create a `config.json` file in your working directory:
-
-```json
-{
-    "user_id": "your-user-id-here",
-    "project_id": "your-project-id-here"
-}
-```
-
-Then run ClaudeSync:
-
-```bash
-claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch
-```
-
-## Usage
-
-### Basic Usage
-
-```bash
-claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch
-```
-
-### Parameters
-
-- `--session-key`: Your Claude.ai session key (required)
-- `--watch-dir`: Directory to watch for changes (default: current directory)
-- `--user-id`: User ID for Claude API (optional if in config.json)
-- `--project-id`: Project ID for Claude API (optional if in config.json)
-- `--delay`: Delay in seconds before uploading (default: 5)
-
-### Examples
-
-Watch the current directory and sync changes:
-```bash
-claudesync --session-key YOUR_SESSION_KEY
-```
-
-Watch a specific directory with a custom delay:
-```bash
-claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch --delay 10
-```
-
-## Terminal User Interface (TUI)
-
-ClaudeSync now features a user-friendly TUI that displays:
-
-- Watched directory
-- Upload delay
-- User ID
-- Project ID
-- Recent activity log
-
-To exit the TUI, press 'q'.
-
-## Contributing
-
-We welcome contributions to ClaudeSync! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information on how to get started.
-
-## License
-
-[MIT License](https://opensource.org/licenses/MIT)
-
-## Disclaimer
+## ⚠️ Disclaimer
 
 Ensure you have the necessary permissions to access and modify your Claude.ai projects. Keep your session key secure and do not share it publicly.
+
+## 📞 Support
+
+If you encounter any issues or have questions, please [open an issue](https://github.com/jahwag/ClaudeSync/issues) on our GitHub repository.
+
+---
+
+Made with ❤️ by the ClaudeSync team
