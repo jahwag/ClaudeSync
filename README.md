@@ -9,6 +9,7 @@ Key features:
 - Configurable delay to prevent excessive uploads during active editing
 - Supports both command-line arguments and config file for flexibility
 - Handles recursive directory watching
+- User-friendly Terminal User Interface (TUI)
 
 Use ClaudeSync if you're working with Claude.ai Projects and want to keep your project's knowledge base updated with your local files without manual uploads.
 
@@ -31,10 +32,10 @@ You have two options for configuring ClaudeSync:
 
 ### Option 1: Command-line Arguments
 
-Provide your user ID and project ID directly in the command:
+Provide your session key and watch directory directly in the command:
 
 ```bash
-claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch --user-id your-user-id --project-id your-project-id
+claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch
 ```
 
 ### Option 2: Configuration File
@@ -48,7 +49,7 @@ Create a `config.json` file in your working directory:
 }
 ```
 
-Then run ClaudeSync without the `--user-id` and `--project-id` arguments:
+Then run ClaudeSync:
 
 ```bash
 claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch
@@ -65,56 +66,38 @@ claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch
 ### Parameters
 
 - `--session-key`: Your Claude.ai session key (required)
-- `--watch-dir`: Directory to watch for changes (required)
+- `--watch-dir`: Directory to watch for changes (default: current directory)
 - `--user-id`: User ID for Claude API (optional if in config.json)
 - `--project-id`: Project ID for Claude API (optional if in config.json)
-- `--delete-all`: Delete all project documents
 - `--delay`: Delay in seconds before uploading (default: 5)
 
 ### Examples
 
-Watch a directory and sync changes:
+Watch the current directory and sync changes:
 ```bash
-claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch --user-id your-user-id --project-id your-project-id
+claudesync --session-key YOUR_SESSION_KEY
 ```
 
-Delete all documents in the project:
-```bash
-claudesync --session-key YOUR_SESSION_KEY --delete-all --user-id your-user-id --project-id your-project-id
-```
-
-Set a custom delay for file uploads:
+Watch a specific directory with a custom delay:
 ```bash
 claudesync --session-key YOUR_SESSION_KEY --watch-dir /path/to/watch --delay 10
 ```
 
-## Development
-To contribute to ClaudeSync:
+## Terminal User Interface (TUI)
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/jahwag/claudesync.git
-   ```
-2. Install development dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-3. Make your changes and test locally:
-   ```
-   python -m build
-   pip install -e .
-   ```
-4. Run the locally installed version:
-   ```
-   claudesync --help
-   ```
-5. Remember to clean up after testing:
-   ```
-   pip uninstall claudesync
-   rm -rf dist build **/*.egg-info
-   ```
-6. Submit a pull request with your changes.
+ClaudeSync now features a user-friendly TUI that displays:
 
+- Watched directory
+- Upload delay
+- User ID
+- Project ID
+- Recent activity log
+
+To exit the TUI, press 'q'.
+
+## Contributing
+
+We welcome contributions to ClaudeSync! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information on how to get started.
 
 ## License
 
