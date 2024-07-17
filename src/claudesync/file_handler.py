@@ -1,11 +1,12 @@
 import os
+import mimetypes
 from watchdog.events import FileSystemEventHandler
 from .debounce import DebounceHandler
 from .gitignore_utils import load_gitignore, should_ignore
 import requests
 
 class FileUploadHandler(FileSystemEventHandler):
-    def __init__(self, api_endpoint, session_key, base_path, delay=5):
+    def __init__(self, api_endpoint, session_key, base_path, delay=5, max_file_size=1024*320):  # 320 KB limit or roughly 4k lines
         self.api_endpoint = api_endpoint
         self.session_key = session_key
         self.base_path = os.path.abspath(base_path)
@@ -19,6 +20,7 @@ class FileUploadHandler(FileSystemEventHandler):
         self.debouncer = DebounceHandler(delay)
         self.gitignore = load_gitignore(self.base_path)
         self.log_callback = None
+        self.max_file_size = max_file_size
 
     def log(self, message):
         if self.log_callback:
@@ -35,13 +37,24 @@ class FileUploadHandler(FileSystemEventHandler):
             self.debouncer.debounce(self.upload_file, event.src_path)
 
     def should_ignore_file(self, file_path):
-            # Check if the file is in the .git directory
-            rel_path = os.path.relpath(file_path, self.base_path)
-            if rel_path.startswith('.git' + os.path.sep) or rel_path == '.git':
-                return True
+        # Check if the file is in the .git directory
+        rel_path = os.path.relpath(file_path, self.base_path)
+        if rel_path.startswith('.git' + os.path.sep) or rel_path == '.git':
+            return True
 
-            # Check if the file should be ignored based on .gitignore
-            return should_ignore(self.gitignore, file_path, self.base_path)
+        # Check file size
+        if os.path.getsize(file_path) > self.max_file_size:
+            self.log(f"Ignoring large file: {file_path}")
+            return True
+
+        # Check file type
+        mime_type, _ = mimetypes.guess_type(file_path)
+        if mime_type and not mime_type.startswith('text/'):
+            self.log(f"Ignoring non-text file: {file_path}")
+            return True
+
+        # Check if the file should be ignored based on .gitignore
+        return should_ignore(self.gitignore, file_path, self.base_path)
 
     def api_request(self, method, url, **kwargs):
         try:
@@ -88,4 +101,3 @@ class FileUploadHandler(FileSystemEventHandler):
                 self.log(f"Uploaded: {file_name}")
         except Exception as e:
             print(f"Error processing file {file_path}: {str(e)}")
-
