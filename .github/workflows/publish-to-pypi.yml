@@ -30,18 +30,19 @@ jobs:
 
       - name: Generate Changelog
         run: |
-          git log $(git describe --tags --abbrev=0)..HEAD --pretty=format:"- %s%n%b" > CHANGELOG.md
+          CURRENT_TAG=$(git describe --tags --abbrev=0)
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${CURRENT_TAG}^)
+          echo "# Changelog for $CURRENT_TAG" > CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:"- %s%n%b" >> CHANGELOG.md
 
       - name: Commit and Push Changelog
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add CHANGELOG.md
-          git commit -m "Update CHANGELOG.md" || echo "No changes to commit"
-          git fetch origin master
-          git checkout master
-          git merge --no-ff ${{ github.sha }} -m "Merge tag ${{ github.ref }} into master"
-          git push origin master
+          git commit -m "Update CHANGELOG.md for ${{ github.ref_name }}" || echo "No changes to commit"
+          git push origin HEAD:master
 
       - name: Build package
         run: python -m build
