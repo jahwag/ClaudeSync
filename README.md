@@ -41,13 +41,9 @@ ClaudeSync is a powerful tool designed to seamlessly synchronize your local file
    # or
    claudesync project create
    ```
+   When selecting or creating a project, you'll be prompted to enter the local path for synchronization.
 
-5. **Set the local path to sync:**
-   ```bash
-   claudesync config set local_path /path/to/your/project
-   ```
-
-6. **Start syncing:**
+5. **Start syncing:**
    ```bash
    claudesync sync
    ```
@@ -64,14 +60,13 @@ ClaudeSync is a powerful tool designed to seamlessly synchronize your local file
 - Archive a project: `claudesync project archive`
 - Select active project: `claudesync project select`
 
+Each time you create or select a project, you'll be prompted to enter or update the local path for synchronization.
+
 ### File Management
 - List remote files: `claudesync ls`
 - Sync files: `claudesync sync`
 
 ### Configuration
-- Set a configuration value: `claudesync config set <key> <value>`
-- Get a configuration value: `claudesync config get <key>`
-- List all configuration values: `claudesync config list`
 - View current status: `claudesync status`
 
 ### Scheduled Sync

@@ -10,7 +10,6 @@ from .provider_factory import get_provider
 from .exceptions import ConfigurationError, ProviderError
 from .utils import calculate_checksum, get_local_files
 
-
 def handle_errors(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -18,9 +17,7 @@ def handle_errors(func):
             return func(*args, **kwargs)
         except (ConfigurationError, ProviderError) as e:
             click.echo(f"Error: {str(e)}")
-
     return wrapper
-
 
 def validate_and_get_provider(config, require_org=True):
     active_provider = config.get('active_provider')
@@ -31,12 +28,23 @@ def validate_and_get_provider(config, require_org=True):
         raise ConfigurationError("No active organization set. Please select an organization.")
     return get_provider(active_provider, session_key)
 
+def validate_and_store_local_path(config):
+    while True:
+        local_path = click.prompt("Enter the absolute path to your local project directory", type=str)
+        if os.path.isabs(local_path):
+            if os.path.exists(local_path):
+                config.set('local_path', local_path)
+                click.echo(f"Local path set to: {local_path}")
+                break
+            else:
+                click.echo("The specified path does not exist. Please enter a valid path.")
+        else:
+            click.echo("Please enter an absolute path.")
 
 @click.group()
 @click.pass_context
 def cli(ctx):
     ctx.obj = ConfigManager()
-
 
 @cli.command()
 @click.argument('provider', required=False)
@@ -57,7 +65,6 @@ def login(config, provider):
     config.set('active_provider', provider)
     click.echo("Logged in successfully.")
 
-
 @cli.command()
 @click.pass_obj
 def logout(config):
@@ -66,12 +73,10 @@ def logout(config):
         config.set(key, None)
     click.echo("Logged out successfully.")
 
-
 @cli.group()
 def organization():
     """Organization management"""
     pass
-
 
 @organization.command()
 @click.pass_obj
@@ -86,7 +91,6 @@ def list(config):
         click.echo("Available organizations:")
         for idx, org in enumerate(organizations, 1):
             click.echo(f"  {idx}. {org['name']} (ID: {org['id']})")
-
 
 @organization.command()
 @click.pass_obj
@@ -109,12 +113,10 @@ def select(config):
     else:
         click.echo("Invalid selection. Please try again.")
 
-
 @cli.group()
 def project():
     """Project management"""
     pass
-
 
 @project.command()
 @click.pass_obj
@@ -131,13 +133,14 @@ def create(config):
         new_project = provider.create_project(active_organization_id, title, description)
         click.echo(f"Project '{new_project['name']}' (uuid: {new_project['uuid']}) has been created successfully.")
 
-        if click.confirm("Do you want to set this as your active project?"):
-            config.set('active_project_id', new_project['uuid'])
-            config.set('active_project_name', new_project['name'])
-            click.echo(f"Active project set to: {new_project['name']} (uuid: {new_project['uuid']})")
+        config.set('active_project_id', new_project['uuid'])
+        config.set('active_project_name', new_project['name'])
+        click.echo(f"Active project set to: {new_project['name']} (uuid: {new_project['uuid']})")
+
+        validate_and_store_local_path(config)
+
     except ProviderError as e:
         click.echo(f"Failed to create project: {str(e)}")
-
 
 @project.command()
 @click.pass_obj
@@ -162,7 +165,6 @@ def archive(config):
     else:
         click.echo("Invalid selection. Please try again.")
 
-
 @project.command()
 @click.pass_obj
 @handle_errors
@@ -183,9 +185,10 @@ def select(config):
         config.set('active_project_id', selected_project['id'])
         config.set('active_project_name', selected_project['name'])
         click.echo(f"Selected project: {selected_project['name']} (ID: {selected_project['id']})")
+
+        validate_and_store_local_path(config)
     else:
         click.echo("Invalid selection. Please try again.")
-
 
 @project.command()
 @click.option('-a', '--all', 'show_all', is_flag=True, help="Show all projects, including archived ones")
@@ -204,16 +207,13 @@ def ls(config, show_all):
             status = " (Archived)" if project.get('archived_at') else ""
             click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
 
-
 @cli.command()
 @click.pass_obj
 def status(config):
     """Show status"""
-    for key in ['active_provider', 'active_organization_id', 'active_project_id', 'active_project_name', 'local_path',
-                'log_level']:
+    for key in ['active_provider', 'active_organization_id', 'active_project_id', 'active_project_name', 'local_path', 'log_level']:
         value = config.get(key)
         click.echo(f"{key.replace('_', ' ').capitalize()}: {value or 'Not set'}")
-
 
 @cli.command()
 @click.pass_obj
@@ -229,8 +229,7 @@ def ls(config):
     else:
         click.echo(f"Files in project '{config.get('active_project_name')}' (ID: {active_project_id}):")
         for file in files:
-            click.echo(f"  - {file['file_name']} (ID: {file['id']}, Created: {file['created_at']})")
-
+            click.echo(f"  - {file['file_name']} (ID: {file['uuid']}, Created: {file['created_at']})")
 
 @cli.command()
 @click.pass_obj
@@ -241,8 +240,15 @@ def sync(config):
     active_organization_id = config.get('active_organization_id')
     active_project_id = config.get('active_project_id')
     local_path = config.get('local_path')
+
     if not local_path:
-        raise ConfigurationError("No local path set. Use 'claudesync config set local_path <path>' to set it.")
+        click.echo("No local path set. Please select or create a project to set the local path.")
+        sys.exit(1)
+
+    if not os.path.exists(local_path):
+        click.echo(f"The configured local path does not exist: {local_path}")
+        click.echo("Please update the local path by selecting or creating a project.")
+        sys.exit(1)
 
     remote_files = provider.list_files(active_organization_id, active_project_id)
     local_files = get_local_files(local_path)
@@ -266,7 +272,6 @@ def sync(config):
             provider.upload_file(active_organization_id, active_project_id, local_file, content)
 
     click.echo("Sync completed successfully.")
-
 
 @cli.command()
 @click.pass_obj
@@ -293,40 +298,6 @@ def schedule(config, interval):
         cron.write()
         click.echo(f"Cron job created successfully! It will run every {interval} minutes.")
         click.echo("\nTo remove the cron job, run: crontab -e and remove the line for ClaudeSync")
-
-
-@cli.group()
-def config():
-    """Configuration management"""
-    pass
-
-
-@config.command()
-@click.argument('key')
-@click.argument('value')
-@click.pass_obj
-def set(config, key, value):
-    """Set a configuration value"""
-    config.set(key, value)
-    click.echo(f"Set {key} to {value}")
-
-
-@config.command()
-@click.argument('key')
-@click.pass_obj
-def get(config, key):
-    """Get a configuration value"""
-    value = config.get(key)
-    click.echo(f"{key}: {value}")
-
-
-@config.command()
-@click.pass_obj
-def list(config):
-    """List all configuration values"""
-    for key, value in config.config.items():
-        click.echo(f"{key}: {value}")
-
 
 if __name__ == '__main__':
     cli()
