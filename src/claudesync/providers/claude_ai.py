@@ -140,3 +140,15 @@ class ClaudeAIProvider:
             f"/organizations/{organization_id}/projects/{project_id}",
             json={"is_archived": True}
         )
+
+    def create_project(self, organization_id, name, description=""):
+        data = {
+            "name": name,
+            "description": description,
+            "is_private": True
+        }
+        return self._make_request(
+            "POST",
+            f"/organizations/{organization_id}/projects",
+            json=data
+        )

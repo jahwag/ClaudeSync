@@ -99,6 +99,27 @@ def project():
 @project.command()
 @click.pass_obj
 @handle_errors
+def create(config):
+    provider = validate_and_get_provider(config)
+    active_organization_id = config.get('active_organization_id')
+
+    title = click.prompt("Enter the project title")
+    description = click.prompt("Enter the project description (optional)", default="")
+
+    try:
+        new_project = provider.create_project(active_organization_id, title, description)
+        click.echo(f"Project '{new_project['name']}' (uuid: {new_project['uuid']}) has been created successfully.")
+
+        if click.confirm("Do you want to set this as your active project?"):
+            config.set('active_project_id', new_project['uuid'])
+            config.set('active_project_name', new_project['name'])
+            click.echo(f"Active project set to: {new_project['name']} (uuid: {new_project['uuid']})")
+    except ProviderError as e:
+        click.echo(f"Failed to create project: {str(e)}")
+
+@project.command()
+@click.pass_obj
+@handle_errors
 def archive(config):
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
@@ -159,17 +180,9 @@ def ls(config, show_all):
 @cli.command()
 @click.pass_obj
 def status(config):
-    click.echo("ClaudeSync status:")
-    for key in ['active_provider', 'active_organization_id']:
+    for key in ['active_provider', 'active_organization_id', 'active_project_id', 'active_project_name', 'local_path', 'log_level']:
         value = config.get(key)
         click.echo(f"{key.replace('_', ' ').capitalize()}: {value or 'Not set'}")
-    projects = config.get('projects', {})
-    if projects:
-        click.echo("Synced projects:")
-        for project_id, local_path in projects.items():
-            click.echo(f"  - {project_id}: {local_path}")
-    else:
-        click.echo("No projects are currently being synced.")
 
 @cli.group()
 def remote():
