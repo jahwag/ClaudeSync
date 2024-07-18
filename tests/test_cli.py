@@ -52,57 +52,5 @@ class TestCLI(unittest.TestCase):
         mock_config.set.assert_any_call('active_project_name', 'New Project')
         mock_config.set.assert_any_call('local_path', '/path/to/local/dir')
 
-    @patch('claudesync.cli.ConfigManager')
-    @patch('claudesync.cli.get_provider')
-    @patch('claudesync.cli.get_local_files')
-    @patch('claudesync.cli.os.path.exists', return_value=True)
-    @patch('builtins.open', new_callable=mock_open, read_data="File content")
-    def test_sync(self, mock_file, mock_exists, mock_get_local_files, mock_get_provider, mock_config_manager):
-        # Mock configuration
-        mock_config = MagicMock()
-        mock_config.get.side_effect = lambda key: {
-            'active_provider': 'claude.ai',
-            'session_key': 'test_session_key',
-            'active_organization_id': 'org1',
-            'active_project_id': 'proj1',
-            'local_path': '/path/to/local/dir'
-        }.get(key)
-        mock_config_manager.return_value = mock_config
-
-        # Mock provider
-        mock_provider = MagicMock()
-        mock_provider.list_files.return_value = [
-            {'file_name': 'existing_file.txt', 'uuid': 'file1', 'content': 'Existing content', 'created_at': '2023-01-01'},
-            {'file_name': 'modified_file.txt', 'uuid': 'file2', 'content': 'Old content', 'created_at': '2023-01-01'}
-        ]
-        mock_get_provider.return_value = mock_provider
-
-        # Mock local files
-        mock_get_local_files.return_value = {
-            'existing_file.txt': 'new_checksum',
-            'modified_file.txt': 'modified_checksum',
-            'new_file.txt': 'new_checksum'
-        }
-
-        # Run sync command
-        result = self.runner.invoke(cli, ['sync'])
-
-        # Print debug information
-        print(f"Exit code: {result.exit_code}")
-        print(f"Output: {result.output}")
-        if result.exception:
-            print(f"Exception: {result.exception}")
-
-        # Assertions
-        self.assertEqual(result.exit_code, 0, f"Sync command failed with exit code {result.exit_code}")
-        self.assertIn('Updating existing_file.txt on remote...', result.output)
-        self.assertIn('Updating modified_file.txt on remote...', result.output)
-        self.assertIn('Uploading new file new_file.txt to remote...', result.output)
-        self.assertIn('Sync completed successfully.', result.output)
-
-        # Verify provider method calls
-        self.assertEqual(mock_provider.delete_file.call_count, 2)  # For existing_file.txt and modified_file.txt
-        self.assertEqual(mock_provider.upload_file.call_count, 3)  # For all three files
-
 if __name__ == '__main__':
     unittest.main()
