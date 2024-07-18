@@ -9,7 +9,24 @@ permissions:
   contents: write
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run tests
+        run: |
+          pytest
+
   deploy:
+    needs: test
     timeout-minutes: 5
     runs-on: ubuntu-latest
 
@@ -31,10 +48,10 @@ jobs:
       - name: Generate Changelog
         run: |
           CURRENT_TAG=$(git describe --tags --abbrev=0)
-          FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD)
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^)
           echo "# Changelog for $CURRENT_TAG" > CHANGELOG.md
           echo "" >> CHANGELOG.md
-          git log ${FIRST_COMMIT}..${CURRENT_TAG} --pretty=format:"- %s%n%b" >> CHANGELOG.md
+          git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:"- %s%n%b" | grep -v "Update CHANGELOG.md" >> CHANGELOG.md
 
       - name: Commit and Push Changelog
         run: |
