@@ -99,6 +99,28 @@ def project():
 @project.command()
 @click.pass_obj
 @handle_errors
+def archive(config):
+    provider = validate_and_get_provider(config)
+    active_organization_id = config.get('active_organization_id')
+    projects = provider.get_projects(active_organization_id, include_archived=False)
+    if not projects:
+        click.echo("No active projects found.")
+        return
+    click.echo("Available projects to archive:")
+    for idx, project in enumerate(projects, 1):
+        click.echo(f"  {idx}. {project['name']} (ID: {project['id']})")
+    selection = click.prompt("Enter the number of the project to archive", type=int)
+    if 1 <= selection <= len(projects):
+        selected_project = projects[selection - 1]
+        if click.confirm(f"Are you sure you want to archive '{selected_project['name']}'?"):
+            provider.archive_project(active_organization_id, selected_project['id'])
+            click.echo(f"Project '{selected_project['name']}' has been archived.")
+    else:
+        click.echo("Invalid selection. Please try again.")
+
+@project.command()
+@click.pass_obj
+@handle_errors
 def select(config):
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')

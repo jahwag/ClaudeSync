@@ -133,3 +133,10 @@ class ClaudeAIProvider:
                 logger.error(f"Response headers: {e.response.headers}")
                 logger.error(f"Response content: {e.response.text}")
             raise ProviderError(f"API request failed: {str(e)}")
+
+    def archive_project(self, organization_id, project_id):
+        return self._make_request(
+            "PUT",
+            f"/organizations/{organization_id}/projects/{project_id}",
+            json={"is_archived": True}
+        )
