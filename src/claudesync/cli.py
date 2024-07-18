@@ -1,7 +1,10 @@
-import os
-
 import click
+import sys
+import os
+import shutil
+
 from functools import wraps
+from crontab import CronTab
 from .config_manager import ConfigManager
 from .provider_factory import get_provider
 from .exceptions import ConfigurationError, ProviderError
@@ -35,6 +38,7 @@ def cli(ctx):
 @click.pass_obj
 @handle_errors
 def login(config, provider):
+    """Login to an AI provider"""
     providers = get_provider()
     if not provider:
         click.echo("Available providers:\n" + "\n".join(f"  - {p}" for p in providers))
@@ -51,18 +55,21 @@ def login(config, provider):
 @cli.command()
 @click.pass_obj
 def logout(config):
+    """Logout from an AI provider"""
     for key in ['session_key', 'active_provider', 'active_organization_id']:
         config.set(key, None)
     click.echo("Logged out successfully.")
 
 @cli.group()
 def organization():
+    """Organization management"""
     pass
 
 @organization.command()
 @click.pass_obj
 @handle_errors
 def list(config):
+    """List available organizations"""
     provider = validate_and_get_provider(config, require_org=False)
     organizations = provider.get_organizations()
     if not organizations:
@@ -76,6 +83,7 @@ def list(config):
 @click.pass_obj
 @handle_errors
 def select(config):
+    """Select active organization"""
     provider = validate_and_get_provider(config, require_org=False)
     organizations = provider.get_organizations()
     if not organizations:
@@ -94,12 +102,14 @@ def select(config):
 
 @cli.group()
 def project():
+    """Project management"""
     pass
 
 @project.command()
 @click.pass_obj
 @handle_errors
 def create(config):
+    """Create a project"""
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
 
@@ -121,6 +131,7 @@ def create(config):
 @click.pass_obj
 @handle_errors
 def archive(config):
+    """Archive a project"""
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
     projects = provider.get_projects(active_organization_id, include_archived=False)
@@ -143,6 +154,7 @@ def archive(config):
 @click.pass_obj
 @handle_errors
 def select(config):
+    """Select active project"""
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
     projects = provider.get_projects(active_organization_id, include_archived=False)
@@ -166,6 +178,7 @@ def select(config):
 @click.pass_obj
 @handle_errors
 def ls(config, show_all):
+    """List projects"""
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
     projects = provider.get_projects(active_organization_id, include_archived=show_all)
@@ -180,18 +193,16 @@ def ls(config, show_all):
 @cli.command()
 @click.pass_obj
 def status(config):
+    """Show status"""
     for key in ['active_provider', 'active_organization_id', 'active_project_id', 'active_project_name', 'local_path', 'log_level']:
         value = config.get(key)
         click.echo(f"{key.replace('_', ' ').capitalize()}: {value or 'Not set'}")
 
-@cli.group()
-def remote():
-    pass
-
-@remote.command()
+@cli.command()
 @click.pass_obj
 @handle_errors
 def ls(config):
+    """List remote files"""
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
     active_project_id = config.get('active_project_id')
@@ -203,10 +214,11 @@ def ls(config):
         for file in files:
             click.echo(f"  - {file['file_name']} (ID: {file['id']}, Created: {file['created_at']})")
 
-@remote.command()
+@cli.command()
 @click.pass_obj
 @handle_errors
 def sync(config):
+    """Sync remote files"""
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
     active_project_id = config.get('active_project_id')
@@ -236,6 +248,32 @@ def sync(config):
             provider.upload_file(active_organization_id, active_project_id, local_file, content)
 
     click.echo("Sync completed successfully.")
+
+@cli.command()
+@click.pass_obj
+@click.option('--interval', type=int, default=5, prompt='Enter sync interval in minutes')
+@handle_errors
+def schedule(config, interval):
+    """Set up a cron job to run claudesync remote sync at regular intervals"""
+    claudesync_path = shutil.which('claudesync')
+    if not claudesync_path:
+        click.echo("Error: claudesync not found in PATH. Please ensure it's installed correctly.")
+        sys.exit(1)
+
+    if sys.platform.startswith('win'):
+        click.echo("Windows Task Scheduler setup:")
+        command = f'schtasks /create /tn "ClaudeSync" /tr "{claudesync_path} sync" /sc minute /mo {interval}'
+        click.echo(f"Run this command to create the task:\n{command}")
+        click.echo("\nTo remove the task, run: schtasks /delete /tn \"ClaudeSync\" /f")
+    else:
+        # Unix-like systems (Linux, macOS)
+        cron = CronTab(user=True)
+        job = cron.new(command=f'{claudesync_path} sync')
+        job.minute.every(interval)
+
+        cron.write()
+        click.echo(f"Cron job created successfully! It will run every {interval} minutes.")
+        click.echo("\nTo remove the cron job, run: crontab -e and remove the line for ClaudeSync")
 
 if __name__ == '__main__':
     cli()
