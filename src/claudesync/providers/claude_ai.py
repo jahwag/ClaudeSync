@@ -48,15 +48,18 @@ class ClaudeAIProvider:
             for membership in account_info['account']['memberships']
         ]
 
-    def get_projects(self, organization_id):
+    def get_projects(self, organization_id, include_archived=False):
         projects = self._make_request("GET", f"/organizations/{organization_id}/projects")
-        return [
+        filtered_projects = [
             {
                 'id': project['uuid'],
-                'name': project['name']
+                'name': project['name'],
+                'archived_at': project.get('archived_at')
             }
             for project in projects
+            if include_archived or project.get('archived_at') is None
         ]
+        return filtered_projects
 
     def list_files(self, organization_id, project_id):
         files = self._make_request("GET", f"/organizations/{organization_id}/projects/{project_id}/docs")

@@ -121,21 +121,26 @@ def project():
     pass
 
 @project.command()
+@click.option('-a', '--all', 'show_all', is_flag=True, help="Show all projects, including archived ones")
 @click.pass_obj
-def ls(config):
+def ls(config, show_all):
     click.echo("Listing remote projects...")
 
     try:
         provider = validate_and_get_provider(config)
         active_organization_id = config.get('active_organization_id')
-        projects = provider.get_projects(active_organization_id)
+        if not active_organization_id:
+            raise ConfigurationError("No active organization set. Please use 'claudesync organization select' to choose an organization.")
+
+        projects = provider.get_projects(active_organization_id, include_archived=show_all)
 
         if not projects:
             click.echo("No projects found.")
         else:
             click.echo("Remote projects:")
             for project in projects:
-                click.echo(f"  - {project['name']} (ID: {project['id']})")
+                status = " (Archived)" if project.get('archived_at') else ""
+                click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
     except (ConfigurationError, ProviderError) as e:
         click.echo(f"Error: {str(e)}")
 
