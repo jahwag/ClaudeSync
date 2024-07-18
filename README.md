@@ -11,20 +11,12 @@ ClaudeSync is a powerful tool designed to seamlessly synchronize your local file
 ## 🚀 Key Features
 
 - **Real-time synchronization** with Claude.ai projects
-- **User-friendly Terminal User Interface (TUI)**
+- **Command-line interface (CLI)** for easy management
+- **Multiple organization and project support**
 - **Automatic handling** of file creation, modification, and deletion
 - **Intelligent file filtering** based on .gitignore rules
-- **Configurable sync delay** to optimize performance
+- **Configurable sync interval** with cron job support
 - **Seamless integration** with your existing workflow
-
-## 🖼️ Screenshots
-
-<table>
-  <tr>
-    <td><img src="https://raw.githubusercontent.com/jahwag/ClaudeSync/master/screen1.png" alt="ClaudeSync Interface" width="400"/></td>
-    <td><img src="https://raw.githubusercontent.com/jahwag/ClaudeSync/master/screen2.png" alt="ClaudeSync in Action" width="400"/></td>
-  </tr>
-</table>
 
 ## 🚀 Quick Start
 
@@ -33,18 +25,57 @@ ClaudeSync is a powerful tool designed to seamlessly synchronize your local file
    pip install claudesync
    ```
 
-2. **Run ClaudeSync:**
+2. **Login to Claude.ai:**
    ```bash
-   claudesync
+   claudesync login claude.ai
    ```
 
-   That's it! ClaudeSync will guide you through obtaining your session key and selecting your project. It will then start syncing your current directory with your Claude.ai project.
+3. **Select an organization:**
+   ```bash
+   claudesync organization select
+   ```
+
+4. **Select or create a project:**
+   ```bash
+   claudesync project select
+   # or
+   claudesync project create
+   ```
+
+5. **Set the local path to sync:**
+   ```bash
+   claudesync config set local_path /path/to/your/project
+   ```
+
+6. **Start syncing:**
+   ```bash
+   claudesync sync
+   ```
 
 ## 🛠️ Advanced Usage
 
-For more options and advanced configurations, run:
+### Organization Management
+- List organizations: `claudesync organization list`
+- Select active organization: `claudesync organization select`
+
+### Project Management
+- List projects: `claudesync project ls`
+- Create a new project: `claudesync project create`
+- Archive a project: `claudesync project archive`
+- Select active project: `claudesync project select`
+
+### File Management
+- List remote files: `claudesync ls`
+- Sync files: `claudesync sync`
+
+### Configuration
+- View current status: `claudesync status`
+- Set configuration: `claudesync config set <key> <value>`
+
+### Scheduled Sync
+Set up automatic syncing at regular intervals:
 ```bash
-claudesync --help
+claudesync schedule
 ```
 
 ## 🤝 Contributing
@@ -53,7 +84,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ## 📄 License
 
-This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
+This project is licensed under the [MIT License](LICENSE).
 
 ## ⚠️ Disclaimer
 

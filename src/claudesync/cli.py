@@ -10,6 +10,7 @@ from .provider_factory import get_provider
 from .exceptions import ConfigurationError, ProviderError
 from .utils import calculate_checksum, get_local_files
 
+
 def handle_errors(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -17,7 +18,9 @@ def handle_errors(func):
             return func(*args, **kwargs)
         except (ConfigurationError, ProviderError) as e:
             click.echo(f"Error: {str(e)}")
+
     return wrapper
+
 
 def validate_and_get_provider(config, require_org=True):
     active_provider = config.get('active_provider')
@@ -28,10 +31,12 @@ def validate_and_get_provider(config, require_org=True):
         raise ConfigurationError("No active organization set. Please select an organization.")
     return get_provider(active_provider, session_key)
 
+
 @click.group()
 @click.pass_context
 def cli(ctx):
     ctx.obj = ConfigManager()
+
 
 @cli.command()
 @click.argument('provider', required=False)
@@ -52,6 +57,7 @@ def login(config, provider):
     config.set('active_provider', provider)
     click.echo("Logged in successfully.")
 
+
 @cli.command()
 @click.pass_obj
 def logout(config):
@@ -60,10 +66,12 @@ def logout(config):
         config.set(key, None)
     click.echo("Logged out successfully.")
 
+
 @cli.group()
 def organization():
     """Organization management"""
     pass
+
 
 @organization.command()
 @click.pass_obj
@@ -78,6 +86,7 @@ def list(config):
         click.echo("Available organizations:")
         for idx, org in enumerate(organizations, 1):
             click.echo(f"  {idx}. {org['name']} (ID: {org['id']})")
+
 
 @organization.command()
 @click.pass_obj
@@ -100,10 +109,12 @@ def select(config):
     else:
         click.echo("Invalid selection. Please try again.")
 
+
 @cli.group()
 def project():
     """Project management"""
     pass
+
 
 @project.command()
 @click.pass_obj
@@ -126,6 +137,7 @@ def create(config):
             click.echo(f"Active project set to: {new_project['name']} (uuid: {new_project['uuid']})")
     except ProviderError as e:
         click.echo(f"Failed to create project: {str(e)}")
+
 
 @project.command()
 @click.pass_obj
@@ -150,6 +162,7 @@ def archive(config):
     else:
         click.echo("Invalid selection. Please try again.")
 
+
 @project.command()
 @click.pass_obj
 @handle_errors
@@ -173,6 +186,7 @@ def select(config):
     else:
         click.echo("Invalid selection. Please try again.")
 
+
 @project.command()
 @click.option('-a', '--all', 'show_all', is_flag=True, help="Show all projects, including archived ones")
 @click.pass_obj
@@ -190,13 +204,16 @@ def ls(config, show_all):
             status = " (Archived)" if project.get('archived_at') else ""
             click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
 
+
 @cli.command()
 @click.pass_obj
 def status(config):
     """Show status"""
-    for key in ['active_provider', 'active_organization_id', 'active_project_id', 'active_project_name', 'local_path', 'log_level']:
+    for key in ['active_provider', 'active_organization_id', 'active_project_id', 'active_project_name', 'local_path',
+                'log_level']:
         value = config.get(key)
         click.echo(f"{key.replace('_', ' ').capitalize()}: {value or 'Not set'}")
+
 
 @cli.command()
 @click.pass_obj
@@ -213,6 +230,7 @@ def ls(config):
         click.echo(f"Files in project '{config.get('active_project_name')}' (ID: {active_project_id}):")
         for file in files:
             click.echo(f"  - {file['file_name']} (ID: {file['id']}, Created: {file['created_at']})")
+
 
 @cli.command()
 @click.pass_obj
@@ -249,6 +267,7 @@ def sync(config):
 
     click.echo("Sync completed successfully.")
 
+
 @cli.command()
 @click.pass_obj
 @click.option('--interval', type=int, default=5, prompt='Enter sync interval in minutes')
@@ -274,6 +293,40 @@ def schedule(config, interval):
         cron.write()
         click.echo(f"Cron job created successfully! It will run every {interval} minutes.")
         click.echo("\nTo remove the cron job, run: crontab -e and remove the line for ClaudeSync")
+
+
+@cli.group()
+def config():
+    """Configuration management"""
+    pass
+
+
+@config.command()
+@click.argument('key')
+@click.argument('value')
+@click.pass_obj
+def set(config, key, value):
+    """Set a configuration value"""
+    config.set(key, value)
+    click.echo(f"Set {key} to {value}")
+
+
+@config.command()
+@click.argument('key')
+@click.pass_obj
+def get(config, key):
+    """Get a configuration value"""
+    value = config.get(key)
+    click.echo(f"{key}: {value}")
+
+
+@config.command()
+@click.pass_obj
+def list(config):
+    """List all configuration values"""
+    for key, value in config.config.items():
+        click.echo(f"{key}: {value}")
+
 
 if __name__ == '__main__':
     cli()
