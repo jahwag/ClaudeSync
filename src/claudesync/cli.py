@@ -44,7 +44,7 @@ def validate_and_store_local_path(config):
 @click.group()
 @click.pass_context
 def cli(ctx):
-    """ClaudeSync: Synchronize local files with Claude.ai projects."""
+    """ClaudeSync: Synchronize local files with ai projects."""
     ctx.obj = ConfigManager()
 
 @cli.command()
@@ -85,7 +85,7 @@ def logout(config):
 
 @cli.group()
 def organization():
-    """Manage Claude.ai organizations."""
+    """Manage ai organizations."""
     pass
 
 @organization.command()
@@ -133,7 +133,7 @@ def select(config):
 
 @cli.group()
 def project():
-    """Manage Claude.ai projects within the active organization."""
+    """Manage ai projects within the active organization."""
     pass
 
 @project.command()
@@ -263,7 +263,7 @@ def ls(config):
     """
     List files in the active remote project.
 
-    Displays file names, IDs, and creation dates for all files in the current Claude.ai project.
+    Displays file names, IDs, and creation dates for all files in the current ai project.
     """
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
