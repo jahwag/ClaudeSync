@@ -1,9 +1,11 @@
-name: Upload Python Package and Generate Changelog
+name: CI/CD Pipeline
 
 on:
   push:
     tags:
       - '*'
+  pull_request:
+    branches: [ main, master ]  # Adjust these branch names as needed
 
 permissions:
   contents: write
@@ -16,7 +18,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.x'
+          python-version: '3.12.4'  # Specify the exact version you're using
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -24,9 +26,16 @@ jobs:
       - name: Run tests
         run: |
           pytest
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: pytest-results
+          path: pytest-results/
+        if: failure()
 
   deploy:
     needs: test
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     timeout-minutes: 5
     runs-on: ubuntu-latest
 
@@ -38,7 +47,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.x'
+          python-version: '3.12.4'  # Specify the exact version you're using
 
       - name: Install dependencies
         run: |
