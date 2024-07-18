@@ -1,8 +1,14 @@
+import mimetypes
+import os
 
 import click
+import pathspec
+
+from claudesync.utils import calculate_checksum
 from .config_manager import ConfigManager
 from .provider_factory import get_provider
 from .exceptions import ConfigurationError, ProviderError
+
 
 def validate_and_get_provider(config, require_org=True):
     """
@@ -20,17 +26,20 @@ def validate_and_get_provider(config, require_org=True):
     if require_org:
         active_organization_id = config.get('active_organization_id')
         if not active_organization_id:
-            raise ConfigurationError("No active organization set. Please use 'claudesync organization select' to choose an organization.")
+            raise ConfigurationError(
+                "No active organization set. Please use 'claudesync organization select' to choose an organization.")
 
     try:
         return get_provider(active_provider, session_key)
     except ValueError as e:
         raise ConfigurationError(str(e))
 
+
 @click.group()
 @click.pass_context
 def cli(ctx):
     ctx.obj = ConfigManager()
+
 
 @cli.command()
 @click.argument('provider', required=False)
@@ -57,6 +66,7 @@ def login(config, provider):
     except ProviderError as e:
         click.echo(f"Error during login: {str(e)}")
 
+
 @cli.command()
 @click.pass_obj
 def logout(config):
@@ -66,9 +76,11 @@ def logout(config):
     config.set('active_organization_id', None)
     click.echo("Logged out successfully.")
 
+
 @cli.group()
 def organization():
     pass
+
 
 @organization.command()
 @click.pass_obj
@@ -87,6 +99,7 @@ def list(config):
                 click.echo(f"  {idx}. {org['name']} (ID: {org['id']})")
     except (ConfigurationError, ProviderError) as e:
         click.echo(f"Error: {str(e)}")
+
 
 @organization.command()
 @click.pass_obj
@@ -116,9 +129,11 @@ def select(config):
     except (ConfigurationError, ProviderError) as e:
         click.echo(f"Error: {str(e)}")
 
+
 @cli.group()
 def project():
     pass
+
 
 @project.command()
 @click.pass_obj
@@ -129,7 +144,8 @@ def select(config):
         provider = validate_and_get_provider(config)
         active_organization_id = config.get('active_organization_id')
         if not active_organization_id:
-            raise ConfigurationError("No active organization set. Please use 'claudesync organization select' to choose an organization.")
+            raise ConfigurationError(
+                "No active organization set. Please use 'claudesync organization select' to choose an organization.")
 
         projects = provider.get_projects(active_organization_id, include_archived=False)
 
@@ -152,6 +168,7 @@ def select(config):
     except (ConfigurationError, ProviderError) as e:
         click.echo(f"Error: {str(e)}")
 
+
 @project.command()
 @click.option('-a', '--all', 'show_all', is_flag=True, help="Show all projects, including archived ones")
 @click.pass_obj
@@ -162,7 +179,8 @@ def ls(config, show_all):
         provider = validate_and_get_provider(config)
         active_organization_id = config.get('active_organization_id')
         if not active_organization_id:
-            raise ConfigurationError("No active organization set. Please use 'claudesync organization select' to choose an organization.")
+            raise ConfigurationError(
+                "No active organization set. Please use 'claudesync organization select' to choose an organization.")
 
         projects = provider.get_projects(active_organization_id, include_archived=show_all)
 
@@ -176,6 +194,7 @@ def ls(config, show_all):
     except (ConfigurationError, ProviderError) as e:
         click.echo(f"Error: {str(e)}")
 
+
 @project.command()
 @click.argument('project_id')
 @click.argument('local_path')
@@ -186,6 +205,7 @@ def add(config, project_id, local_path):
     projects[project_id] = local_path
     config.set('projects', projects)
     click.echo("Project added successfully.")
+
 
 @project.command()
 @click.argument('project_id')
@@ -199,6 +219,7 @@ def rm(config, project_id):
         click.echo("Project removed successfully.")
     else:
         click.echo("Project not found.")
+
 
 @cli.command()
 @click.pass_obj
@@ -224,9 +245,11 @@ def status(config):
     else:
         click.echo("No projects are currently being synced.")
 
+
 @cli.group()
 def config():
     pass
+
 
 @config.command()
 @click.argument('key')
@@ -244,6 +267,7 @@ def set(config, key, value):
     else:
         click.echo(f"Current value of {key}: {config.get(key)}")
 
+
 @config.command()
 @click.argument('key')
 @click.pass_obj
@@ -251,9 +275,11 @@ def get(config, key):
     value = config.get(key)
     click.echo(f"{key}: {value}")
 
+
 @cli.group()
 def remote():
     pass
+
 
 @remote.command()
 @click.pass_obj
@@ -266,9 +292,11 @@ def ls(config):
         active_project_id = config.get('active_project_id')
 
         if not active_organization_id:
-            raise ConfigurationError("No active organization set. Please use 'claudesync organization select' to choose an organization.")
+            raise ConfigurationError(
+                "No active organization set. Please use 'claudesync organization select' to choose an organization.")
         if not active_project_id:
-            raise ConfigurationError("No active project set. Please use 'claudesync project select' to choose a project.")
+            raise ConfigurationError(
+                "No active project set. Please use 'claudesync project select' to choose a project.")
 
         files = provider.list_files(active_organization_id, active_project_id)
 
@@ -280,6 +308,120 @@ def ls(config):
                 click.echo(f"  - {file['file_name']} (ID: {file['id']}, Created: {file['created_at']})")
     except (ConfigurationError, ProviderError) as e:
         click.echo(f"Error: {str(e)}")
+
+
+@remote.command()
+@click.pass_obj
+def sync(config):
+    click.echo("Syncing files with the active project...")
+
+    try:
+        provider = validate_and_get_provider(config)
+        active_organization_id = config.get('active_organization_id')
+        active_project_id = config.get('active_project_id')
+        local_path = config.get('local_path')
+
+        if not active_organization_id:
+            raise ConfigurationError(
+                "No active organization set. Please use 'claudesync organization select' to choose an organization.")
+        if not active_project_id:
+            raise ConfigurationError(
+                "No active project set. Please use 'claudesync project select' to choose a project.")
+        if not local_path:
+            raise ConfigurationError(
+                "No local path set. Please use 'claudesync config set local_path <path>' to set the local directory.")
+
+        remote_files = provider.list_files(active_organization_id, active_project_id)
+        local_files = get_local_files(local_path)
+
+        # Sync local to remote
+        for local_file, local_checksum in local_files.items():
+            remote_file = next((rf for rf in remote_files if rf['file_name'] == local_file), None)
+            if remote_file:
+                remote_checksum = calculate_checksum(remote_file['content'])
+                if local_checksum != remote_checksum:
+                    click.echo(f"Updating {local_file} on remote...")
+                    # Delete existing remote file(s)
+                    for rf in remote_files:
+                        if rf['file_name'] == local_file:
+                            provider.delete_file(active_organization_id, active_project_id, rf['uuid'])
+                            print(f"Deleted {rf['file_name']} ({rf['uuid']})")
+                    # Upload new version
+                    with open(os.path.join(local_path, local_file), 'r', encoding='utf-8') as file:
+                        content = file.read()
+                    provider.upload_file(active_organization_id, active_project_id, local_file, content)
+            else:
+                click.echo(f"Uploading new file {local_file} to remote...")
+                with open(os.path.join(local_path, local_file), 'r', encoding='utf-8') as file:
+                    content = file.read()
+                provider.upload_file(active_organization_id, active_project_id, local_file, content)
+
+        click.echo("Sync completed successfully.")
+
+    except (ConfigurationError, ProviderError) as e:
+        click.echo(f"Error: {str(e)}")
+
+
+def load_gitignore(base_path):
+    patterns = []
+    current_dir = base_path
+    while True:
+        gitignore_path = os.path.join(current_dir, '.gitignore')
+        if os.path.exists(gitignore_path):
+            with open(gitignore_path, 'r') as f:
+                patterns.extend(f.read().splitlines())
+
+        if os.path.exists(os.path.join(current_dir, '.git')):
+            # Stop if we've reached the root of the Git repository
+            break
+
+        parent_dir = os.path.dirname(current_dir)
+        if parent_dir == current_dir or parent_dir == base_path:
+            # Stop if we've reached the filesystem root or the base watched directory
+            break
+        current_dir = parent_dir
+
+    if patterns:
+        return pathspec.PathSpec.from_lines('gitwildmatch', patterns)
+    return None
+
+
+def should_ignore(gitignore, local_path):
+    # Check file type
+    mime_type, _ = mimetypes.guess_type(local_path)
+    if mime_type and not mime_type.startswith('text/'):
+        return True
+    # Check if .git dir
+    if '.git' in local_path.split(os.sep):
+        return True
+    # Check if temporary editor file
+    if local_path.endswith("~"):
+        return True
+    # Check if too big
+    if os.path.getsize(local_path) > 200 * 1024:
+        return True
+    # Check .gitignore
+    if gitignore is None:
+        return False
+    if gitignore.match_file(local_path):
+        return True
+    return False
+
+
+def get_local_files(local_path):
+    gitignore = load_gitignore(local_path)
+
+    files = {}
+    for root, _, filenames in os.walk(local_path):
+        for filename in filenames:
+            file_path = os.path.join(root, filename)
+            if not should_ignore(gitignore, file_path):
+                rel_path = os.path.relpath(file_path, local_path)
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    content = file.read()
+                    files[rel_path] = calculate_checksum(content)
+    return files
+
 
 if __name__ == '__main__':
     cli()

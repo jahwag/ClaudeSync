@@ -65,7 +65,7 @@ class ClaudeAIProvider:
         files = self._make_request("GET", f"/organizations/{organization_id}/projects/{project_id}/docs")
         return [
             {
-                'id': file['uuid'],
+                'uuid': file['uuid'],
                 'file_name': file['file_name'],
                 'content': file['content'],
                 'created_at': file['created_at']
@@ -73,14 +73,12 @@ class ClaudeAIProvider:
             for file in files
         ]
 
-    def upload_file(self, organization_id, project_id, file_path):
-        with open(file_path, 'rb') as f:
-            files = {'file': f}
-            return self._make_request(
-                "POST",
-                f"/organizations/{organization_id}/projects/{project_id}/docs",
-                files=files
-            )
+    def upload_file(self, organization_id, project_id, file_name, content):
+        return self._make_request(
+            "POST",
+            f"/organizations/{organization_id}/projects/{project_id}/docs",
+            json={"file_name": file_name, "content": content}
+        )
 
     def delete_file(self, organization_id, project_id, file_uuid):
         return self._make_request(
