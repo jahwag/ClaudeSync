@@ -66,8 +66,9 @@ class ClaudeAIProvider:
         return [
             {
                 'id': file['uuid'],
-                'name': file['name'],
-                'content': file['content']
+                'file_name': file['file_name'],
+                'content': file['content'],
+                'created_at': file['created_at']
             }
             for file in files
         ]

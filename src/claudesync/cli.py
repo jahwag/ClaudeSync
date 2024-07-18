@@ -121,6 +121,38 @@ def project():
     pass
 
 @project.command()
+@click.pass_obj
+def select(config):
+    click.echo("Selecting a project...")
+
+    try:
+        provider = validate_and_get_provider(config)
+        active_organization_id = config.get('active_organization_id')
+        if not active_organization_id:
+            raise ConfigurationError("No active organization set. Please use 'claudesync organization select' to choose an organization.")
+
+        projects = provider.get_projects(active_organization_id, include_archived=False)
+
+        if not projects:
+            click.echo("No active projects found.")
+            return
+
+        click.echo("Available projects:")
+        for idx, project in enumerate(projects, 1):
+            click.echo(f"  {idx}. {project['name']} (ID: {project['id']})")
+
+        selection = click.prompt("Enter the number of the project you want to select", type=int)
+        if 1 <= selection <= len(projects):
+            selected_project = projects[selection - 1]
+            config.set('active_project_id', selected_project['id'])
+            config.set('active_project_name', selected_project['name'])
+            click.echo(f"Selected project: {selected_project['name']} (ID: {selected_project['id']})")
+        else:
+            click.echo("Invalid selection. Please run the command again and select a valid number.")
+    except (ConfigurationError, ProviderError) as e:
+        click.echo(f"Error: {str(e)}")
+
+@project.command()
 @click.option('-a', '--all', 'show_all', is_flag=True, help="Show all projects, including archived ones")
 @click.pass_obj
 def ls(config, show_all):
@@ -218,6 +250,36 @@ def set(config, key, value):
 def get(config, key):
     value = config.get(key)
     click.echo(f"{key}: {value}")
+
+@cli.group()
+def remote():
+    pass
+
+@remote.command()
+@click.pass_obj
+def ls(config):
+    click.echo("Listing files in the active project...")
+
+    try:
+        provider = validate_and_get_provider(config)
+        active_organization_id = config.get('active_organization_id')
+        active_project_id = config.get('active_project_id')
+
+        if not active_organization_id:
+            raise ConfigurationError("No active organization set. Please use 'claudesync organization select' to choose an organization.")
+        if not active_project_id:
+            raise ConfigurationError("No active project set. Please use 'claudesync project select' to choose a project.")
+
+        files = provider.list_files(active_organization_id, active_project_id)
+
+        if not files:
+            click.echo("No files found in the active project.")
+        else:
+            click.echo(f"Files in project '{config.get('active_project_name')}' (ID: {active_project_id}):")
+            for file in files:
+                click.echo(f"  - {file['file_name']} (ID: {file['id']}, Created: {file['created_at']})")
+    except (ConfigurationError, ProviderError) as e:
+        click.echo(f"Error: {str(e)}")
 
 if __name__ == '__main__':
     cli()
