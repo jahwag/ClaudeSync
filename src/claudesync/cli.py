@@ -44,6 +44,7 @@ def validate_and_store_local_path(config):
 @click.group()
 @click.pass_context
 def cli(ctx):
+    """ClaudeSync: Synchronize local files with Claude.ai projects."""
     ctx.obj = ConfigManager()
 
 @cli.command()
@@ -51,7 +52,12 @@ def cli(ctx):
 @click.pass_obj
 @handle_errors
 def login(config, provider):
-    """Login to an AI provider"""
+    """
+    Authenticate with an AI provider.
+
+    If no provider is specified, lists available providers.
+    Otherwise, initiates the login process for the specified provider.
+    """
     providers = get_provider()
     if not provider:
         click.echo("Available providers:\n" + "\n".join(f"  - {p}" for p in providers))
@@ -68,21 +74,29 @@ def login(config, provider):
 @cli.command()
 @click.pass_obj
 def logout(config):
-    """Logout from an AI provider"""
+    """
+    Log out from the current AI provider.
+
+    Clears all stored authentication and active selection data.
+    """
     for key in ['session_key', 'active_provider', 'active_organization_id']:
         config.set(key, None)
     click.echo("Logged out successfully.")
 
 @cli.group()
 def organization():
-    """Organization management"""
+    """Manage Claude.ai organizations."""
     pass
 
 @organization.command()
 @click.pass_obj
 @handle_errors
 def list(config):
-    """List available organizations"""
+    """
+    List all available organizations.
+
+    Displays organizations the user has access to, including their names and IDs.
+    """
     provider = validate_and_get_provider(config, require_org=False)
     organizations = provider.get_organizations()
     if not organizations:
@@ -96,7 +110,11 @@ def list(config):
 @click.pass_obj
 @handle_errors
 def select(config):
-    """Select active organization"""
+    """
+    Set the active organization.
+
+    Prompts the user to choose from available organizations and sets it as active.
+    """
     provider = validate_and_get_provider(config, require_org=False)
     organizations = provider.get_organizations()
     if not organizations:
@@ -115,14 +133,19 @@ def select(config):
 
 @cli.group()
 def project():
-    """Project management"""
+    """Manage Claude.ai projects within the active organization."""
     pass
 
 @project.command()
 @click.pass_obj
 @handle_errors
 def create(config):
-    """Create a project"""
+    """
+    Create a new project in the active organization.
+
+    Prompts for project title and description, then creates the project and sets it as active.
+    Also prompts for the local directory to sync with the new project.
+    """
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
 
@@ -146,7 +169,12 @@ def create(config):
 @click.pass_obj
 @handle_errors
 def archive(config):
-    """Archive a project"""
+    """
+    Archive an existing project.
+
+    Lists active projects and allows the user to select one for archiving.
+    Archived projects are no longer available for syncing but can be viewed with the --all flag.
+    """
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
     projects = provider.get_projects(active_organization_id, include_archived=False)
@@ -169,7 +197,12 @@ def archive(config):
 @click.pass_obj
 @handle_errors
 def select(config):
-    """Select active project"""
+    """
+    Set the active project for syncing.
+
+    Lists available projects in the active organization and prompts user to select one.
+    Also prompts for the local directory to sync with the selected project.
+    """
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
     projects = provider.get_projects(active_organization_id, include_archived=False)
@@ -191,11 +224,15 @@ def select(config):
         click.echo("Invalid selection. Please try again.")
 
 @project.command()
-@click.option('-a', '--all', 'show_all', is_flag=True, help="Show all projects, including archived ones")
+@click.option('-a', '--all', 'show_all', is_flag=True, help="Include archived projects in the list")
 @click.pass_obj
 @handle_errors
 def ls(config, show_all):
-    """List projects"""
+    """
+    List all projects in the active organization.
+
+    Displays project names and IDs. Use --all flag to include archived projects.
+    """
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
     projects = provider.get_projects(active_organization_id, include_archived=show_all)
@@ -210,7 +247,11 @@ def ls(config, show_all):
 @cli.command()
 @click.pass_obj
 def status(config):
-    """Show status"""
+    """
+    Display current configuration status.
+
+    Shows active provider, organization, project, local sync path, and log level.
+    """
     for key in ['active_provider', 'active_organization_id', 'active_project_id', 'active_project_name', 'local_path', 'log_level']:
         value = config.get(key)
         click.echo(f"{key.replace('_', ' ').capitalize()}: {value or 'Not set'}")
@@ -219,7 +260,11 @@ def status(config):
 @click.pass_obj
 @handle_errors
 def ls(config):
-    """List remote files"""
+    """
+    List files in the active remote project.
+
+    Displays file names, IDs, and creation dates for all files in the current Claude.ai project.
+    """
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
     active_project_id = config.get('active_project_id')
@@ -235,7 +280,11 @@ def ls(config):
 @click.pass_obj
 @handle_errors
 def sync(config):
-    """Sync remote files"""
+    """
+    Synchronize local files with the active remote project.
+
+    Compares local and remote files, uploading new or modified local files and updating changed remote files.
+    """
     provider = validate_and_get_provider(config)
     active_organization_id = config.get('active_organization_id')
     active_project_id = config.get('active_project_id')
@@ -278,7 +327,12 @@ def sync(config):
 @click.option('--interval', type=int, default=5, prompt='Enter sync interval in minutes')
 @handle_errors
 def schedule(config, interval):
-    """Set up a cron job to run claudesync remote sync at regular intervals"""
+    """
+    Set up automated synchronization at regular intervals.
+
+    Creates a cron job (Unix/Linux/macOS) or scheduled task (Windows) to run sync command periodically.
+    Prompts for sync interval in minutes.
+    """
     claudesync_path = shutil.which('claudesync')
     if not claudesync_path:
         click.echo("Error: claudesync not found in PATH. Please ensure it's installed correctly.")
