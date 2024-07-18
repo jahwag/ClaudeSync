@@ -1,24 +1,31 @@
 # ClaudeSync
 
-[![GitHub Actions](https://github.com/jahwag/ClaudeSync/actions/workflows/publish-to-pypi.yml/badge.svg)](https://github.com/jahwag/ClaudeSync/actions/workflows/publish-to-pypi.yml)
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+[![PyPI version](https://badge.fury.io/py/claudesync.svg)](https://badge.fury.io/py/claudesync)
 
 ClaudeSync is a powerful tool designed to seamlessly synchronize your local files with [Claude.ai](https://www.anthropic.com/claude) projects.
 
-## 🤖 What is Claude.ai?
+## Overview and Scope
 
-[Claude.ai](https://www.anthropic.com/claude) is an advanced AI assistant created by Anthropic, capable of engaging in various tasks including analysis, coding, and creative writing. ClaudeSync bridges the gap between your local development environment and Claude.ai's knowledge base.
+ClaudeSync bridges the gap between your local development environment and Claude.ai's knowledge base. At a high level, the scope of ClaudeSync includes:
 
-## 🚀 Key Features
+- Real-time synchronization with Claude.ai projects
+- Command-line interface (CLI) for easy management
+- Multiple organization and project support
+- Automatic handling of file creation, modification, and deletion
+- Intelligent file filtering based on .gitignore rules
+- Configurable sync interval with cron job support
+- Seamless integration with your existing workflow
 
-- **Real-time synchronization** with Claude.ai projects
-- **Command-line interface (CLI)** for easy management
-- **Multiple organization and project support**
-- **Automatic handling** of file creation, modification, and deletion
-- **Intelligent file filtering** based on .gitignore rules
-- **Configurable sync interval** with cron job support
-- **Seamless integration** with your existing workflow
+## Roadmap
 
-## 🚀 Quick Start
+1. Enhanced support for large file synchronization
+2. Improved conflict resolution mechanisms
+3. GUI client for easier management
+4. Integration with popular IDEs and text editors
+5. Support for additional AI platforms beyond Claude.ai
+
+## Quick Start
 
 1. **Install ClaudeSync:**
    ```bash
@@ -41,14 +48,13 @@ ClaudeSync is a powerful tool designed to seamlessly synchronize your local file
    # or
    claudesync project create
    ```
-   When selecting or creating a project, you'll be prompted to enter the local path for synchronization.
 
 5. **Start syncing:**
    ```bash
    claudesync sync
    ```
 
-## 🛠️ Advanced Usage
+## Advanced Usage
 
 ### Organization Management
 - List organizations: `claudesync organization list`
@@ -59,8 +65,6 @@ ClaudeSync is a powerful tool designed to seamlessly synchronize your local file
 - Create a new project: `claudesync project create`
 - Archive a project: `claudesync project archive`
 - Select active project: `claudesync project select`
-
-Each time you create or select a project, you'll be prompted to enter or update the local path for synchronization.
 
 ### File Management
 - List remote files: `claudesync ls`
@@ -75,25 +79,21 @@ Set up automatic syncing at regular intervals:
 claudesync schedule
 ```
 
-### Authentication
-- Login: `claudesync login [provider]`
-- Logout: `claudesync logout`
-
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
 
-## 📄 License
+## Communication Channels
 
-This project is licensed under the [MIT License](LICENSE).
+- **Issues**: For bug reports and feature requests, please use our [GitHub Issues](https://github.com/jahwag/claudesync/issues).
 
-## ⚠️ Disclaimer
+## License
 
-Ensure you have the necessary permissions to access and modify your Claude.ai projects. Keep your session key secure and do not share it publicly.
+ClaudeSync is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## 📞 Support
+## Related Projects
 
-If you encounter any issues or have questions, please [open an issue](https://github.com/jahwag/ClaudeSync/issues) on our GitHub repository.
+- [Claude.ai](https://www.anthropic.com/claude): The AI assistant that ClaudeSync integrates with.
 
 ---
 
