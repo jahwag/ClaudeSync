@@ -1,3 +1,7 @@
-watchdog
-requests
-pathspec
+Click>=8.1.7
+requests>=2.32.3
+pathspec>=0.12.1
+crontab>=1.0.1
+setuptools>=63.2.0
+pytest>=8.2.2
+pytest-cov>=5.0.0
