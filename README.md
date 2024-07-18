@@ -69,14 +69,20 @@ ClaudeSync is a powerful tool designed to seamlessly synchronize your local file
 - Sync files: `claudesync sync`
 
 ### Configuration
+- Set a configuration value: `claudesync config set <key> <value>`
+- Get a configuration value: `claudesync config get <key>`
+- List all configuration values: `claudesync config list`
 - View current status: `claudesync status`
-- Set configuration: `claudesync config set <key> <value>`
 
 ### Scheduled Sync
 Set up automatic syncing at regular intervals:
 ```bash
 claudesync schedule
 ```
+
+### Authentication
+- Login: `claudesync login [provider]`
+- Logout: `claudesync logout`
 
 ## 🤝 Contributing
 
