@@ -1,9 +1,11 @@
 from .providers.claude_ai import ClaudeAIProvider
+
 # Import other providers here as they are added
+
 
 def get_provider(provider_name=None, session_key=None):
     providers = {
-        'claude.ai': ClaudeAIProvider,
+        "claude.ai": ClaudeAIProvider,
         # Add other providers here as they are implemented
     }
 
