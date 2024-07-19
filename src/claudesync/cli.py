@@ -29,15 +29,22 @@ def validate_and_get_provider(config, require_org=True):
     return get_provider(active_provider, session_key)
 
 def validate_and_store_local_path(config):
+    def get_default_path():
+        return os.getcwd()
+
     while True:
-        local_path = click.prompt("Enter the absolute path to your local project directory", type=str)
+        default_path = get_default_path()
+        local_path = click.prompt(
+            "Enter the absolute path to your local project directory",
+            type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
+            default=default_path,
+            show_default=True
+        )
+
         if os.path.isabs(local_path):
-            if os.path.exists(local_path):
-                config.set('local_path', local_path)
-                click.echo(f"Local path set to: {local_path}")
-                break
-            else:
-                click.echo("The specified path does not exist. Please enter a valid path.")
+            config.set('local_path', local_path)
+            click.echo(f"Local path set to: {local_path}")
+            break
         else:
             click.echo("Please enter an absolute path.")
 
