@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "claudesync"
-version = "0.2.8"
+version = "0.2.9"
 authors = [
     {name = "Jahziah Wagner", email = "jahziah.wagner+pypi@gmail.com"},
 ]
@@ -33,8 +33,14 @@ dependencies = [
 "Bug Tracker" = "https://github.com/jahwag/claudesync/issues"
 
 [project.scripts]
-claudesync = "claudesync.cli:cli"
+claudesync = "claudesync.cli.main:cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["claudesync*"]
+
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-v --cov=claudesync --cov-report=term-missing"

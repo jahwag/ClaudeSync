@@ -1,8 +1,14 @@
 import os
 import hashlib
 import mimetypes
+from functools import wraps
+
+import click
 import pathspec
 import logging
+
+from claudesync.exceptions import ConfigurationError, ProviderError
+from claudesync.provider_factory import get_provider
 
 logger = logging.getLogger(__name__)
 
@@ -62,3 +68,41 @@ def get_local_files(local_path):
                     logger.error(f"Error reading file {file_path}: {str(e)}")
                     continue
     return files
+
+def handle_errors(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except (ConfigurationError, ProviderError) as e:
+            click.echo(f"Error: {str(e)}")
+    return wrapper
+
+def validate_and_get_provider(config, require_org=True):
+    active_provider = config.get('active_provider')
+    session_key = config.get('session_key')
+    if not active_provider or not session_key:
+        raise ConfigurationError("No active provider or session key. Please login first.")
+    if require_org and not config.get('active_organization_id'):
+        raise ConfigurationError("No active organization set. Please select an organization.")
+    return get_provider(active_provider, session_key)
+
+def validate_and_store_local_path(config):
+    def get_default_path():
+        return os.getcwd()
+
+    while True:
+        default_path = get_default_path()
+        local_path = click.prompt(
+            "Enter the absolute path to your local project directory",
+            type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
+            default=default_path,
+            show_default=True
+        )
+
+        if os.path.isabs(local_path):
+            config.set('local_path', local_path)
+            click.echo(f"Local path set to: {local_path}")
+            break
+        else:
+            click.echo("Please enter an absolute path.")
