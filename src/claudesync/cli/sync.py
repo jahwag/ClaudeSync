@@ -54,6 +54,9 @@ def sync(config):
     remote_files = provider.list_files(active_organization_id, active_project_id)
     local_files = get_local_files(local_path)
 
+    # Track remote files to delete
+    remote_files_to_delete = set(rf['file_name'] for rf in remote_files)
+
     for local_file, local_checksum in local_files.items():
         remote_file = next(
             (rf for rf in remote_files if rf["file_name"] == local_file), None
@@ -62,29 +65,37 @@ def sync(config):
             remote_checksum = calculate_checksum(remote_file["content"])
             if local_checksum != remote_checksum:
                 click.echo(f"Updating {local_file} on remote...")
-                for rf in remote_files:
-                    if rf["file_name"] == local_file:
-                        provider.delete_file(
-                            active_organization_id, active_project_id, rf["uuid"]
-                        )
+                provider.delete_file(
+                    active_organization_id, active_project_id, remote_file["uuid"]
+                )
                 with open(
-                    os.path.join(local_path, local_file), "r", encoding="utf-8"
+                        os.path.join(local_path, local_file), "r", encoding="utf-8"
                 ) as file:
                     content = file.read()
                 provider.upload_file(
                     active_organization_id, active_project_id, local_file, content
                 )
                 time.sleep(upload_delay)  # Add delay after upload
+            remote_files_to_delete.remove(local_file)
         else:
             click.echo(f"Uploading new file {local_file} to remote...")
             with open(
-                os.path.join(local_path, local_file), "r", encoding="utf-8"
+                    os.path.join(local_path, local_file), "r", encoding="utf-8"
             ) as file:
                 content = file.read()
             provider.upload_file(
                 active_organization_id, active_project_id, local_file, content
             )
             time.sleep(upload_delay)  # Add delay after upload
+
+    # Delete remote files that no longer exist locally
+    for file_to_delete in remote_files_to_delete:
+        click.echo(f"Deleting {file_to_delete} from remote...")
+        remote_file = next(rf for rf in remote_files if rf["file_name"] == file_to_delete)
+        provider.delete_file(
+            active_organization_id, active_project_id, remote_file["uuid"]
+        )
+        time.sleep(upload_delay)  # Add delay after deletion
 
     click.echo("Sync completed successfully.")
 

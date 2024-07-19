@@ -51,3 +51,18 @@ def ratelimit(config, delay):
         return
     config.set("upload_delay", delay)
     click.echo(f"Upload delay set to {delay} seconds.")
+
+
+@click.command()
+@click.option("--size", type=int, required=True, help="Maximum file size in bytes")
+@click.pass_obj
+@handle_errors
+def max_filesize(config, size):
+    """Set the maximum file size for syncing."""
+    if size < 0:
+        click.echo("Error: Maximum file size must be a non-negative number.")
+        return
+    config.set("max_file_size", size)
+    click.echo(f"Maximum file size set to {size} bytes.")
+
+
