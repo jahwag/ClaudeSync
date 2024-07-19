@@ -2,6 +2,9 @@ import os
 import hashlib
 import mimetypes
 import pathspec
+import logging
+
+logger = logging.getLogger(__name__)
 
 def calculate_checksum(content):
     normalized_content = content.replace('\r\n', '\n').replace('\r', '\n').strip()
@@ -51,7 +54,11 @@ def get_local_files(local_path):
             file_path = os.path.join(root, filename)
             if not should_ignore(gitignore, file_path):
                 rel_path = os.path.relpath(file_path, local_path)
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    content = file.read()
-                    files[rel_path] = calculate_checksum(content)
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as file:
+                        content = file.read()
+                        files[rel_path] = calculate_checksum(content)
+                except Exception as e:
+                    logger.error(f"Error reading file {file_path}: {str(e)}")
+                    continue
     return files
