@@ -20,7 +20,12 @@ classifiers = [
 dependencies = [
     "Click",
     "requests",
-    "watchdog",
+    "pathspec",
+    "crontab",
+    "setuptools",
+    "pytest",
+    "pytest-cov",
+    "click_completion",
 ]
 
 [project.urls]

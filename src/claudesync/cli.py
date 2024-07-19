@@ -10,6 +10,11 @@ from .provider_factory import get_provider
 from .exceptions import ConfigurationError, ProviderError
 from .utils import calculate_checksum, get_local_files
 
+import click_completion
+import click_completion.core
+
+click_completion.init()
+
 def handle_errors(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -53,6 +58,16 @@ def validate_and_store_local_path(config):
 def cli(ctx):
     """ClaudeSync: Synchronize local files with ai projects."""
     ctx.obj = ConfigManager()
+
+@cli.command()
+@click.argument('shell', required=False, type=click.Choice(['bash', 'zsh', 'fish', 'powershell']))
+def install_completion(shell):
+    """Install completion for the specified shell."""
+    if shell is None:
+        shell = click_completion.get_auto_shell()
+        click.echo("Shell is set to '%s'" % shell)
+    click_completion.install(shell=shell)
+    click.echo("Completion installed.")
 
 @cli.command()
 @click.argument('provider', required=False)
