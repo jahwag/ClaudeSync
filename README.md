@@ -12,7 +12,7 @@
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 [![PyPI version](https://badge.fury.io/py/claudesync.svg)](https://badge.fury.io/py/claudesync)
 
-ClaudeSync is a powerful tool designed to seamlessly synchronize your local files with [Claude.ai](https://www.anthropic.com/claude) projects.
+ClaudeSync is a powerful tool designed to seamlessly synchronize your local files with [Claude.ai](https://www.anthropic.com/claude) projects. 
 
 ## Overview and Scope
 
@@ -43,7 +43,7 @@ ClaudeSync bridges the gap between your local development environment and Claude
 
 2. **Login to Claude.ai:**
    ```bash
-   claudesync login claude.ai
+   claudesync api login claude.ai
    ```
 
 3. **Select an organization:**
@@ -64,6 +64,11 @@ ClaudeSync bridges the gap between your local development environment and Claude
    ```
 
 ## Advanced Usage
+
+### API Management
+- Login to Claude.ai: `claudesync api login claude.ai`
+- Logout: `claudesync api logout`
+- Set upload delay: `claudesync api ratelimit --delay <seconds>`
 
 ### Organization Management
 - List organizations: `claudesync organization ls`
@@ -107,3 +112,4 @@ ClaudeSync is licensed under the MIT License. See the [LICENSE](LICENSE) file fo
 ---
 
 Made with ❤️ by the ClaudeSync team
+```

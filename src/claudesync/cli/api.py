@@ -3,7 +3,13 @@ from claudesync.provider_factory import get_provider
 from ..utils import handle_errors
 
 
-@click.command()
+@click.group()
+def api():
+    """Manage api."""
+    pass
+
+
+@api.command()
 @click.argument("provider", required=False)
 @click.pass_obj
 @handle_errors
@@ -25,10 +31,23 @@ def login(config, provider):
     click.echo("Logged in successfully.")
 
 
-@click.command()
+@api.command()
 @click.pass_obj
 def logout(config):
     """Log out from the current AI provider."""
     for key in ["session_key", "active_provider", "active_organization_id"]:
         config.set(key, None)
     click.echo("Logged out successfully.")
+
+
+@click.command()
+@click.option("--delay", type=float, required=True, help="Upload delay in seconds")
+@click.pass_obj
+@handle_errors
+def ratelimit(config, delay):
+    """Set the delay between file uploads during sync."""
+    if delay < 0:
+        click.echo("Error: Upload delay must be a non-negative number.")
+        return
+    config.set("upload_delay", delay)
+    click.echo(f"Upload delay set to {delay} seconds.")
