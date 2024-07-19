@@ -66,7 +66,7 @@ ClaudeSync bridges the gap between your local development environment and Claude
 ## Advanced Usage
 
 ### Organization Management
-- List organizations: `claudesync organization list`
+- List organizations: `claudesync organization ls`
 - Select active organization: `claudesync organization select`
 
 ### Project Management

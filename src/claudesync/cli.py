@@ -98,7 +98,7 @@ def organization():
 @organization.command()
 @click.pass_obj
 @handle_errors
-def list(config):
+def ls(config):
     """
     List all available organizations.
 
