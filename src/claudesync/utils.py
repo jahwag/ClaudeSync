@@ -9,9 +9,11 @@ import logging
 
 from claudesync.exceptions import ConfigurationError, ProviderError
 from claudesync.provider_factory import get_provider
+from claudesync.config_manager import ConfigManager
 
 logger = logging.getLogger(__name__)
 
+config_manager = ConfigManager()
 
 def calculate_checksum(content):
     normalized_content = content.replace("\r\n", "\n").replace("\r", "\n").strip()
@@ -37,7 +39,6 @@ def load_gitignore(base_path):
 
     return pathspec.PathSpec.from_lines("gitwildmatch", patterns) if patterns else None
 
-
 def should_ignore(gitignore, local_path):
     # Check file type
     mime_type, _ = mimetypes.guess_type(local_path)
@@ -50,7 +51,8 @@ def should_ignore(gitignore, local_path):
     if local_path.endswith("~"):
         return True
     # Check if too big
-    if os.path.getsize(local_path) > 200 * 1024:
+    max_file_size = config_manager.get("max_file_size", 32 * 1024)  # Default to 32 KB if not set
+    if os.path.getsize(local_path) > max_file_size:
         return True
     # Check .gitignore
     return gitignore.match_file(local_path) if gitignore else False
