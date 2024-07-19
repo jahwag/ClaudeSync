@@ -7,7 +7,7 @@ We're excited that you're interested in contributing to ClaudeSync! This documen
 1. Fork the repository on GitHub.
 2. Clone your fork locally:
    ```
-   git clone https://github.com/your-username/claudesync.git
+   git clone https://github.com/jahwag/ClaudeSync.git
    ```
 3. Create a new branch for your feature or bug fix:
    ```
