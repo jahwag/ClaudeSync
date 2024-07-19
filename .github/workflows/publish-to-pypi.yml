@@ -12,67 +12,39 @@ permissions:
 
 jobs:
   test:
+    timeout-minutes: 2
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.12.4'  # Specify the exact version you're using
+          python-version: '3.x'
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Run tests
+      - name: Install package
+        run: pip install -e .
+      - name: Test with pytest
         run: |
           pytest
-      - name: Upload test results
-        uses: actions/upload-artifact@v3
-        with:
-          name: pytest-results
-          path: pytest-results/
-        if: failure()
 
   deploy:
+    timeout-minutes: 2
     needs: test
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-    timeout-minutes: 5
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # This fetches all history for all branches and tags
-
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.12.4'  # Specify the exact version you're using
-
+          python-version: '3.x'
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install build
-
-      - name: Generate Changelog
-        run: |
-          CURRENT_TAG=$(git describe --tags --abbrev=0)
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^)
-          echo "# Changelog for $CURRENT_TAG" > CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          git log ${PREVIOUS_TAG}..${CURRENT_TAG} --pretty=format:"- %s%n%b" | grep -v "Update CHANGELOG.md" >> CHANGELOG.md
-
-      - name: Commit and Push Changelog
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add CHANGELOG.md
-          git commit -m "Update CHANGELOG.md for ${{ github.ref_name }}" || echo "No changes to commit"
-          git push origin HEAD:master
-
-      - name: Build package
-        run: python -m build
-
+          pip install -r requirements.txt
+      - name: Install package
+        run: pip install -e .
       - name: Publish package
         uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
         with:
