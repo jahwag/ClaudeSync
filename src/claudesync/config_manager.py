@@ -11,11 +11,13 @@ class ConfigManager:
     def _load_config(self):
         if not self.config_file.exists():
             self.config_dir.mkdir(parents=True, exist_ok=True)
-            return {"log_level": "INFO"}  # Default log level
+            return {"log_level": "INFO", "upload_delay": 0.5}  # Default values
         with open(self.config_file, "r") as f:
             config = json.load(f)
             if "log_level" not in config:
-                config["log_level"] = "INFO"  # Set default if not present
+                config["log_level"] = "INFO"
+            if "upload_delay" not in config:
+                config["upload_delay"] = 0.5
             return config
 
     def _save_config(self):

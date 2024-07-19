@@ -1,6 +1,7 @@
 import click
 import sys
 import os
+import time
 import shutil
 from crontab import CronTab
 from claudesync.utils import calculate_checksum, get_local_files
@@ -37,6 +38,7 @@ def sync(config):
     active_organization_id = config.get("active_organization_id")
     active_project_id = config.get("active_project_id")
     local_path = config.get("local_path")
+    upload_delay = config.get("upload_delay", 0.5)
 
     if not local_path:
         click.echo(
@@ -72,6 +74,7 @@ def sync(config):
                 provider.upload_file(
                     active_organization_id, active_project_id, local_file, content
                 )
+                time.sleep(upload_delay)  # Add delay after upload
         else:
             click.echo(f"Uploading new file {local_file} to remote...")
             with open(
@@ -81,6 +84,7 @@ def sync(config):
             provider.upload_file(
                 active_organization_id, active_project_id, local_file, content
             )
+            time.sleep(upload_delay)  # Add delay after upload
 
     click.echo("Sync completed successfully.")
 

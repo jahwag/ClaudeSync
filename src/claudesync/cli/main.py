@@ -3,8 +3,7 @@ from claudesync.config_manager import ConfigManager
 import click_completion
 import click_completion.core
 
-# Import commands from other CLI files
-from .auth import login, logout
+from .api import api
 from .organization import organization
 from .project import project
 from .sync import ls, sync, schedule
@@ -48,8 +47,7 @@ def status(config):
         click.echo(f"{key.replace('_', ' ').capitalize()}: {value or 'Not set'}")
 
 
-cli.add_command(login)
-cli.add_command(logout)
+cli.add_command(api)
 cli.add_command(organization)
 cli.add_command(project)
 cli.add_command(ls)
