@@ -6,21 +6,27 @@ from crontab import CronTab
 from claudesync.utils import calculate_checksum, get_local_files
 from ..utils import handle_errors, validate_and_get_provider
 
+
 @click.command()
 @click.pass_obj
 @handle_errors
 def ls(config):
     """List files in the active remote project."""
     provider = validate_and_get_provider(config)
-    active_organization_id = config.get('active_organization_id')
-    active_project_id = config.get('active_project_id')
+    active_organization_id = config.get("active_organization_id")
+    active_project_id = config.get("active_project_id")
     files = provider.list_files(active_organization_id, active_project_id)
     if not files:
         click.echo("No files found in the active project.")
     else:
-        click.echo(f"Files in project '{config.get('active_project_name')}' (ID: {active_project_id}):")
+        click.echo(
+            f"Files in project '{config.get('active_project_name')}' (ID: {active_project_id}):"
+        )
         for file in files:
-            click.echo(f"  - {file['file_name']} (ID: {file['uuid']}, Created: {file['created_at']})")
+            click.echo(
+                f"  - {file['file_name']} (ID: {file['uuid']}, Created: {file['created_at']})"
+            )
+
 
 @click.command()
 @click.pass_obj
@@ -28,12 +34,14 @@ def ls(config):
 def sync(config):
     """Synchronize local files with the active remote project."""
     provider = validate_and_get_provider(config)
-    active_organization_id = config.get('active_organization_id')
-    active_project_id = config.get('active_project_id')
-    local_path = config.get('local_path')
+    active_organization_id = config.get("active_organization_id")
+    active_project_id = config.get("active_project_id")
+    local_path = config.get("local_path")
 
     if not local_path:
-        click.echo("No local path set. Please select or create a project to set the local path.")
+        click.echo(
+            "No local path set. Please select or create a project to set the local path."
+        )
         sys.exit(1)
 
     if not os.path.exists(local_path):
@@ -45,47 +53,68 @@ def sync(config):
     local_files = get_local_files(local_path)
 
     for local_file, local_checksum in local_files.items():
-        remote_file = next((rf for rf in remote_files if rf['file_name'] == local_file), None)
+        remote_file = next(
+            (rf for rf in remote_files if rf["file_name"] == local_file), None
+        )
         if remote_file:
-            remote_checksum = calculate_checksum(remote_file['content'])
+            remote_checksum = calculate_checksum(remote_file["content"])
             if local_checksum != remote_checksum:
                 click.echo(f"Updating {local_file} on remote...")
                 for rf in remote_files:
-                    if rf['file_name'] == local_file:
-                        provider.delete_file(active_organization_id, active_project_id, rf['uuid'])
-                with open(os.path.join(local_path, local_file), 'r', encoding='utf-8') as file:
+                    if rf["file_name"] == local_file:
+                        provider.delete_file(
+                            active_organization_id, active_project_id, rf["uuid"]
+                        )
+                with open(
+                    os.path.join(local_path, local_file), "r", encoding="utf-8"
+                ) as file:
                     content = file.read()
-                provider.upload_file(active_organization_id, active_project_id, local_file, content)
+                provider.upload_file(
+                    active_organization_id, active_project_id, local_file, content
+                )
         else:
             click.echo(f"Uploading new file {local_file} to remote...")
-            with open(os.path.join(local_path, local_file), 'r', encoding='utf-8') as file:
+            with open(
+                os.path.join(local_path, local_file), "r", encoding="utf-8"
+            ) as file:
                 content = file.read()
-            provider.upload_file(active_organization_id, active_project_id, local_file, content)
+            provider.upload_file(
+                active_organization_id, active_project_id, local_file, content
+            )
 
     click.echo("Sync completed successfully.")
 
+
 @click.command()
 @click.pass_obj
-@click.option('--interval', type=int, default=5, prompt='Enter sync interval in minutes')
+@click.option(
+    "--interval", type=int, default=5, prompt="Enter sync interval in minutes"
+)
 @handle_errors
 def schedule(config, interval):
     """Set up automated synchronization at regular intervals."""
-    claudesync_path = shutil.which('claudesync')
+    claudesync_path = shutil.which("claudesync")
     if not claudesync_path:
-        click.echo("Error: claudesync not found in PATH. Please ensure it's installed correctly.")
+        click.echo(
+            "Error: claudesync not found in PATH. Please ensure it's installed correctly."
+        )
         sys.exit(1)
 
-    if sys.platform.startswith('win'):
+    if sys.platform.startswith("win"):
         click.echo("Windows Task Scheduler setup:")
         command = f'schtasks /create /tn "ClaudeSync" /tr "{claudesync_path} sync" /sc minute /mo {interval}'
         click.echo(f"Run this command to create the task:\n{command}")
-        click.echo("\nTo remove the task, run: schtasks /delete /tn \"ClaudeSync\" /f")
+        click.echo('\nTo remove the task, run: schtasks /delete /tn "ClaudeSync" /f')
     else:
         # Unix-like systems (Linux, macOS)
         cron = CronTab(user=True)
-        job = cron.new(command=f'{claudesync_path} sync')
+        job = cron.new(command=f"{claudesync_path} sync")
         job.minute.every(interval)
 
         cron.write()
-        click.echo(f"Cron job created successfully! It will run every {interval} minutes.")
-        click.echo("\nTo remove the cron job, run: crontab -e and remove the line for ClaudeSync")
+        click.echo(
+            f"Cron job created successfully! It will run every {interval} minutes."
+        )
+        click.echo(
+            "\nTo remove the cron job, run: crontab -e and remove the line for ClaudeSync"
+        )
