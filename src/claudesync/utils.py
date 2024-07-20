@@ -14,11 +14,40 @@ logger = logging.getLogger(__name__)
 
 
 def calculate_checksum(content):
+    """
+    Calculate the MD5 checksum of the given content after normalizing line endings.
+
+    This function normalizes the line endings of the input content to Unix-style (\n),
+    strips leading and trailing whitespace, and then calculates the MD5 checksum of the
+    normalized content. This is useful for ensuring consistent checksums across different
+    operating systems and environments.
+
+    Args:
+        content (str): The content for which to calculate the checksum.
+
+    Returns:
+        str: The hexadecimal MD5 checksum of the normalized content.
+    """
     normalized_content = content.replace("\r\n", "\n").replace("\r", "\n").strip()
     return hashlib.md5(normalized_content.encode("utf-8")).hexdigest()
 
 
 def load_gitignore(base_path):
+    """
+    Load and parse .gitignore patterns from a given base path.
+
+    This function traverses up the directory tree starting from the given base path,
+    looking for .gitignore files. It aggregates all patterns found in these files.
+    The search stops when it reaches the root of the Git repository (identified by the
+    presence of a .git directory) or the filesystem root.
+
+    Args:
+        base_path (str): The base path from which to start searching for .gitignore files.
+
+    Returns:
+        pathspec.PathSpec: A PathSpec object containing all aggregated .gitignore patterns.
+                            Returns None if no patterns are found.
+    """
     patterns = []
     current_dir = base_path
     while True:
@@ -39,6 +68,19 @@ def load_gitignore(base_path):
 
 
 def should_ignore(gitignore, local_path):
+    """
+    Determine if a file should be ignored based on various criteria.
+
+    This function checks if a file should be ignored based on its MIME type, presence in a .git directory,
+    being a temporary editor file, its size, or if it matches patterns in a .gitignore file.
+
+    Args:
+        gitignore (pathspec.PathSpec): A PathSpec object containing .gitignore patterns.
+        local_path (str): The path to the file being checked.
+
+    Returns:
+        bool: True if the file should be ignored, False otherwise.
+    """
     # Check file type
     mime_type, _ = mimetypes.guess_type(local_path)
     if mime_type and not mime_type.startswith("text/"):
@@ -57,6 +99,20 @@ def should_ignore(gitignore, local_path):
 
 
 def get_local_files(local_path):
+    """
+    Retrieve a dictionary of local files not ignored by .gitignore, mapped to their checksums.
+
+    This function walks through the directory tree starting from `local_path`, checking each file
+    against .gitignore rules to determine if it should be included. For each file not ignored,
+    it calculates the file's checksum and stores it in a dictionary with the file's relative path as the key.
+
+    Args:
+        local_path (str): The root directory path to start searching for files.
+
+    Returns:
+        dict: A dictionary where keys are relative file paths from `local_path` and values are their MD5 checksums.
+              Files ignored by .gitignore are not included.
+    """
     gitignore = load_gitignore(local_path)
     files = {}
     for root, _, filenames in os.walk(local_path):
@@ -75,6 +131,20 @@ def get_local_files(local_path):
 
 
 def handle_errors(func):
+    """
+    A decorator to handle exceptions raised by the decorated function.
+
+    This decorator wraps a function and catches specific exceptions (ConfigurationError, ProviderError).
+    If an exception is caught, it prints the error message to the console using click.echo.
+    This is useful for CLI applications where a friendly error message is preferred over a full traceback.
+
+    Args:
+        func (Callable): The function to be decorated.
+
+    Returns:
+        Callable: The wrapper function that includes exception handling.
+    """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
@@ -86,6 +156,27 @@ def handle_errors(func):
 
 
 def validate_and_get_provider(config, require_org=True):
+    """
+    Validate the configuration and retrieve the active provider based on the configuration.
+
+    This function checks if the configuration contains an active provider and a session key.
+    If either is missing, it raises a ConfigurationError indicating that the user needs to login first.
+    Additionally, if the `require_org` flag is set to True, it also checks for an active organization ID
+    in the configuration. If no active organization is set, it raises a ConfigurationError asking the user
+    to select an organization. If all validations pass, it retrieves and returns the active provider using
+    the provider's name and session key.
+
+    Args:
+        config (dict): The configuration dictionary containing provider, session key, and optionally an organization ID.
+        require_org (bool, optional): A flag indicating whether an active organization ID is required. Defaults to True.
+
+    Returns:
+        object: The active provider object retrieved based on the configuration.
+
+    Raises:
+        ConfigurationError: If no active provider or session key is found, or if `require_org` is True and no active
+                             organization ID is set.
+    """
     active_provider = config.get("active_provider")
     session_key = config.get("session_key")
     if not active_provider or not session_key:
@@ -100,7 +191,25 @@ def validate_and_get_provider(config, require_org=True):
 
 
 def validate_and_store_local_path(config):
+    """
+    Prompt the user for the absolute path to their local project directory and store it in the configuration.
+
+    This function repeatedly prompts the user to enter the absolute path to their local project directory until
+    a valid absolute path is provided. The path is then stored in the provided configuration object. It uses the
+    current working directory as the default path.
+
+    Args:
+        config: The configuration object where the local path should be stored. This object must have a set method.
+
+    """
+
     def get_default_path():
+        """
+        Retrieve the current working directory as the default local project path.
+
+        Returns:
+            str: The absolute path of the current working directory.
+        """
         return os.getcwd()
 
     while True:
