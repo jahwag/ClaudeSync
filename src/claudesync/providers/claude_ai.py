@@ -1,9 +1,11 @@
-import requests
 import json
-import click
 import logging
-from ..exceptions import ProviderError
+
+import click
+import requests
+
 from ..config_manager import ConfigManager
+from ..exceptions import ProviderError
 
 logger = logging.getLogger(__name__)
 
