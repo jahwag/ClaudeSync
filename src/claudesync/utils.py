@@ -1,6 +1,5 @@
 import os
 import hashlib
-import mimetypes
 from functools import wraps
 
 import click
@@ -15,64 +14,79 @@ logger = logging.getLogger(__name__)
 
 config_manager = ConfigManager()
 
+
 def calculate_checksum(content):
     normalized_content = content.replace("\r\n", "\n").replace("\r", "\n").strip()
     return hashlib.md5(normalized_content.encode("utf-8")).hexdigest()
 
 
 def load_gitignore(base_path):
-    patterns = []
-    current_dir = base_path
-    while True:
-        gitignore_path = os.path.join(current_dir, ".gitignore")
-        if os.path.exists(gitignore_path):
-            with open(gitignore_path, "r") as f:
-                patterns.extend(f.read().splitlines())
+    gitignore_path = os.path.join(base_path, ".gitignore")
+    if os.path.exists(gitignore_path):
+        with open(gitignore_path, "r") as f:
+            return pathspec.PathSpec.from_lines("gitwildmatch", f)
+    return None
 
-        if os.path.exists(os.path.join(current_dir, ".git")):
-            break  # Stop if we've reached the root of the Git repository
 
-        parent_dir = os.path.dirname(current_dir)
-        if parent_dir == current_dir or parent_dir == base_path:
-            break  # Stop if we've reached the filesystem root or the base watched directory
-        current_dir = parent_dir
+def is_text_file(file_path, sample_size=8192):
+    try:
+        with open(file_path, "rb") as file:
+            return b"\x00" not in file.read(sample_size)
+    except IOError:
+        return False
 
-    return pathspec.PathSpec.from_lines("gitwildmatch", patterns) if patterns else None
 
-def should_ignore(gitignore, local_path):
-    # Check file type
-    mime_type, _ = mimetypes.guess_type(local_path)
-    if mime_type and not mime_type.startswith("text/"):
-        return True
-    # Check if .git dir
-    if ".git" in local_path.split(os.sep):
-        return True
-    # Check if temporary editor file
-    if local_path.endswith("~"):
-        return True
-    # Check if too big
-    max_file_size = config_manager.get("max_file_size", 32 * 1024)  # Default to 32 KB if not set
-    if os.path.getsize(local_path) > max_file_size:
-        return True
-    # Check .gitignore
-    return gitignore.match_file(local_path) if gitignore else False
+def calculate_checksum(content):
+    return hashlib.md5(content.encode("utf-8")).hexdigest()
 
 
 def get_local_files(local_path):
     gitignore = load_gitignore(local_path)
     files = {}
-    for root, _, filenames in os.walk(local_path):
+
+    # List of directories to exclude
+    exclude_dirs = {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS"}
+
+    for root, dirs, filenames in os.walk(local_path):
+        # Remove excluded directories
+        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+
+        rel_root = os.path.relpath(root, local_path)
+        if rel_root == ".":
+            rel_root = ""
+
         for filename in filenames:
-            file_path = os.path.join(root, filename)
-            if not should_ignore(gitignore, file_path):
-                rel_path = os.path.relpath(file_path, local_path)
-                try:
-                    with open(file_path, "r", encoding="utf-8") as file:
-                        content = file.read()
-                        files[rel_path] = calculate_checksum(content)
-                except Exception as e:
-                    logger.error(f"Error reading file {file_path}: {str(e)}")
-                    continue
+            rel_path = os.path.join(rel_root, filename)
+            full_path = os.path.join(root, filename)
+
+            # Skip files larger than 200KB
+            max_file_size = config_manager.get("max_file_size", 32 * 1024)
+            if os.path.getsize(full_path) > max_file_size:
+                continue
+
+            # Skip temporary editor files
+            if filename.endswith("~"):
+                continue
+
+            # Use gitignore rules if available
+            if gitignore and gitignore.match_file(rel_path):
+                continue
+
+            # Check if it's a text file
+            if not is_text_file(full_path):
+                continue
+
+            try:
+                with open(full_path, "r", encoding="utf-8") as file:
+                    content = file.read()
+                    files[rel_path] = calculate_checksum(content)
+            except UnicodeDecodeError:
+                # If UTF-8 decoding fails, it's likely not a text file we can handle
+                logger.debug(f"Unable to read {full_path} as UTF-8 text. Skipping.")
+                continue
+            except Exception as e:
+                logger.error(f"Error reading file {full_path}: {str(e)}")
+
     return files
 
 
