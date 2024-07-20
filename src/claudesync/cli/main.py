@@ -1,8 +1,8 @@
 import click
-from claudesync.config_manager import ConfigManager
 import click_completion
 import click_completion.core
 
+from claudesync.config_manager import ConfigManager
 from .api import api
 from .organization import organization
 from .project import project

@@ -1,9 +1,11 @@
-import click
-import sys
 import os
-import time
 import shutil
+import sys
+import time
+
+import click
 from crontab import CronTab
+
 from claudesync.utils import calculate_checksum, get_local_files
 from ..utils import handle_errors, validate_and_get_provider
 
@@ -68,7 +70,7 @@ def sync(config):
                             active_organization_id, active_project_id, rf["uuid"]
                         )
                 with open(
-                    os.path.join(local_path, local_file), "r", encoding="utf-8"
+                        os.path.join(local_path, local_file), "r", encoding="utf-8"
                 ) as file:
                     content = file.read()
                 provider.upload_file(
@@ -78,7 +80,7 @@ def sync(config):
         else:
             click.echo(f"Uploading new file {local_file} to remote...")
             with open(
-                os.path.join(local_path, local_file), "r", encoding="utf-8"
+                    os.path.join(local_path, local_file), "r", encoding="utf-8"
             ) as file:
                 content = file.read()
             provider.upload_file(

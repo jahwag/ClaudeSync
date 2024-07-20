@@ -1,11 +1,11 @@
-import os
 import hashlib
+import logging
 import mimetypes
+import os
 from functools import wraps
 
 import click
 import pathspec
-import logging
 
 from claudesync.exceptions import ConfigurationError, ProviderError
 from claudesync.provider_factory import get_provider
@@ -160,7 +160,7 @@ def validate_and_get_provider(config, require_org=True):
     Validate the configuration and retrieve the active provider based on the configuration.
 
     This function checks if the configuration contains an active provider and a session key.
-    If either is missing, it raises a ConfigurationError indicating that the user needs to login first.
+    If either is missing, it raises a ConfigurationError indicating that the user needs to log in first.
     Additionally, if the `require_org` flag is set to True, it also checks for an active organization ID
     in the configuration. If no active organization is set, it raises a ConfigurationError asking the user
     to select an organization. If all validations pass, it retrieves and returns the active provider using
