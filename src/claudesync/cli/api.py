@@ -64,5 +64,3 @@ def max_filesize(config, size):
         return
     config.set("max_file_size", size)
     click.echo(f"Maximum file size set to {size} bytes.")
-
-

@@ -55,7 +55,7 @@ def sync(config):
     local_files = get_local_files(local_path)
 
     # Track remote files to delete
-    remote_files_to_delete = set(rf['file_name'] for rf in remote_files)
+    remote_files_to_delete = set(rf["file_name"] for rf in remote_files)
 
     for local_file, local_checksum in local_files.items():
         remote_file = next(
@@ -69,7 +69,7 @@ def sync(config):
                     active_organization_id, active_project_id, remote_file["uuid"]
                 )
                 with open(
-                        os.path.join(local_path, local_file), "r", encoding="utf-8"
+                    os.path.join(local_path, local_file), "r", encoding="utf-8"
                 ) as file:
                     content = file.read()
                 provider.upload_file(
@@ -80,7 +80,7 @@ def sync(config):
         else:
             click.echo(f"Uploading new file {local_file} to remote...")
             with open(
-                    os.path.join(local_path, local_file), "r", encoding="utf-8"
+                os.path.join(local_path, local_file), "r", encoding="utf-8"
             ) as file:
                 content = file.read()
             provider.upload_file(
@@ -91,7 +91,9 @@ def sync(config):
     # Delete remote files that no longer exist locally
     for file_to_delete in remote_files_to_delete:
         click.echo(f"Deleting {file_to_delete} from remote...")
-        remote_file = next(rf for rf in remote_files if rf["file_name"] == file_to_delete)
+        remote_file = next(
+            rf for rf in remote_files if rf["file_name"] == file_to_delete
+        )
         provider.delete_file(
             active_organization_id, active_project_id, remote_file["uuid"]
         )

@@ -40,8 +40,10 @@ class TestUtils(unittest.TestCase):
                 f.write("Content of file3")
 
             # Create a .git file
-            with open(os.path.join(tmpdir, ".git"), "w") as f:
-                f.write("*.log\n")
+            for vcs in {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS"}:
+                os.makedirs(os.path.join(tmpdir, vcs), exist_ok=True)
+                with open(os.path.join(tmpdir, vcs, ".gitignore"), "w") as f:
+                    f.write("*.log\n")
 
             # Create a test~ file
             with open(os.path.join(tmpdir, "test~"), "w") as f:

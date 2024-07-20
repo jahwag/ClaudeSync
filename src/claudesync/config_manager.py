@@ -14,7 +14,7 @@ class ConfigManager:
             return {
                 "log_level": "INFO",
                 "upload_delay": 0.5,
-                "max_file_size": 32 * 1024  # Default 32 KB
+                "max_file_size": 32 * 1024,  # Default 32 KB
             }
         with open(self.config_file, "r") as f:
             config = json.load(f)
