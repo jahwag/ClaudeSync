@@ -63,6 +63,22 @@ ClaudeSync bridges the gap between your local development environment and Claude
    claudesync sync
    ```
 
+## Obtaining Your Session Key
+
+To synchronize your local files with Claude.ai projects, you need a session key from your Claude.ai account. Follow these steps to obtain your session key:
+
+1. Open your web browser and go to [https://claude.ai](https://claude.ai)
+2. Log in to your Claude account if you haven't already.
+3. Once logged in, open your browser's developer tools:
+   - **Chrome/Edge**: Press `F12` or `Ctrl+Shift+I` (`Cmd+Option+I` on Mac)
+   - **Firefox**: Press `F12` or `Ctrl+Shift+I` (`Cmd+Option+I` on Mac)
+   - **Safari**: Enable developer tools in `Preferences > Advanced`, then press `Cmd+Option+I`
+4. In the developer tools, go to the 'Application' tab (Chrome/Edge) or 'Storage' tab (Firefox).
+5. In the left sidebar, expand 'Cookies' and select 'https://claude.ai'.
+6. Find the cookie named `sessionKey` and copy its value.
+
+Once you have your session key, you can proceed with the login process using the `claudesync api login` command and entering your session key when prompted.
+
 ## Advanced Usage
 
 ### API Management
