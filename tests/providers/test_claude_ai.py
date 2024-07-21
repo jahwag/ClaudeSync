@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from claudesync.providers.claude_ai import ClaudeAIProvider
-from claudesync.exceptions import ProviderError
 
 
 class TestClaudeAIProvider(unittest.TestCase):
@@ -110,7 +109,7 @@ class TestClaudeAIProvider(unittest.TestCase):
         mock_response.status_code = 204
         mock_request.return_value = mock_response
 
-        result = self.provider.delete_file("org1", "proj1", "file1")
+        self.provider.delete_file("org1", "proj1", "file1")
         mock_request.assert_called_once_with(
             "DELETE",
             f"{self.provider.BASE_URL}/organizations/org1/projects/proj1/docs/file1",

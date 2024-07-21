@@ -42,15 +42,21 @@ class ClaudeAIProvider:
 
     def _configure_logging(self):
         """
-            Configures the logging level for the application based on the configuration.
-            This method sets the global logging configuration to the level specified in the application's configuration.
-            If the log level is not specified in the configuration, it defaults to "INFO".
-            It ensures that all log messages across the application are handled at the configured log level.
-            """
+        Configures the logging level for the application based on the configuration.
+        This method sets the global logging configuration to the level specified in the application's configuration.
+        If the log level is not specified in the configuration, it defaults to "INFO".
+        It ensures that all log messages across the application are handled at the configured log level.
+        """
 
-        log_level = self.config.get("log_level", "INFO")  # Retrieve log level from config, default to "INFO"
-        logging.basicConfig(level=getattr(logging, log_level))  # Set global logging configuration
-        logger.setLevel(getattr(logging, log_level))  # Set logger instance to the specified log level
+        log_level = self.config.get(
+            "log_level", "INFO"
+        )  # Retrieve log level from config, default to "INFO"
+        logging.basicConfig(
+            level=getattr(logging, log_level)
+        )  # Set global logging configuration
+        logger.setLevel(
+            getattr(logging, log_level)
+        )  # Set logger instance to the specified log level
 
     def login(self):
         """
