@@ -98,19 +98,16 @@ class ClaudeAIProvider:
         Returns:
             list of dict: A list of dictionaries, each containing the 'id' and 'name' of an organization.
         """
-        account_info = self._make_request("GET", "/bootstrap")
-        if (
-                "account" not in account_info
-                or "memberships" not in account_info["account"]
-        ):
+        organizations = self._make_request("GET", "/organizations")
+        if not organizations:
             raise ProviderError("Unable to retrieve organization information")
 
         return [
             {
-                "id": membership["organization"]["uuid"],
-                "name": membership["organization"]["name"],
+                "id": org["uuid"],
+                "name": org["name"],
             }
-            for membership in account_info["account"]["memberships"]
+            for org in organizations
         ]
 
     def get_projects(self, organization_id, include_archived=False):
