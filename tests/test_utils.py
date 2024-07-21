@@ -3,7 +3,7 @@ import os
 import tempfile
 
 from claudesync.utils import (
-    calculate_checksum,
+    compute_md5_hash,
     load_gitignore,
     get_local_files,
 )
@@ -14,7 +14,7 @@ class TestUtils(unittest.TestCase):
     def test_calculate_checksum(self):
         content = "Hello, World!"
         expected_checksum = "65a8e27d8879283831b664bd8b7f0ad4"
-        self.assertEqual(calculate_checksum(content), expected_checksum)
+        self.assertEqual(compute_md5_hash(content), expected_checksum)
 
     def test_load_gitignore(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -1,27 +1,69 @@
-import requests
 import json
-import click
 import logging
-from ..exceptions import ProviderError
+
+import click
+import requests
+
 from ..config_manager import ConfigManager
+from ..exceptions import ProviderError
 
 logger = logging.getLogger(__name__)
 
 
 class ClaudeAIProvider:
+    """
+    A provider class for interacting with the Claude AI API.
+
+    This class encapsulates methods for performing API operations such as logging in, retrieving organizations,
+    projects, and files, as well as uploading and deleting files. It uses a session key for authentication,
+    which can be obtained through the login method.
+
+    Attributes:
+        BASE_URL (str): The base URL for the Claude AI API.
+        session_key (str, optional): The session key used for authentication with the API.
+        config (ConfigManager): An instance of ConfigManager to manage application configuration.
+    """
+
     BASE_URL = "https://claude.ai/api"
 
     def __init__(self, session_key=None):
+        """
+        Initializes the ClaudeAIProvider instance.
+
+        Sets up the session key if provided, initializes the configuration manager, and configures logging
+        based on the configuration.
+
+        Args:
+            session_key (str, optional): The session key used for authentication. Defaults to None.
+        """
         self.session_key = session_key
         self.config = ConfigManager()
         self._configure_logging()
 
     def _configure_logging(self):
-        log_level = self.config.get("log_level", "INFO")
-        logging.basicConfig(level=getattr(logging, log_level))
-        logger.setLevel(getattr(logging, log_level))
+        """
+            Configures the logging level for the application based on the configuration.
+            This method sets the global logging configuration to the level specified in the application's configuration.
+            If the log level is not specified in the configuration, it defaults to "INFO".
+            It ensures that all log messages across the application are handled at the configured log level.
+            """
+
+        log_level = self.config.get("log_level", "INFO")  # Retrieve log level from config, default to "INFO"
+        logging.basicConfig(level=getattr(logging, log_level))  # Set global logging configuration
+        logger.setLevel(getattr(logging, log_level))  # Set logger instance to the specified log level
 
     def login(self):
+        """
+        Guides the user through obtaining a session key from the Claude AI website.
+
+        This method provides step-by-step instructions for the user to log in to the Claude AI website,
+        access the developer tools of their browser, navigate to the cookies section, and retrieve the
+        'sessionKey' cookie value. It then prompts the user to enter this session key, which is stored
+        in the instance for future requests.
+
+        Returns:
+            str: The session key entered by the user.
+        """
         click.echo("To obtain your session key, please follow these steps:")
         click.echo("1. Open your web browser and go to https://claude.ai")
         click.echo("2. Log in to your Claude account if you haven't already")
@@ -38,15 +80,28 @@ class ClaudeAIProvider:
             "5. In the left sidebar, expand 'Cookies' and select 'https://claude.ai'"
         )
         click.echo("6. Find the cookie named 'sessionKey' and copy its value")
-
         self.session_key = click.prompt("Please enter your sessionKey", type=str)
         return self.session_key
 
     def get_organizations(self):
+        """
+        Retrieves a list of organizations the user is a member of.
+
+        This method sends a GET request to the '/bootstrap' endpoint to fetch account information,
+        including memberships in organizations. It parses the response to extract and return
+        organization IDs and names.
+
+        Raises:
+            ProviderError: If the account information does not contain 'account' or 'memberships' keys,
+                            indicating an issue with retrieving organization information.
+
+        Returns:
+            list of dict: A list of dictionaries, each containing the 'id' and 'name' of an organization.
+        """
         account_info = self._make_request("GET", "/bootstrap")
         if (
-            "account" not in account_info
-            or "memberships" not in account_info["account"]
+                "account" not in account_info
+                or "memberships" not in account_info["account"]
         ):
             raise ProviderError("Unable to retrieve organization information")
 
@@ -59,6 +114,21 @@ class ClaudeAIProvider:
         ]
 
     def get_projects(self, organization_id, include_archived=False):
+        """
+        Retrieves a list of projects for a specified organization.
+
+        This method sends a GET request to fetch all projects associated with a given organization ID.
+        It then filters these projects based on the `include_archived` parameter. If `include_archived`
+        is False (default), only active projects are returned. If True, both active and archived projects
+        are returned.
+
+        Args:
+            organization_id (str): The unique identifier for the organization.
+            include_archived (bool, optional): Flag to include archived projects in the result. Defaults to False.
+
+        Returns:
+            list of dict: A list of dictionaries, each representing a project with its ID, name, and archival status.
+        """
         projects = self._make_request(
             "GET", f"/organizations/{organization_id}/projects"
         )
@@ -74,6 +144,21 @@ class ClaudeAIProvider:
         return filtered_projects
 
     def list_files(self, organization_id, project_id):
+        """
+        Lists all files within a specified project and organization.
+
+        This method sends a GET request to the Claude AI API to retrieve all documents associated with a given project
+        within an organization. It then formats the response into a list of dictionaries, each representing a file with
+        its unique identifier, file name, content, and creation date.
+
+        Args:
+            organization_id (str): The unique identifier for the organization.
+            project_id (str): The unique identifier for the project within the organization.
+
+        Returns:
+            list of dict: A list of dictionaries, each containing details of a file such as its UUID, file name,
+                          content, and the date it was created.
+        """
         files = self._make_request(
             "GET", f"/organizations/{organization_id}/projects/{project_id}/docs"
         )
@@ -88,6 +173,23 @@ class ClaudeAIProvider:
         ]
 
     def upload_file(self, organization_id, project_id, file_name, content):
+        """
+        Uploads a file to a specified project within an organization.
+
+        This method sends a POST request to the Claude AI API to upload a file with the given name and content
+        to a specified project within an organization. The file's metadata, including its name and content,
+        is sent as JSON in the request body.
+
+        Args:
+            organization_id (str): The unique identifier for the organization.
+            project_id (str): The unique identifier for the project within the organization.
+            file_name (str): The name of the file to be uploaded.
+            content (str): The content of the file to be uploaded.
+
+        Returns:
+            dict: The response from the server after the file upload operation, typically including details
+                  about the uploaded file such as its ID, name, and a confirmation of the upload status.
+        """
         return self._make_request(
             "POST",
             f"/organizations/{organization_id}/projects/{project_id}/docs",
@@ -95,12 +197,48 @@ class ClaudeAIProvider:
         )
 
     def delete_file(self, organization_id, project_id, file_uuid):
+        """
+        Deletes a file from a specified project within an organization.
+
+        This method sends a DELETE request to the Claude AI API to remove a file, identified by its UUID,
+        from a specified project within an organization. The organization and project are identified by their
+        respective unique identifiers.
+
+        Args:
+            organization_id (str): The unique identifier for the organization.
+            project_id (str): The unique identifier for the project within the organization.
+            file_uuid (str): The unique identifier (UUID) of the file to be deleted.
+
+        Returns:
+            dict: The response from the server after the file deletion operation, typically confirming the deletion.
+        """
         return self._make_request(
             "DELETE",
             f"/organizations/{organization_id}/projects/{project_id}/docs/{file_uuid}",
         )
 
     def _make_request(self, method, endpoint, **kwargs):
+        """
+        Sends a request to the specified endpoint using the given HTTP method.
+
+        This method constructs a request to the Claude AI API, appending the specified endpoint to the base URL.
+        It sets up common headers and cookies for the request, including a session key for authentication.
+        Additional headers can be provided through `kwargs`. The method logs the request and response details
+        and handles common HTTP errors and JSON parsing errors.
+
+        Args:
+            method (str): The HTTP method to use for the request (e.g., 'GET', 'POST').
+            endpoint (str): The API endpoint to which the request is sent.
+            **kwargs: Arbitrary keyword arguments. Can include 'headers' to add or override default headers,
+                      and any other request parameters.
+
+        Returns:
+            dict or None: The parsed JSON response from the API if the response contains content; otherwise, None.
+
+        Raises:
+            ProviderError: If the request fails, if the response status code indicates an error,
+                           or if the response cannot be parsed as JSON.
+        """
         url = f"{self.BASE_URL}{endpoint}"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
@@ -153,6 +291,19 @@ class ClaudeAIProvider:
             raise ProviderError(f"API request failed: {str(e)}")
 
     def archive_project(self, organization_id, project_id):
+        """
+        Archives a specified project within an organization.
+
+        This method sends a PUT request to the Claude AI API to change the archival status of a specified project
+        to archive. The project and organization are identified by their respective unique identifiers.
+
+        Args:
+            organization_id (str): The unique identifier for the organization.
+            project_id (str): The unique identifier for the project within the organization.
+
+        Returns:
+            dict: The response from the server after the archival operation, typically confirming the archival status.
+        """
         return self._make_request(
             "PUT",
             f"/organizations/{organization_id}/projects/{project_id}",
@@ -160,6 +311,22 @@ class ClaudeAIProvider:
         )
 
     def create_project(self, organization_id, name, description=""):
+        """
+        Creates a new project within a specified organization.
+
+        This method sends a POST request to the Claude AI API to create a new project with the given name,
+        description, and sets it as private within the specified organization. The project's name, description,
+        and privacy status are sent as JSON in the request body.
+
+        Args:
+            organization_id (str): The unique identifier for the organization.
+            name (str): The name of the project to be created.
+            description (str, optional): A description of the project. Defaults to an empty string.
+
+        Returns:
+            dict: The response from the server after the project creation operation, typically including details
+                  about the created project such as its ID, name, and a confirmation of the creation status.
+        """
         data = {"name": name, "description": description, "is_private": True}
         return self._make_request(
             "POST", f"/organizations/{organization_id}/projects", json=data

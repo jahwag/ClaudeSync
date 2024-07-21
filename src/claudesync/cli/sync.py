@@ -1,10 +1,12 @@
-import click
-import sys
 import os
-import time
 import shutil
+import sys
+import time
+
+import click
 from crontab import CronTab
-from claudesync.utils import calculate_checksum, get_local_files
+
+from claudesync.utils import compute_md5_hash, get_local_files
 from ..utils import handle_errors, validate_and_get_provider
 
 
@@ -62,14 +64,14 @@ def sync(config):
             (rf for rf in remote_files if rf["file_name"] == local_file), None
         )
         if remote_file:
-            remote_checksum = calculate_checksum(remote_file["content"])
+            remote_checksum = compute_md5_hash(remote_file["content"])
             if local_checksum != remote_checksum:
                 click.echo(f"Updating {local_file} on remote...")
                 provider.delete_file(
                     active_organization_id, active_project_id, remote_file["uuid"]
                 )
                 with open(
-                    os.path.join(local_path, local_file), "r", encoding="utf-8"
+                        os.path.join(local_path, local_file), "r", encoding="utf-8"
                 ) as file:
                     content = file.read()
                 provider.upload_file(
@@ -80,7 +82,7 @@ def sync(config):
         else:
             click.echo(f"Uploading new file {local_file} to remote...")
             with open(
-                os.path.join(local_path, local_file), "r", encoding="utf-8"
+                    os.path.join(local_path, local_file), "r", encoding="utf-8"
             ) as file:
                 content = file.read()
             provider.upload_file(
