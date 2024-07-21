@@ -6,7 +6,7 @@ import time
 import click
 from crontab import CronTab
 
-from claudesync.utils import calculate_checksum, get_local_files
+from claudesync.utils import compute_md5_hash, get_local_files
 from ..utils import handle_errors, validate_and_get_provider
 
 
@@ -64,7 +64,7 @@ def sync(config):
             (rf for rf in remote_files if rf["file_name"] == local_file), None
         )
         if remote_file:
-            remote_checksum = calculate_checksum(remote_file["content"])
+            remote_checksum = compute_md5_hash(remote_file["content"])
             if local_checksum != remote_checksum:
                 click.echo(f"Updating {local_file} on remote...")
                 provider.delete_file(
