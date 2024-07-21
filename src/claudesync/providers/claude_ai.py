@@ -42,15 +42,21 @@ class ClaudeAIProvider:
 
     def _configure_logging(self):
         """
-            Configures the logging level for the application based on the configuration.
-            This method sets the global logging configuration to the level specified in the application's configuration.
-            If the log level is not specified in the configuration, it defaults to "INFO".
-            It ensures that all log messages across the application are handled at the configured log level.
-            """
+        Configures the logging level for the application based on the configuration.
+        This method sets the global logging configuration to the level specified in the application's configuration.
+        If the log level is not specified in the configuration, it defaults to "INFO".
+        It ensures that all log messages across the application are handled at the configured log level.
+        """
 
-        log_level = self.config.get("log_level", "INFO")  # Retrieve log level from config, default to "INFO"
-        logging.basicConfig(level=getattr(logging, log_level))  # Set global logging configuration
-        logger.setLevel(getattr(logging, log_level))  # Set logger instance to the specified log level
+        log_level = self.config.get(
+            "log_level", "INFO"
+        )  # Retrieve log level from config, default to "INFO"
+        logging.basicConfig(
+            level=getattr(logging, log_level)
+        )  # Set global logging configuration
+        logger.setLevel(
+            getattr(logging, log_level)
+        )  # Set logger instance to the specified log level
 
     def login(self):
         """
@@ -98,19 +104,16 @@ class ClaudeAIProvider:
         Returns:
             list of dict: A list of dictionaries, each containing the 'id' and 'name' of an organization.
         """
-        account_info = self._make_request("GET", "/bootstrap")
-        if (
-                "account" not in account_info
-                or "memberships" not in account_info["account"]
-        ):
+        organizations = self._make_request("GET", "/organizations")
+        if not organizations:
             raise ProviderError("Unable to retrieve organization information")
 
         return [
             {
-                "id": membership["organization"]["uuid"],
-                "name": membership["organization"]["name"],
+                "id": org["uuid"],
+                "name": org["name"],
             }
-            for membership in account_info["account"]["memberships"]
+            for org in organizations
         ]
 
     def get_projects(self, organization_id, include_archived=False):

@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
 from claudesync.providers.claude_ai import ClaudeAIProvider
-from claudesync.exceptions import ProviderError
 
 
 class TestClaudeAIProvider(unittest.TestCase):
@@ -11,14 +10,28 @@ class TestClaudeAIProvider(unittest.TestCase):
     @patch("claudesync.providers.claude_ai.requests.request")
     def test_get_organizations(self, mock_request):
         mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "account": {
-                "memberships": [
-                    {"organization": {"uuid": "org1", "name": "Organization 1"}},
-                    {"organization": {"uuid": "org2", "name": "Organization 2"}},
-                ]
-            }
-        }
+        mock_response.json.return_value = [
+            {
+                "uuid": "org1",
+                "name": "Organization 1",
+                "settings": {},
+                "capabilities": [],
+                "rate_limit_tier": "",
+                "billing_type": "",
+                "created_at": "",
+                "updated_at": "",
+            },
+            {
+                "uuid": "org2",
+                "name": "Organization 2",
+                "settings": {},
+                "capabilities": [],
+                "rate_limit_tier": "",
+                "billing_type": "",
+                "created_at": "",
+                "updated_at": "",
+            },
+        ]
         mock_request.return_value = mock_response
 
         organizations = self.provider.get_organizations()

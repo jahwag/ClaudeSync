@@ -242,6 +242,7 @@ def validate_and_store_local_path(config):
         This function uses `click.prompt` to interact with the user, providing a default path (the current working directory)
         and validating the user's input to ensure it meets the criteria for an absolute path to a directory.
     """
+
     def get_default_path():
         return os.getcwd()
 

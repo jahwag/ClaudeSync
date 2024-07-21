@@ -71,7 +71,7 @@ def sync(config):
                     active_organization_id, active_project_id, remote_file["uuid"]
                 )
                 with open(
-                        os.path.join(local_path, local_file), "r", encoding="utf-8"
+                    os.path.join(local_path, local_file), "r", encoding="utf-8"
                 ) as file:
                     content = file.read()
                 provider.upload_file(
@@ -82,7 +82,7 @@ def sync(config):
         else:
             click.echo(f"Uploading new file {local_file} to remote...")
             with open(
-                    os.path.join(local_path, local_file), "r", encoding="utf-8"
+                os.path.join(local_path, local_file), "r", encoding="utf-8"
             ) as file:
                 content = file.read()
             provider.upload_file(

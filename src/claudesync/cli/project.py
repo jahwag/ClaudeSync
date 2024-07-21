@@ -63,7 +63,7 @@ def archive(config):
     if 1 <= selection <= len(projects):
         selected_project = projects[selection - 1]
         if click.confirm(
-                f"Are you sure you want to archive '{selected_project['name']}'?"
+            f"Are you sure you want to archive '{selected_project['name']}'?"
         ):
             provider.archive_project(active_organization_id, selected_project["id"])
             click.echo(f"Project '{selected_project['name']}' has been archived.")

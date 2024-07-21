@@ -54,7 +54,8 @@ class TestUtils(unittest.TestCase):
             self.assertIn("file1.txt", local_files)
             self.assertIn("file2.py", local_files)
             self.assertIn(os.path.join("subdir", "file3.txt"), local_files)
-            self.assertEqual(len(local_files), 3)  # Ensure ignored files not included
+            # Ensure ignored files not included
+            self.assertEqual(len(local_files), 3)
 
 
 if __name__ == "__main__":
