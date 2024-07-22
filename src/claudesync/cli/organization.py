@@ -5,7 +5,14 @@ from ..utils import handle_errors, validate_and_get_provider
 
 @click.group()
 def organization():
-    """Manage ai organizations."""
+    """
+    Defines a command group for organization-related operations.
+
+    This function serves as a decorator to create a new Click command group. Commands that are part of this group
+    are related to managing AI organizations, such as listing available organizations or setting the active organization.
+    It acts as a namespace for organization commands, allowing them to be organized under the 'organization' command
+    in the CLI tool.
+    """
     pass
 
 
@@ -13,7 +20,21 @@ def organization():
 @click.pass_obj
 @handle_errors
 def ls(config):
-    """List all available organizations."""
+    """
+    List all available organizations.
+
+    This command retrieves and displays a list of all organizations accessible to the user. If no organizations are found,
+    it outputs a message indicating that no organizations are available. Otherwise, it lists each organization with its
+    name and ID.
+
+    Args:
+        config (ConfigManager): The configuration manager instance, passed automatically by Click. It is used to access
+                                the current configuration settings, including the provider information.
+
+    Note:
+        This function is decorated with `@handle_errors` to catch and handle exceptions raised during the execution,
+        providing user-friendly error messages.
+    """
     provider = validate_and_get_provider(config, require_org=False)
     organizations = provider.get_organizations()
     if not organizations:
@@ -28,7 +49,24 @@ def ls(config):
 @click.pass_obj
 @handle_errors
 def select(config):
-    """Set the active organization."""
+    """
+    Set the active organization by allowing the user to choose from a list of available organizations.
+
+    This command first retrieves a list of all organizations accessible to the user. If no organizations are found,
+    it informs the user accordingly. Otherwise, it displays a list of available organizations, prompting the user to
+    select one by entering the corresponding number. Upon a valid selection, it sets the chosen organization as the
+    active organization in the configuration.
+
+    Args:
+        config (ConfigManager): The configuration manager instance, passed automatically by Click. It is used to
+                                access and modify the current configuration settings, including setting the active
+                                organization ID.
+
+    Note:
+        This function is decorated with `@handle_errors` to catch and handle exceptions raised during the execution,
+        providing user-friendly error messages. It relies on `validate_and_get_provider` to ensure that a valid provider
+        is available and uses it to fetch the list of organizations.
+    """
     provider = validate_and_get_provider(config, require_org=False)
     organizations = provider.get_organizations()
     if not organizations:

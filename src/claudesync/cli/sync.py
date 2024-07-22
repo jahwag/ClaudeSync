@@ -14,7 +14,22 @@ from ..utils import handle_errors, validate_and_get_provider
 @click.pass_obj
 @handle_errors
 def ls(config):
-    """List files in the active remote project."""
+    """
+    List files in the active remote project.
+
+    This command retrieves and displays a list of files from the currently active remote project. It shows the file name,
+    unique identifier (UUID), and creation date for each file. If no files are found in the project, it notifies the user.
+
+    Args:
+        config (ConfigManager): The configuration manager instance, passed automatically by Click. It contains
+                                settings and methods to interact with the application's configuration, such as
+                                the active organization and project IDs.
+
+    Note:
+        This function is decorated with `@handle_errors` to catch and handle exceptions raised during the execution,
+        providing user-friendly error messages. It relies on `validate_and_get_provider` to ensure that a valid provider
+        is available and uses it to fetch the list of files from the active project.
+    """
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
     active_project_id = config.get("active_project_id")
@@ -35,7 +50,30 @@ def ls(config):
 @click.pass_obj
 @handle_errors
 def sync(config):
-    """Synchronize local files with the active remote project."""
+    """
+    Synchronize local files with the active remote project.
+
+    This command compares the local files against the files in the active remote project. It performs three main operations:
+    1. Updates remote files with their local versions if the checksums do not match, indicating a change.
+    2. Uploads new local files that do not exist in the remote project.
+    3. Deletes remote files that no longer exist locally.
+
+    Before performing these operations, it checks if a local path is set and exists. If not, it exits with an error message
+    prompting the user to set or update the local path.
+
+    Args:
+        config (ConfigManager): The configuration manager instance, passed automatically by Click. It contains
+                                settings and methods to interact with the application's configuration, such as
+                                the active organization and project IDs, local path, and upload delay.
+
+    Raises:
+        SystemExit: If no local path is set or the configured local path does not exist.
+
+    Note:
+        This function is decorated with `@handle_errors` to catch and handle exceptions raised during the execution,
+        providing user-friendly error messages. It relies on `validate_and_get_provider` to ensure that a valid provider
+        is available and uses it to fetch the list of files from the active project and to perform file operations.
+    """
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
     active_project_id = config.get("active_project_id")
@@ -107,11 +145,34 @@ def sync(config):
 @click.command()
 @click.pass_obj
 @click.option(
-    "--interval", type=int, default=5, prompt="Enter sync interval in minutes"
+    "--interval", type=int, default=5, prompt="Enter sync interval in minutes",
+    # Adds an option to specify the synchronization interval in minutes.
+    # This option allows the user to set how frequently the synchronization task should run.
+    # The default value is set to 5 minutes, but the user can specify any integer value.
+    # The `prompt` parameter ensures that if the option is not provided in the command line,
+    # the user will be prompted to enter the value.
 )
 @handle_errors
 def schedule(config, interval):
-    """Set up automated synchronization at regular intervals."""
+    """
+    Schedule the synchronization task to run at regular intervals.
+
+    This function sets up a scheduled task to run the synchronization command at specified intervals. It first checks if the
+    `claudesync` command is available in the system's PATH. If not, it exits with an error. Depending on the operating system,
+    it either sets up a Windows Task Scheduler task (for Windows) or a cron job (for Unix-like systems).
+
+    Args:
+        config (ConfigManager): The configuration manager instance, passed automatically by Click. It contains
+                                settings and methods to interact with the application's configuration.
+        interval (int): The interval in minutes at which the synchronization task should run.
+
+    Raises:
+        SystemExit: If `claudesync` is not found in the system's PATH.
+
+    Note:
+        For Windows, it provides the command to create a Task Scheduler task and to remove it.
+        For Unix-like systems, it directly creates a cron job and provides instructions to remove it.
+    """
     claudesync_path = shutil.which("claudesync")
     if not claudesync_path:
         click.echo(
