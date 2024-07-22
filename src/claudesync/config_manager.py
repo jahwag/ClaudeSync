@@ -1,3 +1,5 @@
+# src/claudesync/config_manager.py
+
 import json
 from pathlib import Path
 
@@ -40,6 +42,10 @@ class ConfigManager:
                 "log_level": "INFO",
                 "upload_delay": 0.5,
                 "max_file_size": 32 * 1024,  # Default 32 KB
+                "headers": {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
+                    "Origin": "https://claude.ai",
+                },
             }
         with open(self.config_file, "r") as f:
             config = json.load(f)
@@ -49,6 +55,11 @@ class ConfigManager:
                 config["upload_delay"] = 0.5
             if "max_file_size" not in config:
                 config["max_file_size"] = 32 * 1024  # Default 32 KB
+            if "headers" not in config:
+                config["headers"] = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
+                    "Origin": "https://claude.ai",
+                }
             return config
 
     def _save_config(self):
@@ -87,3 +98,25 @@ class ConfigManager:
         """
         self.config[key] = value
         self._save_config()
+
+    def update_headers(self, new_headers):
+        """
+        Updates the headers configuration with new values.
+
+        Args:
+            new_headers (dict): A dictionary containing the new header key-value pairs to update or add.
+
+        This method updates the existing headers with the new values provided, adds any new headers,
+        and then saves the updated configuration to the file.
+        """
+        self.config.setdefault("headers", {}).update(new_headers)
+        self._save_config()
+
+    def get_headers(self):
+        """
+        Retrieves the current headers configuration.
+
+        Returns:
+            dict: The current headers configuration.
+        """
+        return self.config.get("headers", {})
