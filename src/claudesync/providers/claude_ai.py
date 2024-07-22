@@ -1,3 +1,5 @@
+# src/claudesync/providers/claude_ai.py
+
 import json
 import logging
 
@@ -57,6 +59,72 @@ class ClaudeAIProvider:
         logger.setLevel(
             getattr(logging, log_level)
         )  # Set logger instance to the specified log level
+
+    def _make_request(self, method, endpoint, **kwargs):
+        """
+        Sends a request to the specified endpoint using the given HTTP method.
+
+        This method constructs a request to the Claude AI API, appending the specified endpoint to the base URL.
+        It sets up common headers and cookies for the request, including a session key for authentication.
+        Additional headers can be provided through `kwargs`. The method logs the request and response details
+        and handles common HTTP errors and JSON parsing errors.
+
+        Args:
+            method (str): The HTTP method to use for the request (e.g., 'GET', 'POST').
+            endpoint (str): The API endpoint to which the request is sent.
+            **kwargs: Arbitrary keyword arguments. Can include 'headers' to add or override default headers,
+                      and any other request parameters.
+
+        Returns:
+            dict or None: The parsed JSON response from the API if the response contains content; otherwise, None.
+
+        Raises:
+            ProviderError: If the request fails, if the response status code indicates an error,
+                           or if the response cannot be parsed as JSON.
+        """
+        url = f"{self.BASE_URL}{endpoint}"
+        headers = self.config.get_headers()
+        cookies = {"sessionKey": self.session_key}
+
+        if "headers" in kwargs:
+            headers.update(kwargs.pop("headers"))
+
+        try:
+            logger.debug(f"Making {method} request to {url}")
+            logger.debug(f"Headers: {headers}")
+            logger.debug(f"Cookies: {cookies}")
+            if "data" in kwargs:
+                logger.debug(f"Request data: {kwargs['data']}")
+
+            response = requests.request(
+                method, url, headers=headers, cookies=cookies, **kwargs
+            )
+
+            logger.debug(f"Response status code: {response.status_code}")
+            logger.debug(f"Response headers: {response.headers}")
+            logger.debug(
+                f"Response content: {response.text[:1000]}..."
+            )  # Log first 1000 characters of response
+
+            response.raise_for_status()
+
+            if not response.content:
+                return None
+
+            try:
+                return response.json()
+            except json.JSONDecodeError as json_err:
+                logger.error(f"Failed to parse JSON response: {str(json_err)}")
+                logger.error(f"Response content: {response.text}")
+                raise ProviderError(f"Invalid JSON response from API: {str(json_err)}")
+
+        except requests.RequestException as e:
+            logger.error(f"Request failed: {str(e)}")
+            if hasattr(e, "response") and e.response is not None:
+                logger.error(f"Response status code: {e.response.status_code}")
+                logger.error(f"Response headers: {e.response.headers}")
+                logger.error(f"Response content: {e.response.text}")
+            raise ProviderError(f"API request failed: {str(e)}")
 
     def login(self):
         """
@@ -219,79 +287,6 @@ class ClaudeAIProvider:
             "DELETE",
             f"/organizations/{organization_id}/projects/{project_id}/docs/{file_uuid}",
         )
-
-    def _make_request(self, method, endpoint, **kwargs):
-        """
-        Sends a request to the specified endpoint using the given HTTP method.
-
-        This method constructs a request to the Claude AI API, appending the specified endpoint to the base URL.
-        It sets up common headers and cookies for the request, including a session key for authentication.
-        Additional headers can be provided through `kwargs`. The method logs the request and response details
-        and handles common HTTP errors and JSON parsing errors.
-
-        Args:
-            method (str): The HTTP method to use for the request (e.g., 'GET', 'POST').
-            endpoint (str): The API endpoint to which the request is sent.
-            **kwargs: Arbitrary keyword arguments. Can include 'headers' to add or override default headers,
-                      and any other request parameters.
-
-        Returns:
-            dict or None: The parsed JSON response from the API if the response contains content; otherwise, None.
-
-        Raises:
-            ProviderError: If the request fails, if the response status code indicates an error,
-                           or if the response cannot be parsed as JSON.
-        """
-        url = f"{self.BASE_URL}{endpoint}"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
-            "Accept": "*/*",
-            "Accept-Language": "en-US,en;q=0.5",
-            "Referer": "https://claude.ai/",
-            "Origin": "https://claude.ai",
-            "Connection": "keep-alive",
-        }
-        cookies = {"sessionKey": self.session_key}
-
-        if "headers" in kwargs:
-            headers.update(kwargs.pop("headers"))
-
-        try:
-            logger.debug(f"Making {method} request to {url}")
-            logger.debug(f"Headers: {headers}")
-            logger.debug(f"Cookies: {cookies}")
-            if "data" in kwargs:
-                logger.debug(f"Request data: {kwargs['data']}")
-
-            response = requests.request(
-                method, url, headers=headers, cookies=cookies, **kwargs
-            )
-
-            logger.debug(f"Response status code: {response.status_code}")
-            logger.debug(f"Response headers: {response.headers}")
-            logger.debug(
-                f"Response content: {response.text[:1000]}..."
-            )  # Log first 1000 characters of response
-
-            response.raise_for_status()
-
-            if not response.content:
-                return None
-
-            try:
-                return response.json()
-            except json.JSONDecodeError as json_err:
-                logger.error(f"Failed to parse JSON response: {str(json_err)}")
-                logger.error(f"Response content: {response.text}")
-                raise ProviderError(f"Invalid JSON response from API: {str(json_err)}")
-
-        except requests.RequestException as e:
-            logger.error(f"Request failed: {str(e)}")
-            if hasattr(e, "response") and e.response is not None:
-                logger.error(f"Response status code: {e.response.status_code}")
-                logger.error(f"Response headers: {e.response.headers}")
-                logger.error(f"Response content: {e.response.text}")
-            raise ProviderError(f"API request failed: {str(e)}")
 
     def archive_project(self, organization_id, project_id):
         """
