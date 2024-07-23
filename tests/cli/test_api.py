@@ -1,180 +1,97 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from claudesync.providers.claude_ai import ClaudeAIProvider
+from click.testing import CliRunner
+from claudesync.cli.main import cli
+from claudesync.exceptions import ConfigurationError, ProviderError
+from claudesync.provider_factory import get_provider
 
 
-class TestClaudeAIProvider(unittest.TestCase):
+class TestAPICLI(unittest.TestCase):
     def setUp(self):
-        self.provider = ClaudeAIProvider("test_session_key")
+        self.runner = CliRunner()
+        self.mock_config = MagicMock()
+        self.mock_provider = MagicMock()
 
-    @patch("claudesync.providers.claude_ai.requests.request")
-    def test_get_organizations(self, mock_request):
-        mock_response = MagicMock()
-        mock_response.json.return_value = [
-            {
-                "uuid": "org1",
-                "name": "Organization 1",
-                "settings": {},
-                "capabilities": [],
-                "rate_limit_tier": "",
-                "billing_type": "",
-                "created_at": "",
-                "updated_at": "",
-            },
-            {
-                "uuid": "org2",
-                "name": "Organization 2",
-                "settings": {},
-                "capabilities": [],
-                "rate_limit_tier": "",
-                "billing_type": "",
-                "created_at": "",
-                "updated_at": "",
-            },
-        ]
-        mock_request.return_value = mock_response
+    @patch('claudesync.cli.api.get_provider')
+    @patch('claudesync.cli.main.ConfigManager')
+    def test_login_success(self, mock_config_manager, mock_get_provider):
+        mock_config_manager.return_value = self.mock_config
+        mock_get_provider.return_value = self.mock_provider
+        mock_get_provider.side_effect = lambda x=None: ['claude.ai'] if x is None else self.mock_provider
+        self.mock_provider.login.return_value = 'test_session_key'
 
-        organizations = self.provider.get_organizations()
+        result = self.runner.invoke(cli, ['api', 'login', 'claude.ai'])
 
-        self.assertEqual(len(organizations), 2)
-        self.assertEqual(organizations[0]["id"], "org1")
-        self.assertEqual(organizations[0]["name"], "Organization 1")
-        self.assertEqual(organizations[1]["id"], "org2")
-        self.assertEqual(organizations[1]["name"], "Organization 2")
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('Logged in successfully.', result.output)
+        self.mock_config.set.assert_any_call('session_key', 'test_session_key')
+        self.mock_config.set.assert_any_call('active_provider', 'claude.ai')
 
-    @patch("claudesync.providers.claude_ai.requests.request")
-    def test_get_projects(self, mock_request):
-        mock_response = MagicMock()
-        mock_response.json.return_value = [
-            {"uuid": "proj1", "name": "Project 1", "archived_at": None},
-            {"uuid": "proj2", "name": "Project 2", "archived_at": "2023-01-01"},
-        ]
-        mock_request.return_value = mock_response
+    @patch('claudesync.cli.api.get_provider')
+    @patch('claudesync.cli.main.ConfigManager')
+    def test_login_provider_error(self, mock_config_manager, mock_get_provider):
+        mock_config_manager.return_value = self.mock_config
+        mock_get_provider.return_value = self.mock_provider
+        mock_get_provider.side_effect = lambda x=None: ['claude.ai'] if x is None else self.mock_provider
+        self.mock_provider.login.side_effect = ProviderError('Login failed')
 
-        projects = self.provider.get_projects("org1", include_archived=True)
+        result = self.runner.invoke(cli, ['api', 'login', 'claude.ai'])
 
-        self.assertEqual(len(projects), 2)
-        self.assertEqual(projects[0]["id"], "proj1")
-        self.assertEqual(projects[0]["name"], "Project 1")
-        self.assertIsNone(projects[0]["archived_at"])
-        self.assertEqual(projects[1]["id"], "proj2")
-        self.assertEqual(projects[1]["name"], "Project 2")
-        self.assertEqual(projects[1]["archived_at"], "2023-01-01")
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('Error: Login failed', result.output)
 
-    @patch("claudesync.providers.claude_ai.requests.request")
-    def test_list_files(self, mock_request):
-        mock_response = MagicMock()
-        mock_response.json.return_value = [
-            {
-                "uuid": "file1",
-                "file_name": "file1.txt",
-                "content": "content1",
-                "created_at": "2023-01-01",
-            },
-            {
-                "uuid": "file2",
-                "file_name": "file2.py",
-                "content": "content2",
-                "created_at": "2023-01-02",
-            },
-        ]
-        mock_request.return_value = mock_response
+    @patch('claudesync.cli.main.ConfigManager')
+    def test_logout(self, mock_config_manager):
+        mock_config_manager.return_value = self.mock_config
 
-        files = self.provider.list_files("org1", "proj1")
+        result = self.runner.invoke(cli, ['api', 'logout'])
 
-        self.assertEqual(len(files), 2)
-        self.assertEqual(files[0]["uuid"], "file1")
-        self.assertEqual(files[0]["file_name"], "file1.txt")
-        self.assertEqual(files[0]["content"], "content1")
-        self.assertEqual(files[0]["created_at"], "2023-01-01")
-        self.assertEqual(files[1]["uuid"], "file2")
-        self.assertEqual(files[1]["file_name"], "file2.py")
-        self.assertEqual(files[1]["content"], "content2")
-        self.assertEqual(files[1]["created_at"], "2023-01-02")
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('Logged out successfully.', result.output)
+        self.mock_config.set.assert_any_call('session_key', None)
+        self.mock_config.set.assert_any_call('active_provider', None)
+        self.mock_config.set.assert_any_call('active_organization_id', None)
 
-    @patch("claudesync.providers.claude_ai.requests.request")
-    def test_upload_file(self, mock_request):
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "uuid": "new_file",
-            "file_name": "new_file.txt",
-        }
-        mock_request.return_value = mock_response
+    @patch('claudesync.cli.main.ConfigManager')
+    def test_ratelimit_set(self, mock_config_manager):
+        mock_config_manager.return_value = self.mock_config
 
-        result = self.provider.upload_file(
-            "org1", "proj1", "new_file.txt", "file content"
-        )
+        result = self.runner.invoke(cli, ['api', 'ratelimit', '--delay', '1.5'])
 
-        self.assertEqual(result["uuid"], "new_file")
-        self.assertEqual(result["file_name"], "new_file.txt")
-        mock_request.assert_called_once_with(
-            "POST",
-            "https://claude.ai/api/organizations/org1/projects/proj1/docs",
-            headers=unittest.mock.ANY,
-            cookies={"sessionKey": "test_session_key"},
-            json={"file_name": "new_file.txt", "content": "file content"},
-        )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('Upload delay set to 1.5 seconds.', result.output)
+        self.mock_config.set.assert_called_once_with('upload_delay', 1.5)
 
-    @patch("claudesync.providers.claude_ai.requests.request")
-    def test_delete_file(self, mock_request):
-        mock_response = MagicMock()
-        mock_response.json.return_value = None
-        mock_request.return_value = mock_response
+    @patch('claudesync.cli.main.ConfigManager')
+    def test_ratelimit_negative_value(self, mock_config_manager):
+        mock_config_manager.return_value = self.mock_config
 
-        self.provider.delete_file("org1", "proj1", "file1")
+        result = self.runner.invoke(cli, ['api', 'ratelimit', '--delay', '-1'])
 
-        mock_request.assert_called_once_with(
-            "DELETE",
-            "https://claude.ai/api/organizations/org1/projects/proj1/docs/file1",
-            headers=unittest.mock.ANY,
-            cookies={"sessionKey": "test_session_key"},
-        )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('Error: Upload delay must be a non-negative number.', result.output)
+        self.mock_config.set.assert_not_called()
 
-    @patch("claudesync.providers.claude_ai.requests.request")
-    def test_create_project(self, mock_request):
-        mock_response = MagicMock()
-        mock_response.json.return_value = {"uuid": "new_proj", "name": "New Project"}
-        mock_request.return_value = mock_response
+    @patch('claudesync.cli.main.ConfigManager')
+    def test_max_filesize_set(self, mock_config_manager):
+        mock_config_manager.return_value = self.mock_config
 
-        result = self.provider.create_project(
-            "org1", "New Project", "Project Description"
-        )
+        result = self.runner.invoke(cli, ['api', 'max-filesize', '--size', '1048576'])
 
-        self.assertEqual(result["uuid"], "new_proj")
-        self.assertEqual(result["name"], "New Project")
-        mock_request.assert_called_once_with(
-            "POST",
-            "https://claude.ai/api/organizations/org1/projects",
-            headers=unittest.mock.ANY,
-            cookies={"sessionKey": "test_session_key"},
-            json={
-                "name": "New Project",
-                "description": "Project Description",
-                "is_private": True,
-            },
-        )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('Maximum file size set to 1048576 bytes.', result.output)
+        self.mock_config.set.assert_called_once_with('max_file_size', 1048576)
 
-    @patch("claudesync.providers.claude_ai.requests.request")
-    def test_archive_project(self, mock_request):
-        mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "uuid": "proj1",
-            "name": "Project 1",
-            "is_archived": True,
-        }
-        mock_request.return_value = mock_response
+    @patch('claudesync.cli.main.ConfigManager')
+    def test_max_filesize_negative_value(self, mock_config_manager):
+        mock_config_manager.return_value = self.mock_config
 
-        result = self.provider.archive_project("org1", "proj1")
+        result = self.runner.invoke(cli, ['api', 'max-filesize', '--size', '-1'])
 
-        self.assertTrue(result["is_archived"])
-        mock_request.assert_called_once_with(
-            "PUT",
-            "https://claude.ai/api/organizations/org1/projects/proj1",
-            headers=unittest.mock.ANY,
-            cookies={"sessionKey": "test_session_key"},
-            json={"is_archived": True},
-        )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn('Error: Maximum file size must be a non-negative number.', result.output)
+        self.mock_config.set.assert_not_called()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

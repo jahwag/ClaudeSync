@@ -41,7 +41,7 @@ def logout(config):
     click.echo("Logged out successfully.")
 
 
-@click.command()
+@api.command()
 @click.option("--delay", type=float, required=True, help="Upload delay in seconds")
 @click.pass_obj
 @handle_errors
@@ -54,7 +54,7 @@ def ratelimit(config, delay):
     click.echo(f"Upload delay set to {delay} seconds.")
 
 
-@click.command()
+@api.command()
 @click.option("--size", type=int, required=True, help="Maximum file size in bytes")
 @click.pass_obj
 @handle_errors
