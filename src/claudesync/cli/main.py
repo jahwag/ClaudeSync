@@ -7,7 +7,6 @@ from .api import api
 from .organization import organization
 from .project import project
 from .sync import ls, sync, schedule
-from .api import ratelimit, max_filesize
 
 click_completion.init()
 

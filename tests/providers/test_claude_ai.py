@@ -1,6 +1,5 @@
 import unittest
 from unittest.mock import patch, MagicMock
-import json
 import requests
 from claudesync.providers.claude_ai import ClaudeAIProvider
 from claudesync.exceptions import ProviderError
