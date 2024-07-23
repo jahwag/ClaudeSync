@@ -1,17 +1,14 @@
 import os
 import hashlib
 from functools import wraps
-
 import click
 import pathspec
 import logging
-
 from claudesync.exceptions import ConfigurationError, ProviderError
 from claudesync.provider_factory import get_provider
 from claudesync.config_manager import ConfigManager
 
 logger = logging.getLogger(__name__)
-
 config_manager = ConfigManager()
 
 
@@ -97,6 +94,67 @@ def compute_md5_hash(content):
     return hashlib.md5(content.encode("utf-8")).hexdigest()
 
 
+def should_process_file(file_path, filename, gitignore):
+    """
+    Determines whether a file should be processed based on various criteria.
+
+    This function checks if a file should be included in the synchronization process by applying
+    several filters:
+    - Checks if the file size is within the configured maximum limit.
+    - Skips temporary editor files (ending with '~').
+    - Applies .gitignore rules if a gitignore PathSpec is provided.
+    - Verifies if the file is a text file.
+
+    Args:
+        file_path (str): The full path to the file.
+        filename (str): The name of the file.
+        gitignore (pathspec.PathSpec or None): A PathSpec object containing .gitignore patterns, if available.
+
+    Returns:
+        bool: True if the file should be processed, False otherwise.
+    """
+    # Check file size
+    max_file_size = config_manager.get("max_file_size", 32 * 1024)
+    if os.path.getsize(file_path) > max_file_size:
+        return False
+
+    # Skip temporary editor files
+    if filename.endswith("~"):
+        return False
+
+    # Use gitignore rules if available
+    if gitignore and gitignore.match_file(file_path):
+        return False
+
+    # Check if it's a text file
+    return is_text_file(file_path)
+
+
+def process_file(file_path):
+    """
+    Reads the content of a file and computes its MD5 hash.
+
+    This function attempts to read the file as UTF-8 text and compute its MD5 hash.
+    If the file cannot be read as UTF-8 or any other error occurs, it logs the issue
+    and returns None.
+
+    Args:
+        file_path (str): The path to the file to be processed.
+
+    Returns:
+        str or None: The MD5 hash of the file's content if successful, None otherwise.
+    """
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            content = file.read()
+            return compute_md5_hash(content)
+    except UnicodeDecodeError:
+        logger.debug(f"Unable to read {file_path} as UTF-8 text. Skipping.")
+    except Exception as e:
+        logger.error(f"Error reading file {file_path}: {str(e)}")
+    return None
+
+
 def get_local_files(local_path):
     """
     Retrieves a dictionary of local files within a specified path, applying various filters.
@@ -118,49 +176,21 @@ def get_local_files(local_path):
     """
     gitignore = load_gitignore(local_path)
     files = {}
-
-    # List of directories to exclude
     exclude_dirs = {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS"}
 
     for root, dirs, filenames in os.walk(local_path):
-        # Remove excluded directories
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
-
         rel_root = os.path.relpath(root, local_path)
-        if rel_root == ".":
-            rel_root = ""
+        rel_root = "" if rel_root == "." else rel_root
 
         for filename in filenames:
             rel_path = os.path.join(rel_root, filename)
             full_path = os.path.join(root, filename)
 
-            # Skip files larger than 200KB
-            max_file_size = config_manager.get("max_file_size", 32 * 1024)
-            if os.path.getsize(full_path) > max_file_size:
-                continue
-
-            # Skip temporary editor files
-            if filename.endswith("~"):
-                continue
-
-            # Use gitignore rules if available
-            if gitignore and gitignore.match_file(rel_path):
-                continue
-
-            # Check if it's a text file
-            if not is_text_file(full_path):
-                continue
-
-            try:
-                with open(full_path, "r", encoding="utf-8") as file:
-                    content = file.read()
-                    files[rel_path] = compute_md5_hash(content)
-            except UnicodeDecodeError:
-                # If UTF-8 decoding fails, it's likely not a text file we can handle
-                logger.debug(f"Unable to read {full_path} as UTF-8 text. Skipping.")
-                continue
-            except Exception as e:
-                logger.error(f"Error reading file {full_path}: {str(e)}")
+            if should_process_file(full_path, filename, gitignore):
+                file_hash = process_file(full_path)
+                if file_hash:
+                    files[rel_path] = file_hash
 
     return files
 

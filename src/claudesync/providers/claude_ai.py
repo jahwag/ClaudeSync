@@ -6,13 +6,14 @@ import logging
 import click
 import requests
 
+from .base_provider import BaseProvider
 from ..config_manager import ConfigManager
 from ..exceptions import ProviderError
 
 logger = logging.getLogger(__name__)
 
 
-class ClaudeAIProvider:
+class ClaudeAIProvider(BaseProvider):
     """
     A provider class for interacting with the Claude AI API.
 
@@ -61,30 +62,36 @@ class ClaudeAIProvider:
         )  # Set logger instance to the specified log level
 
     def _make_request(self, method, endpoint, **kwargs):
-        """
-        Sends a request to the specified endpoint using the given HTTP method.
-
-        This method constructs a request to the Claude AI API, appending the specified endpoint to the base URL.
-        It sets up common headers and cookies for the request, including a session key for authentication.
-        Additional headers can be provided through `kwargs`. The method logs the request and response details
-        and handles common HTTP errors and JSON parsing errors.
-
-        Args:
-            method (str): The HTTP method to use for the request (e.g., 'GET', 'POST').
-            endpoint (str): The API endpoint to which the request is sent.
-            **kwargs: Arbitrary keyword arguments. Can include 'headers' to add or override default headers,
-                      and any other request parameters.
-
-        Returns:
-            dict or None: The parsed JSON response from the API if the response contains content; otherwise, None.
-
-        Raises:
-            ProviderError: If the request fails, if the response status code indicates an error,
-                           or if the response cannot be parsed as JSON.
-        """
         url = f"{self.BASE_URL}{endpoint}"
         headers = self.config.get_headers()
-        cookies = {"sessionKey": self.session_key}
+        cookies = self.config.get("cookies", {})
+
+        # Update headers
+        headers.update(
+            {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
+                "Origin": "https://claude.ai",
+                "Referer": "https://claude.ai/projects",
+                "Accept": "*/*",
+                "Accept-Encoding": "gzip, deflate, br, zstd",
+                "Accept-Language": "en-US,en;q=0.5",
+                "anthropic-client-sha": "unknown",
+                "anthropic-client-version": "unknown",
+                "Connection": "keep-alive",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-origin",
+            }
+        )
+
+        # Merge cookies
+        cookies.update(
+            {
+                "sessionKey": self.session_key,
+                "CH-prefers-color-scheme": "dark",
+                "anthropic-consent-preferences": '{"analytics":true,"marketing":true}',
+            }
+        )
 
         if "headers" in kwargs:
             headers.update(kwargs.pop("headers"))
@@ -105,6 +112,9 @@ class ClaudeAIProvider:
             logger.debug(
                 f"Response content: {response.text[:1000]}..."
             )  # Log first 1000 characters of response
+
+            # Update cookies with any new values from the response
+            self.config.update_cookies(response.cookies.get_dict())
 
             response.raise_for_status()
 

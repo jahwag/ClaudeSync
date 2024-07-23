@@ -120,3 +120,16 @@ class ConfigManager:
             dict: The current headers configuration.
         """
         return self.config.get("headers", {})
+
+    def update_cookies(self, new_cookies):
+        """
+        Updates the cookies configuration with new values.
+
+        Args:
+            new_cookies (dict): A dictionary containing the new cookie key-value pairs to update or add.
+
+        This method updates the existing cookies with the new values provided, adds any new cookies,
+        and then saves the updated configuration to the file.
+        """
+        self.config.setdefault("cookies", {}).update(new_cookies)
+        self._save_config()
