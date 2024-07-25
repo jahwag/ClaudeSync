@@ -1,5 +1,3 @@
-# src/claudesync/config_manager.py
-
 import json
 from pathlib import Path
 
@@ -46,20 +44,24 @@ class ConfigManager:
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
                     "Origin": "https://claude.ai",
                 },
+                "two_way_sync": False,  # Default to False
             }
         with open(self.config_file, "r") as f:
             config = json.load(f)
-            if "log_level" not in config:
-                config["log_level"] = "INFO"
-            if "upload_delay" not in config:
-                config["upload_delay"] = 0.5
-            if "max_file_size" not in config:
-                config["max_file_size"] = 32 * 1024  # Default 32 KB
-            if "headers" not in config:
-                config["headers"] = {
+            # Ensure all default values are present
+            defaults = {
+                "log_level": "INFO",
+                "upload_delay": 0.5,
+                "max_file_size": 32 * 1024,
+                "headers": {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
                     "Origin": "https://claude.ai",
-                }
+                },
+                "two_way_sync": False,
+            }
+            for key, value in defaults.items():
+                if key not in config:
+                    config[key] = value
             return config
 
     def _save_config(self):

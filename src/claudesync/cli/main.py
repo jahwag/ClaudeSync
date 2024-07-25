@@ -7,6 +7,7 @@ from .api import api
 from .organization import organization
 from .project import project
 from .sync import ls, sync, schedule
+from .config import config
 
 click_completion.init()
 
@@ -53,6 +54,7 @@ cli.add_command(project)
 cli.add_command(ls)
 cli.add_command(sync)
 cli.add_command(schedule)
+cli.add_command(config)
 
 if __name__ == "__main__":
     cli()
