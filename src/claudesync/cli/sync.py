@@ -8,6 +8,7 @@ from crontab import CronTab
 
 from claudesync.utils import compute_md5_hash, get_local_files
 from ..utils import handle_errors, validate_and_get_provider
+from datetime import datetime, timezone
 
 
 @click.command()
@@ -41,6 +42,7 @@ def sync(config):
     active_project_id = config.get("active_project_id")
     local_path = config.get("local_path")
     upload_delay = config.get("upload_delay", 0.5)
+    two_way_sync = config.get("two_way_sync", False)
 
     if not local_path:
         click.echo(
@@ -58,6 +60,9 @@ def sync(config):
 
     # Track remote files to delete
     remote_files_to_delete = set(rf["file_name"] for rf in remote_files)
+
+    # Track synced files
+    synced_files = set()
 
     for local_file, local_checksum in local_files.items():
         remote_file = next(
@@ -78,6 +83,7 @@ def sync(config):
                     active_organization_id, active_project_id, local_file, content
                 )
                 time.sleep(upload_delay)  # Add delay after upload
+                synced_files.add(local_file)
             remote_files_to_delete.remove(local_file)
         else:
             click.echo(f"Uploading new file {local_file} to remote...")
@@ -89,6 +95,49 @@ def sync(config):
                 active_organization_id, active_project_id, local_file, content
             )
             time.sleep(upload_delay)  # Add delay after upload
+            synced_files.add(local_file)
+
+    # Update local file timestamps only for synced files
+    remote_files = provider.list_files(active_organization_id, active_project_id)
+    for remote_file in remote_files:
+        if remote_file["file_name"] in synced_files:
+            local_file_path = os.path.join(local_path, remote_file["file_name"])
+            if os.path.exists(local_file_path):
+                remote_timestamp = datetime.fromisoformat(
+                    remote_file["created_at"].replace("Z", "+00:00")
+                ).timestamp()
+                os.utime(local_file_path, (remote_timestamp, remote_timestamp))
+                click.echo(f"Updated timestamp on local file {local_file_path}")
+
+    # Two-way sync: update local files if remote is newer
+    if two_way_sync:
+        for remote_file in remote_files:
+            local_file_path = os.path.join(local_path, remote_file["file_name"])
+            if os.path.exists(local_file_path):
+                local_mtime = datetime.fromtimestamp(
+                    os.path.getmtime(local_file_path), tz=timezone.utc
+                )
+                remote_mtime = datetime.fromisoformat(
+                    remote_file["created_at"].replace("Z", "+00:00")
+                )
+                if remote_mtime > local_mtime:
+                    click.echo(
+                        f"Updating local file {remote_file['file_name']} from remote..."
+                    )
+                    with open(local_file_path, "w", encoding="utf-8") as file:
+                        file.write(remote_file["content"])
+                    synced_files.add(remote_file["file_name"])
+                    if remote_file["file_name"] in remote_files_to_delete:
+                        remote_files_to_delete.remove(remote_file["file_name"])
+            else:
+                click.echo(
+                    f"Creating new local file {remote_file['file_name']} from remote..."
+                )
+                with open(local_file_path, "w", encoding="utf-8") as file:
+                    file.write(remote_file["content"])
+                synced_files.add(remote_file["file_name"])
+                if remote_file["file_name"] in remote_files_to_delete:
+                    remote_files_to_delete.remove(remote_file["file_name"])
 
     # Delete remote files that no longer exist locally
     for file_to_delete in remote_files_to_delete:

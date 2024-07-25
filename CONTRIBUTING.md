@@ -54,12 +54,24 @@ We follow the PEP 8 style guide for Python code. Please ensure your code adheres
 
 ## Reporting Bugs
 
-If you find a bug, please open an issue on the GitHub repository. Include as much detail as possible, including:
+If you find a bug, please open an issue on the GitHub repository using our bug report template. To do this:
 
-- Steps to reproduce the bug
+1. Go to the [Issues](https://github.com/jahwag/claudesync/issues) page of the ClaudeSync repository.
+2. Click on "New Issue".
+3. Select the "Bug Report" template.
+4. Fill out the template with as much detail as possible.
+
+When reporting a bug, please include:
+
+- A clear and concise description of the bug
+- Steps to reproduce the behavior
 - Expected behavior
-- Actual behavior
 - Any error messages or stack traces
+- Your environment details (OS, Python version, ClaudeSync version)
+- Your ClaudeSync configuration (use `claudesync config list`)
+- Any relevant logs (you can increase log verbosity with `claudesync config set log_level DEBUG`)
+
+The more information you provide, the easier it will be for us to reproduce and fix the bug.
 
 ## Requesting Features
 
