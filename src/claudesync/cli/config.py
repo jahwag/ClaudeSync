@@ -1,4 +1,6 @@
 import click
+
+from ..exceptions import ConfigurationError
 from ..utils import handle_errors
 
 
@@ -15,6 +17,10 @@ def config():
 @handle_errors
 def set(config, key, value):
     """Set a configuration value."""
+    # Check if the key exists in the configuration
+    if key not in config.config:
+        raise ConfigurationError(f"Configuration property '{key}' does not exist.")
+
     # Convert string 'true' and 'false' to boolean
     if value.lower() == "true":
         value = True
