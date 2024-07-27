@@ -25,7 +25,9 @@ class TestClaudeAICurlProvider(unittest.TestCase):
 
     @patch("subprocess.run")
     def test_execute_curl_failure(self, mock_run):
-        mock_run.side_effect = subprocess.CalledProcessError(1, "curl", stderr="Test error")
+        mock_run.side_effect = subprocess.CalledProcessError(
+            1, "curl", stderr="Test error"
+        )
 
         with self.assertRaises(ProviderError):
             self.provider._execute_curl("GET", "/test")
