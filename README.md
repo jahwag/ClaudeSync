@@ -1,3 +1,19 @@
+```
+  .oooooo.   oooo                              .o8                .oooooo..o                                   
+ d8P'  `Y8b  `888                             "888               d8P'    `Y8                                   
+888           888   .oooo.   oooo  oooo   .oooo888   .ooooo.     Y88bo.      oooo    ooo ooo. .oo.    .ooooo.  
+888           888  `P  )88b  `888  `888  d88' `888  d88' `88b     `"Y8888o.   `88.  .8'  `888P"Y88b  d88' `"Y8 
+888           888   .oP"888   888   888  888   888  888ooo888         `"Y88b   `88..8'    888   888  888       
+`88b    ooo   888  d8(  888   888   888  888   888  888    .o    oo     .d8P    `888'     888   888  888   .o8 
+ `Y8bood8P'  o888o `Y888""8o  `V88V"V8P' `Y8bod88P" `Y8bod8P'    8""88888P'      .8'     o888o o888o `Y8bod8P' 
+                                                                             .o..P'                            
+                                                                             `Y8P'                              
+```
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+[![PyPI version](https://badge.fury.io/py/claudesync.svg)](https://badge.fury.io/py/claudesync)
+
+ClaudeSync is a powerful tool designed to seamlessly synchronize your local files with [Claude.ai](https://www.anthropic.com/claude) projects.
+
 ## Overview and Scope
 
 ClaudeSync bridges the gap between your local development environment and Claude.ai's knowledge base. At a high level, the scope of ClaudeSync includes:
