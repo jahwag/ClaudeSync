@@ -1,5 +1,4 @@
-import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import pytest
 from claudesync.provider_factory import get_provider
 from claudesync.providers.claude_ai import ClaudeAIProvider

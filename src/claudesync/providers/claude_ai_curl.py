@@ -1,7 +1,6 @@
 import json
 import subprocess
 import click
-from urllib.parse import quote
 from .base_provider import BaseProvider
 from ..exceptions import ProviderError
 
