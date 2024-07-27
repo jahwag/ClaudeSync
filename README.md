@@ -35,14 +35,6 @@ ClaudeSync bridges the gap between your local development environment and Claude
 - **Affiliation**: ClaudeSync is not affiliated with, endorsed by, or sponsored by Anthropic. It is an independent tool created by enthusiasts for enthusiasts of Claude.ai.
 - **Use at Your Own Risk**: While we strive for reliability, please use ClaudeSync at your own discretion and risk. Always maintain backups of your important data.
 
-## Roadmap
-
-1. Enhanced support for large file synchronization
-2. Improved conflict resolution mechanisms
-3. GUI client for easier management
-4. Integration with popular IDEs and text editors
-5. Support for additional AI platforms beyond Claude.ai
-
 ## Quick Start
 
 1. **Install ClaudeSync:**
