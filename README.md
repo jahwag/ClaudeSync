@@ -164,6 +164,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 ## Communication Channels
 
 - **Issues**: For bug reports and feature requests, please use our [GitHub Issues](https://github.com/jahwag/claudesync/issues).
+- **Discord**: For general development discussions, visit our [Discord server](https://discord.gg/cCeA2Rng).
 
 ## License
 
