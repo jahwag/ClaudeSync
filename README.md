@@ -1,19 +1,3 @@
-```
-  .oooooo.   oooo                              .o8                .oooooo..o                                   
- d8P'  `Y8b  `888                             "888               d8P'    `Y8                                   
-888           888   .oooo.   oooo  oooo   .oooo888   .ooooo.     Y88bo.      oooo    ooo ooo. .oo.    .ooooo.  
-888           888  `P  )88b  `888  `888  d88' `888  d88' `88b     `"Y8888o.   `88.  .8'  `888P"Y88b  d88' `"Y8 
-888           888   .oP"888   888   888  888   888  888ooo888         `"Y88b   `88..8'    888   888  888       
-`88b    ooo   888  d8(  888   888   888  888   888  888    .o    oo     .d8P    `888'     888   888  888   .o8 
- `Y8bood8P'  o888o `Y888""8o  `V88V"V8P' `Y8bod88P" `Y8bod8P'    8""88888P'      .8'     o888o o888o `Y8bod8P' 
-                                                                             .o..P'                            
-                                                                             `Y8P'                              
-```
-![License](https://img.shields.io/badge/License-MIT-blue.svg)
-[![PyPI version](https://badge.fury.io/py/claudesync.svg)](https://badge.fury.io/py/claudesync)
-
-ClaudeSync is a powerful tool designed to seamlessly synchronize your local files with [Claude.ai](https://www.anthropic.com/claude) projects.
-
 ## Overview and Scope
 
 ClaudeSync bridges the gap between your local development environment and Claude.ai's knowledge base. At a high level, the scope of ClaudeSync includes:
@@ -116,6 +100,47 @@ Set up automatic syncing at regular intervals:
 claudesync schedule
 ```
 
+### Providers
+
+ClaudeSync offers two providers for interacting with the Claude.ai API:
+
+1. **claude.ai (Default)**:
+   - Uses built-in Python libraries to make API requests.
+   - No additional dependencies required.
+   - Recommended for most users.
+
+2. **claude.ai-curl**:
+   - Uses cURL to make API requests.
+   - Requires cURL to be installed on your system.
+   - Can be used as a workaround for certain issues, such as 403 Forbidden errors.
+
+   **Note for Windows Users**: To use the claude.ai-curl provider on Windows, you need to have cURL installed. This can be done by:
+   - Installing [Git for Windows](https://git-scm.com/download/win) (which includes cURL)
+   - Installing [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install)
+
+   Make sure cURL is accessible from your command line before using this provider.
+
+### Troubleshooting
+
+#### 403 Forbidden Error
+If you encounter a 403 Forbidden error when using ClaudeSync, it might be due to an issue with the session key or API access. As a workaround, you can try using the `claude.ai-curl` provider:
+
+1. Ensure cURL is installed on your system (see note above for Windows users).
+
+2. Logout from your current session:
+   ```bash
+   claudesync api logout
+   ```
+
+3. Login using the claude.ai-curl provider:
+   ```bash
+   claudesync api login claude.ai-curl
+   ```
+
+4. Try your operation again.
+
+If the issue persists, please check your network connection and ensure that you have the necessary permissions to access Claude.ai.
+
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
@@ -135,4 +160,3 @@ ClaudeSync is licensed under the MIT License. See the [LICENSE](LICENSE) file fo
 ---
 
 Made with ❤️ by the ClaudeSync team
-```
