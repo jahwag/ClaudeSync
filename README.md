@@ -116,6 +116,47 @@ Set up automatic syncing at regular intervals:
 claudesync schedule
 ```
 
+### Providers
+
+ClaudeSync offers two providers for interacting with the Claude.ai API:
+
+1. **claude.ai (Default)**:
+   - Uses built-in Python libraries to make API requests.
+   - No additional dependencies required.
+   - Recommended for most users.
+
+2. **claude.ai-curl**:
+   - Uses cURL to make API requests.
+   - Requires cURL to be installed on your system.
+   - Can be used as a workaround for certain issues, such as 403 Forbidden errors.
+
+   **Note for Windows Users**: To use the claude.ai-curl provider on Windows, you need to have cURL installed. This can be done by:
+   - Installing [Git for Windows](https://git-scm.com/download/win) (which includes cURL)
+   - Installing [Windows Subsystem for Linux (WSL)](https://learn.microsoft.com/en-us/windows/wsl/install)
+
+   Make sure cURL is accessible from your command line before using this provider.
+
+### Troubleshooting
+
+#### 403 Forbidden Error
+If you encounter a 403 Forbidden error when using ClaudeSync, it might be due to an issue with the session key or API access. As a workaround, you can try using the `claude.ai-curl` provider:
+
+1. Ensure cURL is installed on your system (see note above for Windows users).
+
+2. Logout from your current session:
+   ```bash
+   claudesync api logout
+   ```
+
+3. Login using the claude.ai-curl provider:
+   ```bash
+   claudesync api login claude.ai-curl
+   ```
+
+4. Try your operation again.
+
+If the issue persists, please check your network connection and ensure that you have the necessary permissions to access Claude.ai.
+
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for more information.
@@ -135,4 +176,3 @@ ClaudeSync is licensed under the MIT License. See the [LICENSE](LICENSE) file fo
 ---
 
 Made with ❤️ by the ClaudeSync team
-```

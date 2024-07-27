@@ -116,6 +116,17 @@ class ClaudeAIProvider(BaseProvider):
             # Update cookies with any new values from the response
             self.config.update_cookies(response.cookies.get_dict())
 
+            if response.status_code == 403:
+                error_msg = (
+                    "Received a 403 Forbidden error. Your session key might be invalid. "
+                    "Please try logging out and logging in again. If the issue persists, "
+                    "you can try using the claude.ai-curl provider as a workaround:\n"
+                    "claudesync api logout\n"
+                    "claudesync api login claude.ai-curl"
+                )
+                logger.error(error_msg)
+                raise ProviderError(error_msg)
+
             response.raise_for_status()
 
             if not response.content:
