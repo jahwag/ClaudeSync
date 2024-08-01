@@ -4,10 +4,11 @@ from pathlib import Path
 
 class ConfigManager:
     """
-    A class to manage configuration settings for the application.
+    A class to manage configuration settings for the ClaudeSync application.
 
     This class handles loading, saving, and accessing configuration settings from a JSON file.
-    It ensures that default values are set for certain keys if they are not present in the configuration file.
+    It ensures that default values are set for certain keys if they are not present in the configuration file,
+    and handles the expansion of user home directory paths.
 
     Attributes:
         config_dir (Path): The directory where the configuration file is stored.
@@ -17,51 +18,55 @@ class ConfigManager:
 
     def __init__(self):
         """
-        Initializes the ConfigManager instance by setting up the configuration directory and file paths,
-        and loading the current configuration from the file, applying default values as necessary.
+        Initializes the ConfigManager instance.
+
+        Sets up the configuration directory and file paths, and loads the current configuration from the file.
         """
         self.config_dir = Path.home() / ".claudesync"
         self.config_file = self.config_dir / "config.json"
         self.config = self._load_config()
 
+    def _get_default_config(self):
+        """
+        Returns the default configuration dictionary.
+
+        This method centralizes the default configuration settings, making it easier to manage and update defaults.
+
+        Returns:
+            dict: The default configuration settings.
+        """
+        return {
+            "log_level": "INFO",
+            "upload_delay": 0.5,
+            "max_file_size": 32 * 1024,  # Default 32 KB
+            "two_way_sync": False,  # Default to False
+            "chat_destination": str(Path.home() / ".claudesync" / "chats"),
+            "artifact_destination": str(Path.home() / ".claudesync" / "artifacts"),
+        }
+
     def _load_config(self):
         """
         Loads the configuration from the JSON file, applying default values for missing keys.
 
-        If the configuration file does not exist, it creates the directory (if necessary) and returns a dictionary
-        with default values.
+        If the configuration file does not exist, it creates the directory (if necessary) and returns the default configuration.
+        For existing configurations, it ensures all default values are present and expands user home directory paths.
 
         Returns:
-            dict: The loaded configuration with default values for missing keys.
+            dict: The loaded configuration with default values for missing keys and expanded paths.
         """
         if not self.config_file.exists():
             self.config_dir.mkdir(parents=True, exist_ok=True)
-            return {
-                "log_level": "INFO",
-                "upload_delay": 0.5,
-                "max_file_size": 32 * 1024,  # Default 32 KB
-                "headers": {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
-                    "Origin": "https://claude.ai",
-                },
-                "two_way_sync": False,  # Default to False
-            }
+            return self._get_default_config()
+
         with open(self.config_file, "r") as f:
             config = json.load(f)
-            # Ensure all default values are present
-            defaults = {
-                "log_level": "INFO",
-                "upload_delay": 0.5,
-                "max_file_size": 32 * 1024,
-                "headers": {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
-                    "Origin": "https://claude.ai",
-                },
-                "two_way_sync": False,
-            }
+            defaults = self._get_default_config()
             for key, value in defaults.items():
                 if key not in config:
                     config[key] = value
+                elif key in ["chat_destination", "artifact_destination"]:
+                    # Expand user home directory for path-based settings
+                    config[key] = str(Path(config[key]).expanduser())
             return config
 
     def _save_config(self):
@@ -91,47 +96,16 @@ class ConfigManager:
         """
         Sets a configuration value and saves the configuration.
 
+        For path-based settings (chat_destination and artifact_destination), this method expands the user's home directory.
+
         Args:
             key (str): The key for the configuration setting to set.
             value (any): The value to set for the given key.
 
-        This method updates the configuration with the provided key-value pair and then saves the configuration
-        to the file.
+        This method updates the configuration with the provided key-value pair and then saves the configuration to the file.
         """
+        if key in ["chat_destination", "artifact_destination"]:
+            # Expand user home directory for path-based settings
+            value = str(Path(value).expanduser())
         self.config[key] = value
-        self._save_config()
-
-    def update_headers(self, new_headers):
-        """
-        Updates the headers configuration with new values.
-
-        Args:
-            new_headers (dict): A dictionary containing the new header key-value pairs to update or add.
-
-        This method updates the existing headers with the new values provided, adds any new headers,
-        and then saves the updated configuration to the file.
-        """
-        self.config.setdefault("headers", {}).update(new_headers)
-        self._save_config()
-
-    def get_headers(self):
-        """
-        Retrieves the current headers configuration.
-
-        Returns:
-            dict: The current headers configuration.
-        """
-        return self.config.get("headers", {})
-
-    def update_cookies(self, new_cookies):
-        """
-        Updates the cookies configuration with new values.
-
-        Args:
-            new_cookies (dict): A dictionary containing the new cookie key-value pairs to update or add.
-
-        This method updates the existing cookies with the new values provided, adds any new cookies,
-        and then saves the updated configuration to the file.
-        """
-        self.config.setdefault("cookies", {}).update(new_cookies)
         self._save_config()

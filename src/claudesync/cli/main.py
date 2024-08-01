@@ -2,12 +2,18 @@ import click
 import click_completion
 import click_completion.core
 
+from claudesync.cli.chat import chat
 from claudesync.config_manager import ConfigManager
 from .api import api
 from .organization import organization
 from .project import project
 from .sync import ls, sync, schedule
 from .config import config
+import logging
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 click_completion.init()
 
@@ -55,6 +61,7 @@ cli.add_command(ls)
 cli.add_command(sync)
 cli.add_command(schedule)
 cli.add_command(config)
+cli.add_command(chat)
 
 if __name__ == "__main__":
     cli()

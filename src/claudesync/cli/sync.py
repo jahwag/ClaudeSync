@@ -7,6 +7,7 @@ from crontab import CronTab
 from claudesync.utils import get_local_files
 from ..utils import handle_errors, validate_and_get_provider
 from ..syncmanager import SyncManager
+from ..chat_sync import sync_chats
 
 
 @click.command()
@@ -34,21 +35,21 @@ def ls(config):
 @click.pass_obj
 @handle_errors
 def sync(config):
-    """Synchronize local files with the active remote project."""
+    """Synchronize both projects and chats."""
     provider = validate_and_get_provider(config)
-    local_path = config.get("local_path")
 
-    validate_local_path(local_path)
-
+    # Sync projects
     sync_manager = SyncManager(provider, config)
     remote_files = provider.list_files(
         sync_manager.active_organization_id, sync_manager.active_project_id
     )
-    local_files = get_local_files(local_path)
-
+    local_files = get_local_files(config.get("local_path"))
     sync_manager.sync(local_files, remote_files)
+    click.echo("Project sync completed successfully.")
 
-    click.echo("Sync completed successfully.")
+    # Sync chats
+    sync_chats(provider, config)
+    click.echo("Chat sync completed successfully.")
 
 
 def validate_local_path(local_path):
