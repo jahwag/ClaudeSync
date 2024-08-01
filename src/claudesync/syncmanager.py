@@ -3,6 +3,7 @@ import time
 from datetime import datetime, timezone
 
 import click
+from tqdm import tqdm
 
 from claudesync.utils import compute_md5_hash
 
@@ -48,56 +49,45 @@ class SyncManager:
         remote_files_to_delete = set(rf["file_name"] for rf in remote_files)
         synced_files = set()
 
-        self.sync_local_to_remote(
-            local_files, remote_files, remote_files_to_delete, synced_files
-        )
+        with tqdm(total=len(local_files), desc="Syncing local to remote") as pbar:
+            for local_file, local_checksum in local_files.items():
+                remote_file = next(
+                    (rf for rf in remote_files if rf["file_name"] == local_file), None
+                )
+                if remote_file:
+                    self.update_existing_file(
+                        local_file,
+                        local_checksum,
+                        remote_file,
+                        remote_files_to_delete,
+                        synced_files,
+                    )
+                else:
+                    self.upload_new_file(local_file, synced_files)
+                pbar.update(1)
+
         self.update_local_timestamps(remote_files, synced_files)
 
         if self.two_way_sync:
-            self.sync_remote_to_local(
-                remote_files, remote_files_to_delete, synced_files
-            )
+            with tqdm(total=len(remote_files), desc="Syncing remote to local") as pbar:
+                for remote_file in remote_files:
+                    self.sync_remote_to_local(
+                        remote_file, remote_files_to_delete, synced_files
+                    )
+                    pbar.update(1)
 
-        self.delete_remote_files(remote_files_to_delete, remote_files)
-
-    def sync_local_to_remote(
-        self, local_files, remote_files, remote_files_to_delete, synced_files
-    ):
-        """
-        Synchronize local files to the remote project.
-
-        This method checks each local file against the remote files. If a file exists on the remote,
-        it updates the file if there are changes. If the file does not exist on the remote, it uploads
-        the new file.
-
-        Args:
-            local_files (dict): Dictionary of local file names and their corresponding checksums.
-            remote_files (list): List of dictionaries representing remote files.
-            remote_files_to_delete (set): Set of remote file names to be considered for deletion.
-            synced_files (set): Set of file names that have been synchronized.
-        """
-        for local_file, local_checksum in local_files.items():
-            remote_file = next(
-                (rf for rf in remote_files if rf["file_name"] == local_file), None
-            )
-            if remote_file:
-                self.update_existing_file(
-                    local_file,
-                    local_checksum,
-                    remote_file,
-                    remote_files_to_delete,
-                    synced_files,
-                )
-            else:
-                self.upload_new_file(local_file, synced_files)
+        with tqdm(total=len(remote_files_to_delete), desc="Deleting remote files") as pbar:
+            for file_to_delete in list(remote_files_to_delete):
+                self.delete_remote_files(file_to_delete, remote_files)
+                pbar.update(1)
 
     def update_existing_file(
-        self,
-        local_file,
-        local_checksum,
-        remote_file,
-        remote_files_to_delete,
-        synced_files,
+            self,
+            local_file,
+            local_checksum,
+            remote_file,
+            remote_files_to_delete,
+            synced_files,
     ):
         """
         Update an existing file on the remote if it has changed locally.
@@ -115,16 +105,19 @@ class SyncManager:
         remote_checksum = compute_md5_hash(remote_file["content"])
         if local_checksum != remote_checksum:
             click.echo(f"Updating {local_file} on remote...")
-            self.provider.delete_file(
-                self.active_organization_id, self.active_project_id, remote_file["uuid"]
-            )
-            with open(
-                os.path.join(self.local_path, local_file), "r", encoding="utf-8"
-            ) as file:
-                content = file.read()
-            self.provider.upload_file(
-                self.active_organization_id, self.active_project_id, local_file, content
-            )
+            with tqdm(total=2, desc=f"Updating {local_file}", leave=False) as pbar:
+                self.provider.delete_file(
+                    self.active_organization_id, self.active_project_id, remote_file["uuid"]
+                )
+                pbar.update(1)
+                with open(
+                        os.path.join(self.local_path, local_file), "r", encoding="utf-8"
+                ) as file:
+                    content = file.read()
+                self.provider.upload_file(
+                    self.active_organization_id, self.active_project_id, local_file, content
+                )
+                pbar.update(1)
             time.sleep(self.upload_delay)
             synced_files.add(local_file)
         remote_files_to_delete.remove(local_file)
@@ -141,12 +134,14 @@ class SyncManager:
         """
         click.echo(f"Uploading new file {local_file} to remote...")
         with open(
-            os.path.join(self.local_path, local_file), "r", encoding="utf-8"
+                os.path.join(self.local_path, local_file), "r", encoding="utf-8"
         ) as file:
             content = file.read()
-        self.provider.upload_file(
-            self.active_organization_id, self.active_project_id, local_file, content
-        )
+        with tqdm(total=1, desc=f"Uploading {local_file}", leave=False) as pbar:
+            self.provider.upload_file(
+                self.active_organization_id, self.active_project_id, local_file, content
+            )
+            pbar.update(1)
         time.sleep(self.upload_delay)
         synced_files.add(local_file)
 
@@ -161,44 +156,44 @@ class SyncManager:
             remote_files (list): List of dictionaries representing remote files.
             synced_files (set): Set of file names that have been synchronized.
         """
-        for remote_file in remote_files:
-            if remote_file["file_name"] in synced_files:
-                local_file_path = os.path.join(
-                    self.local_path, remote_file["file_name"]
-                )
-                if os.path.exists(local_file_path):
-                    remote_timestamp = datetime.fromisoformat(
-                        remote_file["created_at"].replace("Z", "+00:00")
-                    ).timestamp()
-                    os.utime(local_file_path, (remote_timestamp, remote_timestamp))
-                    click.echo(f"Updated timestamp on local file {local_file_path}")
+        with tqdm(total=len(synced_files), desc="Updating local timestamps") as pbar:
+            for remote_file in remote_files:
+                if remote_file["file_name"] in synced_files:
+                    local_file_path = os.path.join(
+                        self.local_path, remote_file["file_name"]
+                    )
+                    if os.path.exists(local_file_path):
+                        remote_timestamp = datetime.fromisoformat(
+                            remote_file["created_at"].replace("Z", "+00:00")
+                        ).timestamp()
+                        os.utime(local_file_path, (remote_timestamp, remote_timestamp))
+                        click.echo(f"Updated timestamp on local file {local_file_path}")
+                    pbar.update(1)
 
-    def sync_remote_to_local(self, remote_files, remote_files_to_delete, synced_files):
+    def sync_remote_to_local(self, remote_file, remote_files_to_delete, synced_files):
         """
-        Synchronize remote files to the local project (two-way sync).
+        Synchronize a remote file to the local project (two-way sync).
 
-        This method checks each remote file against the local files. If a file exists locally,
-        it updates the file if the remote version is newer. If the file does not exist locally,
-        it creates a new local file from the remote file.
+        This method checks if the remote file exists locally. If it does, it updates the file
+        if the remote version is newer. If it doesn't exist locally, it creates a new local file.
 
         Args:
-            remote_files (list): List of dictionaries representing remote files.
+            remote_file (dict): Dictionary representing the remote file.
             remote_files_to_delete (set): Set of remote file names to be considered for deletion.
             synced_files (set): Set of file names that have been synchronized.
         """
-        for remote_file in remote_files:
-            local_file_path = os.path.join(self.local_path, remote_file["file_name"])
-            if os.path.exists(local_file_path):
-                self.update_existing_local_file(
-                    local_file_path, remote_file, remote_files_to_delete, synced_files
-                )
-            else:
-                self.create_new_local_file(
-                    local_file_path, remote_file, remote_files_to_delete, synced_files
-                )
+        local_file_path = os.path.join(self.local_path, remote_file["file_name"])
+        if os.path.exists(local_file_path):
+            self.update_existing_local_file(
+                local_file_path, remote_file, remote_files_to_delete, synced_files
+            )
+        else:
+            self.create_new_local_file(
+                local_file_path, remote_file, remote_files_to_delete, synced_files
+            )
 
     def update_existing_local_file(
-        self, local_file_path, remote_file, remote_files_to_delete, synced_files
+            self, local_file_path, remote_file, remote_files_to_delete, synced_files
     ):
         """
         Update an existing local file if the remote version is newer.
@@ -220,51 +215,54 @@ class SyncManager:
         )
         if remote_mtime > local_mtime:
             click.echo(f"Updating local file {remote_file['file_name']} from remote...")
-            with open(local_file_path, "w", encoding="utf-8") as file:
-                file.write(remote_file["content"])
+            with tqdm(total=1, desc=f"Updating {remote_file['file_name']}", leave=False) as pbar:
+                with open(local_file_path, "w", encoding="utf-8") as file:
+                    file.write(remote_file["content"])
+                pbar.update(1)
             synced_files.add(remote_file["file_name"])
             if remote_file["file_name"] in remote_files_to_delete:
                 remote_files_to_delete.remove(remote_file["file_name"])
 
     def create_new_local_file(
-        self, local_file_path, remote_file, remote_files_to_delete, synced_files
+            self, local_file_path, remote_file, remote_files_to_delete, synced_files
     ):
         """
-                Create a new local file from a remote file.
+        Create a new local file from a remote file.
 
-                This method creates a new local file with the content from the remote file.
+        This method creates a new local file with the content from the remote file.
 
-                Args:
-                    local_file_path (str): Path to the new local file
-
-        .
-                    remote_file (dict): Dictionary representing the remote file.
-                    remote_files_to_delete (set): Set of remote file names to be considered for deletion.
-                    synced_files (set): Set of file names that have been synchronized.
+        Args:
+            local_file_path (str): Path to the new local file.
+            remote_file (dict): Dictionary representing the remote file.
+            remote_files_to_delete (set): Set of remote file names to be considered for deletion.
+            synced_files (set): Set of file names that have been synchronized.
         """
         click.echo(f"Creating new local file {remote_file['file_name']} from remote...")
-        with open(local_file_path, "w", encoding="utf-8") as file:
-            file.write(remote_file["content"])
+        with tqdm(total=1, desc=f"Creating {remote_file['file_name']}", leave=False) as pbar:
+            with open(local_file_path, "w", encoding="utf-8") as file:
+                file.write(remote_file["content"])
+            pbar.update(1)
         synced_files.add(remote_file["file_name"])
         if remote_file["file_name"] in remote_files_to_delete:
             remote_files_to_delete.remove(remote_file["file_name"])
 
-    def delete_remote_files(self, remote_files_to_delete, remote_files):
+    def delete_remote_files(self, file_to_delete, remote_files):
         """
-        Delete files from the remote project that no longer exist locally.
+        Delete a file from the remote project that no longer exists locally.
 
-        This method deletes remote files that are not present in the local directory.
+        This method deletes a remote file that is not present in the local directory.
 
         Args:
-            remote_files_to_delete (set): Set of remote file names to be deleted.
+            file_to_delete (str): Name of the remote file to be deleted.
             remote_files (list): List of dictionaries representing remote files.
         """
-        for file_to_delete in remote_files_to_delete:
-            click.echo(f"Deleting {file_to_delete} from remote...")
-            remote_file = next(
-                rf for rf in remote_files if rf["file_name"] == file_to_delete
-            )
+        click.echo(f"Deleting {file_to_delete} from remote...")
+        remote_file = next(
+            rf for rf in remote_files if rf["file_name"] == file_to_delete
+        )
+        with tqdm(total=1, desc=f"Deleting {file_to_delete}", leave=False) as pbar:
             self.provider.delete_file(
                 self.active_organization_id, self.active_project_id, remote_file["uuid"]
             )
-            time.sleep(self.upload_delay)
+            pbar.update(1)
+        time.sleep(self.upload_delay)
