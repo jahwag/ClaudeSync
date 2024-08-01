@@ -25,13 +25,15 @@ def sync(config):
 @chat.command()
 @click.pass_obj
 @handle_errors
-def list(config):
+def ls(config):
     """List all chats."""
     provider = validate_and_get_provider(config)
     organization_id = config.get("active_organization_id")
     chats = provider.get_chat_conversations(organization_id)
+
     for chat in chats:
-        project_name = chat.get("project", {}).get("name", "N/A")
+        project = chat.get("project")
+        project_name = project.get("name") if project else ''
         click.echo(
             f"UUID: {chat.get('uuid', 'Unknown')}, "
             f"Name: {chat.get('name', 'Unnamed')}, "
@@ -44,72 +46,93 @@ def list(config):
 @click.option("-a", "--all", "delete_all", is_flag=True, help="Delete all chats")
 @click.pass_obj
 @handle_errors
-def delete(config, delete_all):
+def rm(config, delete_all):
     """Delete chats. Use -a to delete all chats, or select a chat to delete."""
     provider = validate_and_get_provider(config)
     organization_id = config.get("active_organization_id")
 
-    def delete_chats(uuids):
-        try:
-            result = provider.delete_chat(organization_id, uuids)
-            return len(result)
-        except ProviderError as e:
-            logger.error(f"Error deleting chats: {str(e)}")
-            click.echo(f"Error occurred while deleting chats: {str(e)}")
-            return 0, len(uuids)
-
     if delete_all:
-        if click.confirm("Are you sure you want to delete all chats?"):
-            total_deleted = 0
-            with click.progressbar(length=100, label="Deleting chats") as bar:
-                while True:
-                    chats = provider.get_chat_conversations(organization_id)
-                    if not chats:
-                        break
-                    uuids_to_delete = [chat["uuid"] for chat in chats[:50]]
-                    deleted = delete_chats(uuids_to_delete)
-                    total_deleted += deleted
-                    bar.update(len(uuids_to_delete))
-            click.echo(f"Chat deletion complete. Total chats deleted: {total_deleted}")
+        delete_all_chats(provider, organization_id)
     else:
-        chats = provider.get_chat_conversations(organization_id)
-        if not chats:
-            click.echo("No chats found.")
-            return
+        delete_single_chat(provider, organization_id)
 
-        click.echo("Available chats:")
-        for idx, chat in enumerate(chats, 1):
-            project_name = chat.get("project", {}).get("name", "N/A")
-            click.echo(
-                f"{idx}. Name: {chat.get('name', 'Unnamed')}, "
-                f"Project: {project_name}, Updated: {chat.get('updated_at', 'Unknown')}"
-            )
 
-        while True:
-            selection = click.prompt(
-                "Enter the number of the chat to delete (or 'q' to quit)", type=str
-            )
-            if selection.lower() == "q":
-                return
+def delete_chats(provider, organization_id, uuids):
+    """Delete a list of chats by their UUIDs."""
+    try:
+        result = provider.delete_chat(organization_id, uuids)
+        return len(result), 0
+    except ProviderError as e:
+        logger.error(f"Error deleting chats: {str(e)}")
+        click.echo(f"Error occurred while deleting chats: {str(e)}")
+        return 0, len(uuids)
 
-            try:
-                selection = int(selection)
-                if 1 <= selection <= len(chats):
-                    selected_chat = chats[selection - 1]
-                    if click.confirm(
-                        f"Are you sure you want to delete the chat '{selected_chat.get('name', 'Unnamed')}'?"
-                    ):
-                        deleted, failed = delete_chats([selected_chat["uuid"]])
-                        if deleted:
-                            click.echo(
-                                f"Successfully deleted chat: {selected_chat.get('name', 'Unnamed')}"
-                            )
-                        else:
-                            click.echo(
-                                f"Failed to delete chat: {selected_chat.get('name', 'Unnamed')}"
-                            )
+
+def delete_all_chats(provider, organization_id):
+    """Delete all chats for the given organization."""
+    if click.confirm("Are you sure you want to delete all chats?"):
+        total_deleted = 0
+        with click.progressbar(length=100, label="Deleting chats") as bar:
+            while True:
+                chats = provider.get_chat_conversations(organization_id)
+                if not chats:
                     break
-                else:
-                    click.echo("Invalid selection. Please try again.")
-            except ValueError:
-                click.echo("Invalid input. Please enter a number or 'q' to quit.")
+                uuids_to_delete = [chat["uuid"] for chat in chats[:50]]
+                deleted, _ = delete_chats(provider, organization_id, uuids_to_delete)
+                total_deleted += deleted
+                bar.update(len(uuids_to_delete))
+        click.echo(f"Chat deletion complete. Total chats deleted: {total_deleted}")
+
+
+def delete_single_chat(provider, organization_id):
+    """Delete a single chat selected by the user."""
+    chats = provider.get_chat_conversations(organization_id)
+    if not chats:
+        click.echo("No chats found.")
+        return
+
+    display_chat_list(chats)
+    selected_chat = get_chat_selection(chats)
+    if selected_chat:
+        confirm_and_delete_chat(provider, organization_id, selected_chat)
+
+
+def display_chat_list(chats):
+    """Display a list of chats to the user."""
+    click.echo("Available chats:")
+    for idx, chat in enumerate(chats, 1):
+        project = chat.get("project")
+        project_name = project.get("name") if project else ''
+        click.echo(
+            f"{idx}. Name: {chat.get('name', 'Unnamed')}, "
+            f"Project: {project_name}, Updated: {chat.get('updated_at', 'Unknown')}"
+        )
+
+
+def get_chat_selection(chats):
+    """Get a valid chat selection from the user."""
+    while True:
+        selection = click.prompt(
+            "Enter the number of the chat to delete (or 'q' to quit)", type=str
+        )
+        if selection.lower() == "q":
+            return None
+        try:
+            selection = int(selection)
+            if 1 <= selection <= len(chats):
+                return chats[selection - 1]
+            click.echo("Invalid selection. Please try again.")
+        except ValueError:
+            click.echo("Invalid input. Please enter a number or 'q' to quit.")
+
+
+def confirm_and_delete_chat(provider, organization_id, chat):
+    """Confirm deletion with the user and delete the selected chat."""
+    if click.confirm(
+            f"Are you sure you want to delete the chat '{chat.get('name', 'Unnamed')}'?"
+    ):
+        deleted, _ = delete_chats(provider, organization_id, [chat["uuid"]])
+        if deleted:
+            click.echo(f"Successfully deleted chat: {chat.get('name', 'Unnamed')}")
+        else:
+            click.echo(f"Failed to delete chat: {chat.get('name', 'Unnamed')}")
