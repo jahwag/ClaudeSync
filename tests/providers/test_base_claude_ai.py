@@ -1,5 +1,7 @@
 import unittest
 from unittest.mock import patch
+
+from claudesync.exceptions import ProviderError
 from claudesync.providers.base_claude_ai import BaseClaudeAIProvider
 
 
@@ -18,12 +20,33 @@ class TestBaseClaudeAIProvider(unittest.TestCase):
     @patch.object(BaseClaudeAIProvider, "_make_request")
     def test_get_organizations(self, mock_make_request):
         mock_make_request.return_value = [
-            {"uuid": "org1", "name": "Org 1"},
-            {"uuid": "org2", "name": "Org 2"},
+            {"uuid": "org1", "name": "Org 1", "capabilities": ["chat", "claude_pro"]},
+            {"uuid": "org2", "name": "Org 2", "capabilities": ["chat"]},
+            {
+                "uuid": "org3",
+                "name": "Org 3",
+                "capabilities": ["chat", "claude_pro", "other"],
+            },
+            {"uuid": "org4", "name": "Org 4", "capabilities": ["other"]},
         ]
         result = self.provider.get_organizations()
-        expected = [{"id": "org1", "name": "Org 1"}, {"id": "org2", "name": "Org 2"}]
+        expected = [{"id": "org1", "name": "Org 1"}, {"id": "org3", "name": "Org 3"}]
         self.assertEqual(result, expected)
+
+    @patch.object(BaseClaudeAIProvider, "_make_request")
+    def test_get_organizations_no_valid_orgs(self, mock_make_request):
+        mock_make_request.return_value = [
+            {"uuid": "org1", "name": "Org 1", "capabilities": ["api"]},
+            {"uuid": "org2", "name": "Org 2", "capabilities": ["chat"]},
+        ]
+        result = self.provider.get_organizations()
+        self.assertEqual(result, [])
+
+    @patch.object(BaseClaudeAIProvider, "_make_request")
+    def test_get_organizations_error(self, mock_make_request):
+        mock_make_request.return_value = None
+        with self.assertRaises(ProviderError):
+            self.provider.get_organizations()
 
     @patch.object(BaseClaudeAIProvider, "_make_request")
     def test_get_projects(self, mock_make_request):

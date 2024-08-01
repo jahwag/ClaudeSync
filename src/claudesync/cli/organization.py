@@ -13,13 +13,15 @@ def organization():
 @click.pass_obj
 @handle_errors
 def ls(config):
-    """List all available organizations."""
+    """List all available organizations with required capabilities."""
     provider = validate_and_get_provider(config, require_org=False)
     organizations = provider.get_organizations()
     if not organizations:
-        click.echo("No organizations found.")
+        click.echo(
+            "No organizations with required capabilities (chat and claude_pro) found."
+        )
     else:
-        click.echo("Available organizations:")
+        click.echo("Available organizations with required capabilities:")
         for idx, org in enumerate(organizations, 1):
             click.echo(f"  {idx}. {org['name']} (ID: {org['id']})")
 
@@ -32,9 +34,11 @@ def select(config):
     provider = validate_and_get_provider(config, require_org=False)
     organizations = provider.get_organizations()
     if not organizations:
-        click.echo("No organizations found.")
+        click.echo(
+            "No organizations with required capabilities (chat and claude_pro) found."
+        )
         return
-    click.echo("Available organizations:")
+    click.echo("Available organizations with required capabilities:")
     for idx, org in enumerate(organizations, 1):
         click.echo(f"  {idx}. {org['name']} (ID: {org['id']})")
     selection = click.prompt("Enter the number of the organization to select", type=int)
