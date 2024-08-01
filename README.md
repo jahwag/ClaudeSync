@@ -9,6 +9,7 @@
                                                                              .o..P'                            
                                                                              `Y8P'                              
 ```
+[![Python package](https://github.com/jahwag/ClaudeSync/actions/workflows/python-package.yml/badge.svg)](https://github.com/jahwag/ClaudeSync/actions/workflows/python-package.yml)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 [![PyPI version](https://badge.fury.io/py/claudesync.svg)](https://badge.fury.io/py/claudesync)
 
@@ -27,6 +28,9 @@ ClaudeSync bridges the gap between your local development environment and Claude
 - Seamless integration with your existing workflow
 - Optional two-way synchronization support
 - Configuration management through CLI
+- Chat and artifact synchronization and management
+
+**Important Note**: ClaudeSync requires a Claude.ai Professional plan to function properly. Make sure you have an active Professional subscription before using this tool.
 
 ## Important Disclaimers
 
@@ -85,6 +89,12 @@ ClaudeSync bridges the gap between your local development environment and Claude
 - List remote files: `claudesync ls`
 - Sync files: `claudesync sync`
 
+### Chat Management
+- List chats: `claudesync chat ls`
+- Sync chats and artifacts: `claudesync chat sync`
+- Delete chats: `claudesync chat rm`
+- Delete all chats: `claudesync chat rm -a`
+
 ### Configuration
 - View current status: `claudesync status`
 - Set configuration values: `claudesync config set <key> <value>`
@@ -139,23 +149,21 @@ ClaudeSync offers two providers for interacting with the Claude.ai API:
 ### Troubleshooting
 
 #### 403 Forbidden Error
-If you encounter a 403 Forbidden error when using ClaudeSync, it might be due to an issue with the session key or API access. As a workaround, you can try using the `claude.ai-curl` provider:
+If you encounter a 403 Forbidden error when using ClaudeSync, it might be due to an issue with the session key or API access. Here are some steps to resolve this:
 
-1. Ensure cURL is installed on your system (see note above for Windows users).
-
-2. Logout from your current session:
+1. Ensure you have an active Claude.ai Professional plan subscription.
+2. Try logging out and logging in again:
    ```bash
    claudesync api logout
+   claudesync api login claude.ai
    ```
-
-3. Login using the claude.ai-curl provider:
+3. If the issue persists, you can try using the claude.ai-curl provider as a workaround:
    ```bash
+   claudesync api logout
    claudesync api login claude.ai-curl
    ```
 
-4. Try your operation again.
-
-If the issue persists, please check your network connection and ensure that you have the necessary permissions to access Claude.ai.
+If you continue to experience issues, please check your network connection and ensure that you have the necessary permissions to access Claude.ai.
 
 ## Contributing
 
