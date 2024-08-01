@@ -1,10 +1,21 @@
 import textwrap
 import unittest
+from unittest.mock import MagicMock
 
-from claudesync.chat_sync import extract_artifacts
+from claudesync.chat_sync import extract_artifacts, get_file_extension, sync_chats
+from claudesync.exceptions import ConfigurationError
 
 
 class TestExtractArtifacts(unittest.TestCase):
+
+    def setUp(self):
+        self.mock_provider = MagicMock()
+        self.mock_config = MagicMock()
+        self.mock_config.get.side_effect = lambda key, default=None: {
+            "local_path": "/test/path",
+            "active_organization_id": "org123",
+            "active_project_id": "proj456",
+        }.get(key, default)
 
     def test_extract_single_artifact(self):
         text = """
@@ -64,3 +75,25 @@ class TestExtractArtifacts(unittest.TestCase):
         """
         expected_result = []
         self.assertEqual(extract_artifacts(text), expected_result)
+
+    def test_sync_chats_no_local_path(self):
+        self.mock_config.get.side_effect = lambda key, default=None: (
+            None if key == "local_path" else "some_value"
+        )
+        with self.assertRaises(ConfigurationError):
+            sync_chats(self.mock_provider, self.mock_config)
+
+    def test_sync_chats_no_organization(self):
+        self.mock_config.get.side_effect = lambda key, default=None: (
+            None if key == "active_organization_id" else "some_value"
+        )
+        with self.assertRaises(ConfigurationError):
+            sync_chats(self.mock_provider, self.mock_config)
+
+    def test_get_file_extension(self):
+        self.assertEqual(get_file_extension("text/html"), "html")
+        self.assertEqual(get_file_extension("application/vnd.ant.code"), "txt")
+        self.assertEqual(get_file_extension("image/svg+xml"), "svg")
+        self.assertEqual(get_file_extension("application/vnd.ant.mermaid"), "mmd")
+        self.assertEqual(get_file_extension("application/vnd.ant.react"), "jsx")
+        self.assertEqual(get_file_extension("unknown/type"), "txt")
