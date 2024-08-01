@@ -33,7 +33,11 @@ class BaseClaudeAIProvider(BaseProvider):
         response = self._make_request("GET", "/organizations")
         if not response:
             raise ProviderError("Unable to retrieve organization information")
-        return [{"id": org["uuid"], "name": org["name"]} for org in response]
+        return [
+            {"id": org["uuid"], "name": org["name"]}
+            for org in response
+            if set(["chat", "claude_pro"]).issubset(set(org.get("capabilities", [])))
+        ]
 
     def get_projects(self, organization_id, include_archived=False):
         response = self._make_request(
