@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "claudesync"
-version = "0.3.8"
+version = "0.3.9"
 authors = [
     {name = "Jahziah Wagner", email = "jahziah.wagner+pypi@gmail.com"},
 ]
@@ -26,6 +26,7 @@ dependencies = [
     "pytest",
     "pytest-cov",
     "click_completion",
+    "tqdm",
 ]
 
 [project.urls]

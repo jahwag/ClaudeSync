@@ -43,3 +43,28 @@ class BaseProvider(ABC):
     def create_project(self, organization_id, name, description=""):
         """Create a new project within a specified organization."""
         pass
+
+    @abstractmethod
+    def get_chat_conversations(self, organization_id):
+        """Retrieve a list of chat conversations for a specified organization."""
+        pass
+
+    @abstractmethod
+    def get_published_artifacts(self, organization_id):
+        """Retrieve a list of published artifacts for a specified organization."""
+        pass
+
+    @abstractmethod
+    def get_chat_conversation(self, organization_id, conversation_id):
+        """Retrieve the full content of a specific chat conversation."""
+        pass
+
+    @abstractmethod
+    def get_artifact_content(self, organization_id, artifact_uuid):
+        """Retrieve the full content of a specific published artifact."""
+        pass
+
+    @abstractmethod
+    def delete_chat(self, organization_id, conversation_uuids):
+        """Delete specified chats for a given organization."""
+        pass
