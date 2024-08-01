@@ -14,8 +14,16 @@ class TestOrganizationCLI(unittest.TestCase):
         # Mock the provider
         mock_provider = MagicMock()
         mock_provider.get_organizations.return_value = [
-            {"id": "org1", "name": "Organization 1"},
-            {"id": "org2", "name": "Organization 2"},
+            {
+                "id": "org1",
+                "name": "Organization 1",
+                "capabilities": ["chat", "claude_pro"],
+            },
+            {
+                "id": "org2",
+                "name": "Organization 2",
+                "capabilities": ["chat", "claude_pro"],
+            },
         ]
         mock_validate_and_get_provider.return_value = mock_provider
 
@@ -29,7 +37,10 @@ class TestOrganizationCLI(unittest.TestCase):
         mock_provider.get_organizations.return_value = []
         result = self.runner.invoke(cli, ["organization", "ls"])
         self.assertEqual(result.exit_code, 0)
-        self.assertIn("No organizations found.", result.output)
+        self.assertIn(
+            "No organizations with required capabilities (chat and claude_pro) found.",
+            result.output,
+        )
 
         # Test error handling
         mock_validate_and_get_provider.side_effect = ConfigurationError(
@@ -45,8 +56,16 @@ class TestOrganizationCLI(unittest.TestCase):
         # Mock the provider
         mock_provider = MagicMock()
         mock_provider.get_organizations.return_value = [
-            {"id": "org1", "name": "Organization 1"},
-            {"id": "org2", "name": "Organization 2"},
+            {
+                "id": "org1",
+                "name": "Organization 1",
+                "capabilities": ["chat", "claude_pro"],
+            },
+            {
+                "id": "org2",
+                "name": "Organization 2",
+                "capabilities": ["chat", "claude_pro"],
+            },
         ]
         mock_validate_and_get_provider.return_value = mock_provider
 
@@ -68,7 +87,10 @@ class TestOrganizationCLI(unittest.TestCase):
         mock_provider.get_organizations.return_value = []
         result = self.runner.invoke(cli, ["organization", "select"])
         self.assertEqual(result.exit_code, 0)
-        self.assertIn("No organizations found.", result.output)
+        self.assertIn(
+            "No organizations with required capabilities (chat and claude_pro) found.",
+            result.output,
+        )
 
         # Test error handling
         mock_validate_and_get_provider.side_effect = ProviderError("Provider error")
