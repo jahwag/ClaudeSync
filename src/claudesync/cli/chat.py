@@ -1,7 +1,5 @@
 import click
 import logging
-import json
-from tqdm import tqdm
 from ..exceptions import ProviderError
 from ..utils import handle_errors, validate_and_get_provider
 from ..chat_sync import sync_chats
@@ -83,7 +81,8 @@ def delete(config, delete_all):
         for idx, chat in enumerate(chats, 1):
             project_name = chat.get("project", {}).get("name", "N/A")
             click.echo(
-                f"{idx}. Name: {chat.get('name', 'Unnamed')}, Project: {project_name}, Updated: {chat.get('updated_at', 'Unknown')}"
+                f"{idx}. Name: {chat.get('name', 'Unnamed')}, "
+                f"Project: {project_name}, Updated: {chat.get('updated_at', 'Unknown')}"
             )
 
         while True:

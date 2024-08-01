@@ -40,15 +40,14 @@ class ConfigManager:
             "upload_delay": 0.5,
             "max_file_size": 32 * 1024,  # Default 32 KB
             "two_way_sync": False,  # Default to False
-            "chat_destination": str(Path.home() / ".claudesync" / "chats"),
-            "artifact_destination": str(Path.home() / ".claudesync" / "artifacts"),
         }
 
     def _load_config(self):
         """
         Loads the configuration from the JSON file, applying default values for missing keys.
 
-        If the configuration file does not exist, it creates the directory (if necessary) and returns the default configuration.
+        If the configuration file does not exist,
+        it creates the directory (if necessary) and returns the default configuration.
         For existing configurations, it ensures all default values are present and expands user home directory paths.
 
         Returns:
@@ -64,7 +63,7 @@ class ConfigManager:
             for key, value in defaults.items():
                 if key not in config:
                     config[key] = value
-                elif key in ["chat_destination", "artifact_destination"]:
+                elif key == "chat_destination":
                     # Expand user home directory for path-based settings
                     config[key] = str(Path(config[key]).expanduser())
             return config
@@ -96,7 +95,7 @@ class ConfigManager:
         """
         Sets a configuration value and saves the configuration.
 
-        For path-based settings (chat_destination and artifact_destination), this method expands the user's home directory.
+        For path-based settings (chat_destination), this method expands the user's home directory.
 
         Args:
             key (str): The key for the configuration setting to set.
@@ -104,7 +103,7 @@ class ConfigManager:
 
         This method updates the configuration with the provided key-value pair and then saves the configuration to the file.
         """
-        if key in ["chat_destination", "artifact_destination"]:
+        if key == "chat_destination":
             # Expand user home directory for path-based settings
             value = str(Path(value).expanduser())
         self.config[key] = value

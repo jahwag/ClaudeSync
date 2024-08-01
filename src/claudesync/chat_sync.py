@@ -1,14 +1,16 @@
-import os
 import json
 import logging
+import os
+import re
+
 from tqdm import tqdm
-from .config_manager import ConfigManager
+
 from .exceptions import ConfigurationError
 
 logger = logging.getLogger(__name__)
 
 
-def sync_chats(provider, config):
+def sync_chats(provider, config, sync_all=False):
     """
     Synchronize chats and their artifacts from the remote source.
 
@@ -18,18 +20,21 @@ def sync_chats(provider, config):
     Args:
         provider: The API provider instance.
         config: The configuration manager instance.
+        sync_all (bool): If True, sync all chats regardless of project. If False, only sync chats for the active project.
 
     Raises:
         ConfigurationError: If required configuration settings are missing.
     """
-    # Get the configured destinations for chats and artifacts
-    chat_destination = config.get("chat_destination")
-    artifact_destination = config.get("artifact_destination")
-    if not chat_destination or not artifact_destination:
+    # Get the local_path for chats
+    local_path = config.get("local_path")
+    if not local_path:
         raise ConfigurationError(
-            "Chat or artifact destination not set. Use 'claudesync config set chat_destination <path>' and "
-            "'claudesync config set artifact_destination <path>' to set them."
+            "Local path not set. Use 'claudesync project select' or 'claudesync project create' to set it."
         )
+
+    # Create chats directory within local_path
+    chat_destination = os.path.join(local_path, "chats")
+    os.makedirs(chat_destination, exist_ok=True)
 
     # Get the active organization ID
     organization_id = config.get("active_organization_id")
@@ -38,51 +43,66 @@ def sync_chats(provider, config):
             "No active organization set. Please select an organization."
         )
 
+    # Get the active project ID
+    active_project_id = config.get("active_project_id")
+    if not active_project_id and not sync_all:
+        raise ConfigurationError(
+            "No active project set. Please select a project or use the -a flag to sync all chats."
+        )
+
     # Fetch all chats for the organization
-    logger.info(f"Fetching chats for organization {organization_id}")
+    logger.debug(f"Fetching chats for organization {organization_id}")
     chats = provider.get_chat_conversations(organization_id)
-    logger.info(f"Found {len(chats)} chats")
+    logger.debug(f"Found {len(chats)} chats")
 
     # Process each chat
     for chat in tqdm(chats, desc="Syncing chats"):
-        logger.info(f"Processing chat {chat['uuid']}")
-        chat_folder = os.path.join(chat_destination, chat["uuid"])
-        os.makedirs(chat_folder, exist_ok=True)
+        # Check if the chat belongs to the active project or if we're syncing all chats
+        if sync_all or (
+            chat.get("project") and chat["project"].get("uuid") == active_project_id
+        ):
+            logger.info(f"Processing chat {chat['uuid']}")
+            chat_folder = os.path.join(chat_destination, chat["uuid"])
+            os.makedirs(chat_folder, exist_ok=True)
 
-        # Save chat metadata
-        with open(os.path.join(chat_folder, "metadata.json"), "w") as f:
-            json.dump(chat, f, indent=2)
+            # Save chat metadata
+            with open(os.path.join(chat_folder, "metadata.json"), "w") as f:
+                json.dump(chat, f, indent=2)
 
-        # Fetch full chat conversation
-        logger.info(f"Fetching full conversation for chat {chat['uuid']}")
-        full_chat = provider.get_chat_conversation(organization_id, chat["uuid"])
+            # Fetch full chat conversation
+            logger.debug(f"Fetching full conversation for chat {chat['uuid']}")
+            full_chat = provider.get_chat_conversation(organization_id, chat["uuid"])
 
-        # Process each message in the chat
-        for message in full_chat["chat_messages"]:
-            # Save the message
-            message_file = os.path.join(chat_folder, f"{message['uuid']}.json")
-            with open(message_file, "w") as f:
-                json.dump(message, f, indent=2)
+            # Process each message in the chat
+            for message in full_chat["chat_messages"]:
+                # Save the message
+                message_file = os.path.join(chat_folder, f"{message['uuid']}.json")
+                with open(message_file, "w") as f:
+                    json.dump(message, f, indent=2)
 
-            # Handle artifacts in assistant messages
-            if message["sender"] == "assistant":
-                artifacts = extract_artifacts(message["text"])
-                if artifacts:
-                    logger.info(
-                        f"Found {len(artifacts)} artifacts in message {message['uuid']}"
-                    )
-                    for artifact in artifacts:
-                        # Save each artifact
-                        artifact_file = os.path.join(
-                            artifact_destination,
-                            f"{artifact['identifier']}.{get_file_extension(artifact['type'])}",
+                # Handle artifacts in assistant messages
+                if message["sender"] == "assistant":
+                    artifacts = extract_artifacts(message["text"])
+                    if artifacts:
+                        logger.info(
+                            f"Found {len(artifacts)} artifacts in message {message['uuid']}"
                         )
-                        os.makedirs(os.path.dirname(artifact_file), exist_ok=True)
-                        with open(artifact_file, "w") as f:
-                            f.write(artifact["content"])
+                        artifact_folder = os.path.join(chat_folder, "artifacts")
+                        os.makedirs(artifact_folder, exist_ok=True)
+                        for artifact in artifacts:
+                            # Save each artifact
+                            artifact_file = os.path.join(
+                                artifact_folder,
+                                f"{artifact['identifier']}.{get_file_extension(artifact['type'])}",
+                            )
+                            with open(artifact_file, "w") as f:
+                                f.write(artifact["content"])
+        else:
+            logger.debug(
+                f"Skipping chat {chat['uuid']} as it doesn't belong to the active project"
+            )
 
-    logger.info(f"Chats synchronized to {chat_destination}")
-    logger.info(f"Artifacts synchronized to {artifact_destination}")
+    logger.debug(f"Chats and artifacts synchronized to {chat_destination}")
 
 
 def get_file_extension(artifact_type):
@@ -119,39 +139,24 @@ def extract_artifacts(text):
         list: A list of dictionaries containing artifact information.
     """
     artifacts = []
-    start_tag = '<antArtifact undefined isClosed="true" />'
 
-    while start_tag in text:
-        start = text.index(start_tag)
-        end = text.index(end_tag, start) + len(end_tag)
+    # Regular expression to match the <antArtifact> tags and extract their attributes and content
+    pattern = re.compile(
+        r'<antArtifact\s+identifier="([^"]+)"\s+type="([^"]+)"\s+title="([^"]+)">([\s\S]*?)</antArtifact>',
+        re.MULTILINE,
+    )
 
-        artifact_text = text[start:end]
-        identifier = extract_attribute(artifact_text, "identifier")
-        artifact_type = extract_attribute(artifact_text, "type")
-        content = artifact_text[
-            artifact_text.index(">") + 1 : artifact_text.rindex("<")
-        ]
+    # Find all matches in the text
+    matches = pattern.findall(text)
 
+    for match in matches:
+        identifier, artifact_type, title, content = match
         artifacts.append(
-            {"identifier": identifier, "type": artifact_type, "content": content}
+            {
+                "identifier": identifier,
+                "type": artifact_type,
+                "content": content.strip(),
+            }
         )
 
-        text = text[end:]
-
     return artifacts
-
-
-def extract_attribute(text, attribute):
-    """
-    Extract the value of a specific attribute from an XML-like tag.
-
-    Args:
-        text (str): The XML-like tag text.
-        attribute (str): The name of the attribute to extract.
-
-    Returns:
-        str: The value of the specified attribute.
-    """
-    start = text.index(f'{attribute}="') + len(f'{attribute}="')
-    end = text.index('"', start)
-    return text[start:end]

@@ -101,7 +101,7 @@ class BaseClaudeAIProvider(BaseProvider):
     def get_chat_conversation(self, organization_id, conversation_id):
         return self._make_request(
             "GET",
-            f"/organizations/{organization_id}/chat_conversations/{conversation_id}",
+            f"/organizations/{organization_id}/chat_conversations/{conversation_id}?rendering_mode=raw",
         )
 
     def get_artifact_content(self, organization_id, artifact_uuid):
