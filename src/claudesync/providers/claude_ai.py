@@ -26,7 +26,7 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             "Origin": "https://claude.ai",
             "Referer": "https://claude.ai/projects",
             "Accept": "*/*",
-            "Accept-Encoding": "gzip, deflate, br, zstd",
+            "Accept-Encoding": "gzip, deflate, zstd",
             "Accept-Language": "en-US,en;q=0.5",
             "anthropic-client-sha": "unknown",
             "anthropic-client-version": "unknown",

@@ -33,7 +33,7 @@ def ls(config):
 
     for chat in chats:
         project = chat.get("project")
-        project_name = project.get("name") if project else ''
+        project_name = project.get("name") if project else ""
         click.echo(
             f"UUID: {chat.get('uuid', 'Unknown')}, "
             f"Name: {chat.get('name', 'Unnamed')}, "
@@ -102,7 +102,7 @@ def display_chat_list(chats):
     click.echo("Available chats:")
     for idx, chat in enumerate(chats, 1):
         project = chat.get("project")
-        project_name = project.get("name") if project else ''
+        project_name = project.get("name") if project else ""
         click.echo(
             f"{idx}. Name: {chat.get('name', 'Unnamed')}, "
             f"Project: {project_name}, Updated: {chat.get('updated_at', 'Unknown')}"
@@ -129,7 +129,7 @@ def get_chat_selection(chats):
 def confirm_and_delete_chat(provider, organization_id, chat):
     """Confirm deletion with the user and delete the selected chat."""
     if click.confirm(
-            f"Are you sure you want to delete the chat '{chat.get('name', 'Unnamed')}'?"
+        f"Are you sure you want to delete the chat '{chat.get('name', 'Unnamed')}'?"
     ):
         deleted, _ = delete_chats(provider, organization_id, [chat["uuid"]])
         if deleted:

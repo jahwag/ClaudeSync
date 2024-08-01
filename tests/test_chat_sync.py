@@ -53,7 +53,7 @@ class TestExtractArtifacts(unittest.TestCase):
                 "identifier": "second-id",
                 "type": "text/xml",
                 "content": "<note>\n<to>User</to>\n<from>ChatGPT</from>"
-                           "\n<heading>Reminder</heading>\n<body>Don't forget to check your email!</body>\n</note>",
+                "\n<heading>Reminder</heading>\n<body>Don't forget to check your email!</body>\n</note>",
             },
         ]
         self.assertEqual(extract_artifacts(textwrap.dedent(text)), expected_result)
