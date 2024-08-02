@@ -11,11 +11,51 @@ class TestBaseClaudeAIProvider(unittest.TestCase):
         self.provider = BaseClaudeAIProvider("test_session_key")
 
     @patch("click.prompt")
-    def test_login(self, mock_prompt):
-        mock_prompt.return_value = "new_session_key"
+    @patch.object(BaseClaudeAIProvider, "get_organizations")
+    def test_login(self, mock_get_organizations, mock_prompt):
+        # Test successful login on first attempt
+        mock_prompt.return_value = "sk-ant-valid_session_key"
+        mock_get_organizations.return_value = [{"id": "org1", "name": "Org 1"}]
+
         result = self.provider.login()
-        self.assertEqual(result, "new_session_key")
-        self.assertEqual(self.provider.session_key, "new_session_key")
+
+        self.assertEqual(result, "sk-ant-valid_session_key")
+        self.assertEqual(self.provider.session_key, "sk-ant-valid_session_key")
+        mock_prompt.assert_called_once()
+        mock_get_organizations.assert_called_once()
+
+        # Reset mocks for next test
+        mock_prompt.reset_mock()
+        mock_get_organizations.reset_mock()
+
+        # Test invalid session key followed by valid session key
+        mock_prompt.side_effect = ["invalid_key", "sk-ant-valid_session_key"]
+        mock_get_organizations.side_effect = [
+            ProviderError("Invalid session key"),
+            [{"id": "org1", "name": "Org 1"}],
+        ]
+
+        result = self.provider.login()
+
+        self.assertEqual(result, "sk-ant-valid_session_key")
+        self.assertEqual(self.provider.session_key, "sk-ant-valid_session_key")
+        self.assertEqual(mock_prompt.call_count, 2)
+        self.assertEqual(mock_get_organizations.call_count, 2)
+
+        # Reset mocks for next test
+        mock_prompt.reset_mock()
+        mock_get_organizations.reset_mock()
+
+        # Test when get_organizations returns an empty list
+        mock_prompt.return_value = "sk-ant-valid_session_key"
+        mock_get_organizations.return_value = []
+
+        result = self.provider.login()
+
+        self.assertEqual(result, "sk-ant-valid_session_key")
+        self.assertEqual(self.provider.session_key, "sk-ant-valid_session_key")
+        mock_prompt.assert_called_once()
+        mock_get_organizations.assert_called_once()
 
     @patch.object(BaseClaudeAIProvider, "_make_request")
     def test_get_organizations(self, mock_make_request):
