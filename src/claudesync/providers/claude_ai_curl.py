@@ -27,7 +27,7 @@ class ClaudeAICurlProvider(BaseClaudeAIProvider):
             "-H",
             "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
             "-H",
-            f"Cookie: sessionKey={self.session_key};",
+            f"Cookie: sessionKey={self.session_key}",
             "-H",
             "Content-Type: application/json",
         ]
@@ -53,13 +53,21 @@ class ClaudeAICurlProvider(BaseClaudeAIProvider):
 
         http_status_code = result.stdout[-3:]
         response_body = result.stdout[:-3].strip()
+        self.logger.debug(f"Got HTTP {http_status_code}")
 
         if http_status_code.startswith("2"):
+            if http_status_code == "204":
+                # HTTP 204 No Content
+                return None
+            if not response_body:
+                self.logger.warn(f"Got HTTP {http_status_code} but empty response")
+                return None
+
             try:
                 return json.loads(response_body)
             except json.JSONDecodeError as e:
                 error_message = (
-                    f"Failed to parse JSON response: {e}. Response content: {response_body}. Request "
+                    f"Failed to parse JSON response: {response_body}. Reason: {e}. Response content: {response_body}. Request "
                     f"headers: {headers}"
                 )
                 self.logger.error(error_message)
