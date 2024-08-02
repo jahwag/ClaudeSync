@@ -11,8 +11,8 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+    timeout-minutes: 1
     strategy:
       fail-fast: false
       matrix:
