@@ -28,6 +28,24 @@ dependencies = [
     "click_completion",
     "tqdm",
 ]
+keywords = [
+    "sync",
+    "files",
+    "Claude.ai",
+    "automation",
+    "synchronization",
+    "project management",
+    "file management",
+    "cloud sync",
+    "cli tool",
+    "command line",
+    "productivity",
+    "development tools",
+    "file synchronization",
+    "continuous integration",
+    "devops",
+    "version control"
+]
 
 [project.urls]
 "Homepage" = "https://github.com/jahwag/claudesync"
@@ -39,7 +57,6 @@ claudesync = "claudesync.cli.main:cli"
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["claudesync*"]
-
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
