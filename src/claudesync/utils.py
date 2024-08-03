@@ -94,7 +94,7 @@ def compute_md5_hash(content):
     return hashlib.md5(content.encode("utf-8")).hexdigest()
 
 
-def should_process_file(file_path, filename, gitignore):
+def should_process_file(file_path, filename, gitignore, base_path):
     """
     Determines whether a file should be processed based on various criteria.
 
@@ -109,6 +109,7 @@ def should_process_file(file_path, filename, gitignore):
         file_path (str): The full path to the file.
         filename (str): The name of the file.
         gitignore (pathspec.PathSpec or None): A PathSpec object containing .gitignore patterns, if available.
+        base_path (str): The base directory path of the project.
 
     Returns:
         bool: True if the file should be processed, False otherwise.
@@ -123,8 +124,10 @@ def should_process_file(file_path, filename, gitignore):
         return False
 
     # Use gitignore rules if available
-    if gitignore and gitignore.match_file(file_path):
-        return False
+    if gitignore:
+        rel_path = os.path.relpath(file_path, base_path)
+        if gitignore.match_file(rel_path):
+            return False
 
     # Check if it's a text file
     return is_text_file(file_path)
@@ -187,7 +190,7 @@ def get_local_files(local_path):
             rel_path = os.path.join(rel_root, filename)
             full_path = os.path.join(root, filename)
 
-            if should_process_file(full_path, filename, gitignore):
+            if should_process_file(full_path, filename, gitignore, local_path):
                 file_hash = process_file(full_path)
                 if file_hash:
                     files[rel_path] = file_hash

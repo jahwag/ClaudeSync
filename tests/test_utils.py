@@ -39,23 +39,30 @@ class TestUtils(unittest.TestCase):
             with open(os.path.join(tmpdir, "subdir", "file3.txt"), "w") as f:
                 f.write("Content of file3")
 
-            # Create a .git file
+            # Create a test~ file
             for vcs in {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS"}:
-                os.makedirs(os.path.join(tmpdir, vcs), exist_ok=True)
-                with open(os.path.join(tmpdir, vcs, ".gitignore"), "w") as f:
+                os.mkdir(os.path.join(tmpdir, vcs))
+                with open(os.path.join(tmpdir, vcs, "test~"), "w") as f:
                     f.write("*.log\n")
 
-            # Create a test~ file
-            with open(os.path.join(tmpdir, "test~"), "w") as f:
-                f.write("*.log\n")
+            for buildDir in {"target", "build"}:
+                os.mkdir(os.path.join(tmpdir, buildDir))
+                with open(os.path.join(tmpdir, buildDir, "output.txt"), "w") as f:
+                    f.write("Build output")
+
+            with open(os.path.join(tmpdir, ".gitignore"), "w") as f:
+                f.write("*.log\n/build\ntarget")
 
             local_files = get_local_files(tmpdir)
+            print(local_files)
 
             self.assertIn("file1.txt", local_files)
             self.assertIn("file2.py", local_files)
             self.assertIn(os.path.join("subdir", "file3.txt"), local_files)
+            self.assertNotIn(os.path.join("target", "output.txt"), local_files)
+            self.assertNotIn(os.path.join("build", "output.txt"), local_files)
             # Ensure ignored files not included
-            self.assertEqual(len(local_files), 3)
+            self.assertEqual(len(local_files), 4)
 
 
 if __name__ == "__main__":
