@@ -146,6 +146,10 @@ ClaudeSync offers two providers for interacting with the Claude.ai API:
 
    Make sure cURL is accessible from your command line before using this provider.
 
+### Custom Ignore File
+
+ClaudeSync supports a custom ignore file named .claudeignore for specifying patterns of files to exclude from syncing, using the same syntax as .gitignore.
+
 ### Troubleshooting
 
 #### 403 Forbidden Error
