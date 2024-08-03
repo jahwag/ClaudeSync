@@ -171,9 +171,7 @@ class SyncManager:
                         remote_file["created_at"].replace("Z", "+00:00")
                     ).timestamp()
                     os.utime(local_file_path, (remote_timestamp, remote_timestamp))
-                    logger.debug(
-                        f"Updated timestamp on local file {local_file_path}"
-                    )
+                    logger.debug(f"Updated timestamp on local file {local_file_path}")
 
     def sync_remote_to_local(self, remote_file, remote_files_to_delete, synced_files):
         """
