@@ -33,7 +33,7 @@ def sync_chats(provider, config, sync_all=False):
         )
 
     # Create chats directory within local_path
-    chat_destination = os.path.join(local_path, "chats")
+    chat_destination = os.path.join(local_path, "claude_chats")
     os.makedirs(chat_destination, exist_ok=True)
 
     # Get the active organization ID

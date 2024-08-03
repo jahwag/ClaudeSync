@@ -39,11 +39,13 @@ class TestUtils(unittest.TestCase):
             os.mkdir(os.path.join(tmpdir, "subdir"))
             with open(os.path.join(tmpdir, "subdir", "file3.txt"), "w") as f:
                 f.write("Content of file3")
+            with open(os.path.join(tmpdir, "test~"), "w") as f:
+                f.write("*.log\n")
 
             # Create a test~ file
-            for vcs in {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS"}:
+            for vcs in {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS", "claude_chats"}:
                 os.mkdir(os.path.join(tmpdir, vcs))
-                with open(os.path.join(tmpdir, vcs, "test~"), "w") as f:
+                with open(os.path.join(tmpdir, vcs, "afile"), "w") as f:
                     f.write("*.log\n")
 
             for buildDir in {"target", "build"}:
