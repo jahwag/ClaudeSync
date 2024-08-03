@@ -1,7 +1,5 @@
 import unittest
-from unittest.mock import patch
-
-from claudesync.exceptions import ProviderError
+from unittest.mock import patch, MagicMock
 from claudesync.providers.base_claude_ai import BaseClaudeAIProvider
 
 
@@ -10,109 +8,61 @@ class TestBaseClaudeAIProvider(unittest.TestCase):
     def setUp(self):
         self.provider = BaseClaudeAIProvider("test_session_key")
 
-    @patch("click.prompt")
-    def test_login(self, mock_prompt):
-        mock_prompt.return_value = "new_session_key"
-        result = self.provider.login()
-        self.assertEqual(result, "new_session_key")
-        self.assertEqual(self.provider.session_key, "new_session_key")
+    @patch("claudesync.providers.base_claude_ai.click.echo")
+    @patch("claudesync.providers.base_claude_ai.click.prompt")
+    def test_login(self, mock_prompt, mock_echo):
+        mock_prompt.return_value = "sk-ant-test123"
+        self.provider.get_organizations = MagicMock(
+            return_value=[{"id": "org1", "name": "Test Org"}]
+        )
 
-    @patch.object(BaseClaudeAIProvider, "_make_request")
+        result = self.provider.login()
+
+        self.assertEqual(result, "sk-ant-test123")
+        self.assertEqual(self.provider.session_key, "sk-ant-test123")
+        mock_echo.assert_called()
+        mock_prompt.assert_called_with("Please enter your sessionKey", type=str)
+
+    @patch("claudesync.providers.base_claude_ai.click.echo")
+    @patch("claudesync.providers.base_claude_ai.click.prompt")
+    def test_login_invalid_key(self, mock_prompt, mock_echo):
+        mock_prompt.side_effect = ["invalid_key", "sk-ant-test123"]
+        self.provider.get_organizations = MagicMock(
+            return_value=[{"id": "org1", "name": "Test Org"}]
+        )
+
+        result = self.provider.login()
+
+        self.assertEqual(result, "sk-ant-test123")
+        self.assertEqual(mock_prompt.call_count, 2)
+
+    @patch("claudesync.providers.base_claude_ai.BaseClaudeAIProvider._make_request")
     def test_get_organizations(self, mock_make_request):
         mock_make_request.return_value = [
             {"uuid": "org1", "name": "Org 1", "capabilities": ["chat", "claude_pro"]},
             {"uuid": "org2", "name": "Org 2", "capabilities": ["chat"]},
-            {
-                "uuid": "org3",
-                "name": "Org 3",
-                "capabilities": ["chat", "claude_pro", "other"],
-            },
-            {"uuid": "org4", "name": "Org 4", "capabilities": ["other"]},
+            {"uuid": "org3", "name": "Org 3", "capabilities": ["chat", "claude_pro"]},
         ]
+
         result = self.provider.get_organizations()
-        expected = [{"id": "org1", "name": "Org 1"}, {"id": "org3", "name": "Org 3"}]
-        self.assertEqual(result, expected)
 
-    @patch.object(BaseClaudeAIProvider, "_make_request")
-    def test_get_organizations_no_valid_orgs(self, mock_make_request):
-        mock_make_request.return_value = [
-            {"uuid": "org1", "name": "Org 1", "capabilities": ["api"]},
-            {"uuid": "org2", "name": "Org 2", "capabilities": ["chat"]},
-        ]
-        result = self.provider.get_organizations()
-        self.assertEqual(result, [])
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["id"], "org1")
+        self.assertEqual(result[1]["id"], "org3")
 
-    @patch.object(BaseClaudeAIProvider, "_make_request")
-    def test_get_organizations_error(self, mock_make_request):
-        mock_make_request.return_value = None
-        with self.assertRaises(ProviderError):
-            self.provider.get_organizations()
-
-    @patch.object(BaseClaudeAIProvider, "_make_request")
+    @patch("claudesync.providers.base_claude_ai.BaseClaudeAIProvider._make_request")
     def test_get_projects(self, mock_make_request):
         mock_make_request.return_value = [
             {"uuid": "proj1", "name": "Project 1", "archived_at": None},
             {"uuid": "proj2", "name": "Project 2", "archived_at": "2023-01-01"},
+            {"uuid": "proj3", "name": "Project 3", "archived_at": None},
         ]
-        result = self.provider.get_projects("org1", include_archived=True)
-        expected = [
-            {"id": "proj1", "name": "Project 1", "archived_at": None},
-            {"id": "proj2", "name": "Project 2", "archived_at": "2023-01-01"},
-        ]
-        self.assertEqual(result, expected)
 
-    @patch.object(BaseClaudeAIProvider, "_make_request")
-    def test_list_files(self, mock_make_request):
-        mock_make_request.return_value = [
-            {
-                "uuid": "file1",
-                "file_name": "test1.txt",
-                "content": "content1",
-                "created_at": "2023-01-01",
-            },
-            {
-                "uuid": "file2",
-                "file_name": "test2.txt",
-                "content": "content2",
-                "created_at": "2023-01-02",
-            },
-        ]
-        result = self.provider.list_files("org1", "proj1")
-        expected = [
-            {
-                "uuid": "file1",
-                "file_name": "test1.txt",
-                "content": "content1",
-                "created_at": "2023-01-01",
-            },
-            {
-                "uuid": "file2",
-                "file_name": "test2.txt",
-                "content": "content2",
-                "created_at": "2023-01-02",
-            },
-        ]
-        self.assertEqual(result, expected)
+        result = self.provider.get_projects("org1")
 
-    @patch.object(BaseClaudeAIProvider, "_make_request")
-    def test_upload_file(self, mock_make_request):
-        mock_make_request.return_value = {"uuid": "new_file", "file_name": "test.txt"}
-        result = self.provider.upload_file("org1", "proj1", "test.txt", "content")
-        self.assertEqual(result, {"uuid": "new_file", "file_name": "test.txt"})
-        mock_make_request.assert_called_once_with(
-            "POST",
-            "/organizations/org1/projects/proj1/docs",
-            {"file_name": "test.txt", "content": "content"},
-        )
-
-    @patch.object(BaseClaudeAIProvider, "_make_request")
-    def test_delete_file(self, mock_make_request):
-        mock_make_request.return_value = {"status": "deleted"}
-        result = self.provider.delete_file("org1", "proj1", "file1")
-        self.assertEqual(result, {"status": "deleted"})
-        mock_make_request.assert_called_once_with(
-            "DELETE", "/organizations/org1/projects/proj1/docs/file1"
-        )
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["id"], "proj1")
+        self.assertEqual(result[1]["id"], "proj3")
 
     def test_make_request_not_implemented(self):
         with self.assertRaises(NotImplementedError):

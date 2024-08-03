@@ -1,5 +1,7 @@
+import logging
 import click
 from .base_provider import BaseProvider
+from ..config_manager import ConfigManager
 from ..exceptions import ProviderError
 
 
@@ -7,7 +9,15 @@ class BaseClaudeAIProvider(BaseProvider):
     BASE_URL = "https://claude.ai/api"
 
     def __init__(self, session_key=None):
+        self.config = ConfigManager()
         self.session_key = session_key
+        self.logger = logging.getLogger(__name__)
+        self._configure_logging()
+
+    def _configure_logging(self):
+        log_level = self.config.get("log_level", "INFO")
+        logging.basicConfig(level=getattr(logging, log_level))
+        self.logger.setLevel(getattr(logging, log_level))
 
     def login(self):
         click.echo("To obtain your session key, please follow these steps:")
@@ -26,7 +36,25 @@ class BaseClaudeAIProvider(BaseProvider):
             "5. In the left sidebar, expand 'Cookies' and select 'https://claude.ai'"
         )
         click.echo("6. Find the cookie named 'sessionKey' and copy its value")
-        self.session_key = click.prompt("Please enter your sessionKey", type=str)
+
+        while True:
+            session_key = click.prompt("Please enter your sessionKey", type=str)
+            if not session_key.startswith("sk-ant"):
+                click.echo(
+                    "Invalid sessionKey format. Please make sure it starts with 'sk-ant'."
+                )
+                continue
+
+            self.session_key = session_key
+            try:
+                organizations = self.get_organizations()
+                if organizations:
+                    break  # Exit the loop if get_organizations is successful
+            except ProviderError:
+                click.echo(
+                    "Failed to retrieve organizations. Please enter a valid sessionKey."
+                )
+
         return self.session_key
 
     def get_organizations(self):

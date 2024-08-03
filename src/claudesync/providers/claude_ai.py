@@ -1,23 +1,12 @@
 import json
-import logging
 import requests
 from .base_claude_ai import BaseClaudeAIProvider
-from ..config_manager import ConfigManager
 from ..exceptions import ProviderError
-
-logger = logging.getLogger(__name__)
 
 
 class ClaudeAIProvider(BaseClaudeAIProvider):
     def __init__(self, session_key=None):
         super().__init__(session_key)
-        self.config = ConfigManager()
-        self._configure_logging()
-
-    def _configure_logging(self):
-        log_level = self.config.get("log_level", "INFO")
-        logging.basicConfig(level=getattr(logging, log_level))
-        logger.setLevel(getattr(logging, log_level))
 
     def _make_request(self, method, endpoint, data=None):
         url = f"{self.BASE_URL}{endpoint}"
@@ -43,19 +32,19 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
         }
 
         try:
-            logger.debug(f"Making {method} request to {url}")
-            logger.debug(f"Headers: {headers}")
-            logger.debug(f"Cookies: {cookies}")
+            self.logger.debug(f"Making {method} request to {url}")
+            self.logger.debug(f"Headers: {headers}")
+            self.logger.debug(f"Cookies: {cookies}")
             if data:
-                logger.debug(f"Request data: {data}")
+                self.logger.debug(f"Request data: {data}")
 
             response = requests.request(
                 method, url, headers=headers, cookies=cookies, json=data
             )
 
-            logger.debug(f"Response status code: {response.status_code}")
-            logger.debug(f"Response headers: {response.headers}")
-            logger.debug(f"Response content: {response.text[:1000]}...")
+            self.logger.debug(f"Response status code: {response.status_code}")
+            self.logger.debug(f"Response headers: {response.headers}")
+            self.logger.debug(f"Response content: {response.text[:1000]}...")
 
             if response.status_code == 403:
                 error_msg = (
@@ -65,7 +54,7 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
                     "claudesync api logout\n"
                     "claudesync api login claude.ai-curl"
                 )
-                logger.error(error_msg)
+                self.logger.error(error_msg)
                 raise ProviderError(error_msg)
 
             response.raise_for_status()
@@ -76,13 +65,13 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             return response.json()
 
         except requests.RequestException as e:
-            logger.error(f"Request failed: {str(e)}")
+            self.logger.error(f"Request failed: {str(e)}")
             if hasattr(e, "response") and e.response is not None:
-                logger.error(f"Response status code: {e.response.status_code}")
-                logger.error(f"Response headers: {e.response.headers}")
-                logger.error(f"Response content: {e.response.text}")
+                self.logger.error(f"Response status code: {e.response.status_code}")
+                self.logger.error(f"Response headers: {e.response.headers}")
+                self.logger.error(f"Response content: {e.response.text}")
             raise ProviderError(f"API request failed: {str(e)}")
         except json.JSONDecodeError as json_err:
-            logger.error(f"Failed to parse JSON response: {str(json_err)}")
-            logger.error(f"Response content: {response.text}")
+            self.logger.error(f"Failed to parse JSON response: {str(json_err)}")
+            self.logger.error(f"Response content: {response.text}")
             raise ProviderError(f"Invalid JSON response from API: {str(json_err)}")
