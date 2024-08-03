@@ -56,10 +56,10 @@ def sync_chats(provider, config, sync_all=False):
     logger.debug(f"Found {len(chats)} chats")
 
     # Process each chat
-    for chat in tqdm(chats, desc="Syncing chats"):
+    for chat in tqdm(chats, desc="Chats"):
         # Check if the chat belongs to the active project or if we're syncing all chats
         if sync_all or (chat.get("project") and chat["project"].get("uuid") == active_project_id):
-            logger.info(f"Processing chat {chat['uuid']}")
+            logger.debug(f"Processing chat {chat['uuid']}")
             chat_folder = os.path.join(chat_destination, chat['uuid'])
             os.makedirs(chat_folder, exist_ok=True)
 

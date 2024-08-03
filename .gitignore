@@ -169,5 +169,5 @@ __pycache__
 claude.sync
 config.json
 claudesync.log
-chats
+claude_chats
 some_value
