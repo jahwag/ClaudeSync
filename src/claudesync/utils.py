@@ -94,7 +94,7 @@ def compute_md5_hash(content):
     return hashlib.md5(content.encode("utf-8")).hexdigest()
 
 
-def should_process_file(file_path, filename, gitignore, base_path):
+def should_process_file(file_path, filename, gitignore, base_path, claudeignore):
     """
     Determines whether a file should be processed based on various criteria.
 
@@ -110,6 +110,7 @@ def should_process_file(file_path, filename, gitignore, base_path):
         filename (str): The name of the file.
         gitignore (pathspec.PathSpec or None): A PathSpec object containing .gitignore patterns, if available.
         base_path (str): The base directory path of the project.
+        claudeignore (pathspec.PathSpec or None): A PathSpec object containing .claudeignore patterns, if available.
 
     Returns:
         bool: True if the file should be processed, False otherwise.
@@ -123,11 +124,15 @@ def should_process_file(file_path, filename, gitignore, base_path):
     if filename.endswith("~"):
         return False
 
+    rel_path = os.path.relpath(file_path, base_path)
+
     # Use gitignore rules if available
-    if gitignore:
-        rel_path = os.path.relpath(file_path, base_path)
-        if gitignore.match_file(rel_path):
-            return False
+    if gitignore and gitignore.match_file(rel_path):
+        return False
+
+    # Use .claudeignore rules if available
+    if claudeignore and claudeignore.match_file(rel_path):
+        return False
 
     # Check if it's a text file
     return is_text_file(file_path)
@@ -167,6 +172,7 @@ def get_local_files(local_path):
     - Skips files larger than a specified maximum size (default 200KB, configurable).
     - Ignores temporary editor files (ending with '~').
     - Applies .gitignore rules if a .gitignore file is present in the `local_path`.
+    - Applies .gitignore rules if a .claudeignore file is present in the `local_path`.
     - Checks if the file is a text file before processing.
     Each file that passes these filters is read, and its content is hashed using MD5. The function returns a dictionary
     where each key is the relative path of a file from `local_path`, and its value is the MD5 hash of the file's content.
@@ -178,6 +184,7 @@ def get_local_files(local_path):
         dict: A dictionary where keys are relative file paths, and values are MD5 hashes of the file contents.
     """
     gitignore = load_gitignore(local_path)
+    claudeignore = load_claudeignore(local_path)
     files = {}
     exclude_dirs = {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS"}
 
@@ -190,7 +197,9 @@ def get_local_files(local_path):
             rel_path = os.path.join(rel_root, filename)
             full_path = os.path.join(root, filename)
 
-            if should_process_file(full_path, filename, gitignore, local_path):
+            if should_process_file(
+                full_path, filename, gitignore, local_path, claudeignore
+            ):
                 file_hash = process_file(full_path)
                 if file_hash:
                     files[rel_path] = file_hash
@@ -296,3 +305,21 @@ def validate_and_store_local_path(config):
             break
         else:
             click.echo("Please enter an absolute path.")
+
+
+def load_claudeignore(base_path):
+    """
+    Loads and parses the .claudeignore file from the specified base path.
+
+    Args:
+        base_path (str): The base directory path where the .claudeignore file is located.
+
+    Returns:
+        pathspec.PathSpec or None: A PathSpec object containing the patterns from the .claudeignore file
+                                    if the file exists; otherwise, None.
+    """
+    claudeignore_path = os.path.join(base_path, ".claudeignore")
+    if os.path.exists(claudeignore_path):
+        with open(claudeignore_path, "r") as f:
+            return pathspec.PathSpec.from_lines("gitwildmatch", f)
+    return None

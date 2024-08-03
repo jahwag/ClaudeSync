@@ -6,6 +6,7 @@ from claudesync.utils import (
     compute_md5_hash,
     load_gitignore,
     get_local_files,
+    load_claudeignore,
 )
 
 
@@ -63,6 +64,39 @@ class TestUtils(unittest.TestCase):
             self.assertNotIn(os.path.join("build", "output.txt"), local_files)
             # Ensure ignored files not included
             self.assertEqual(len(local_files), 4)
+
+    def test_load_claudeignore(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            claudeignore_content = "*.log\n/build/\n"
+            with open(os.path.join(tmpdir, ".claudeignore"), "w") as f:
+                f.write(claudeignore_content)
+
+            claudeignore = load_claudeignore(tmpdir)
+            self.assertIsNotNone(claudeignore)
+            self.assertTrue(claudeignore.match_file("test.log"))
+            self.assertTrue(claudeignore.match_file("build/output.txt"))
+            self.assertFalse(claudeignore.match_file("src/main.py"))
+
+    def test_get_local_files_with_claudeignore(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create some test files
+            with open(os.path.join(tmpdir, "file1.txt"), "w") as f:
+                f.write("Content of file1")
+            with open(os.path.join(tmpdir, "file2.log"), "w") as f:
+                f.write("Log content")
+            os.mkdir(os.path.join(tmpdir, "build"))
+            with open(os.path.join(tmpdir, "build", "output.txt"), "w") as f:
+                f.write("Build output")
+
+            # Create a .claudeignore file
+            with open(os.path.join(tmpdir, ".claudeignore"), "w") as f:
+                f.write("*.log\n/build/\n")
+
+            local_files = get_local_files(tmpdir)
+
+            self.assertIn("file1.txt", local_files)
+            self.assertNotIn("file2.log", local_files)
+            self.assertNotIn(os.path.join("build", "output.txt"), local_files)
 
 
 if __name__ == "__main__":
