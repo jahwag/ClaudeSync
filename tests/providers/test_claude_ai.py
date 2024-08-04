@@ -8,7 +8,9 @@ from claudesync.exceptions import ProviderError
 class TestClaudeAIProvider(unittest.TestCase):
 
     def setUp(self):
-        self.provider = ClaudeAIProvider("test_session_key")
+        self.provider = ClaudeAIProvider(
+            "test_session_key", "Tue, 03 Sep 2099 06:51:21 UTC"
+        )
         self.mock_config = MagicMock()
 
     @patch("claudesync.config_manager.ConfigManager.get_session_key")

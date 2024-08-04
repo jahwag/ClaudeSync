@@ -258,6 +258,7 @@ def validate_and_get_provider(config, require_org=True):
     """
     active_provider = config.get("active_provider")
     session_key = config.get("session_key")
+    session_key_expiry = config.get("session_key_expiry")
     if not active_provider or not session_key:
         raise ConfigurationError(
             "No active provider or session key. Please login first."
@@ -266,7 +267,7 @@ def validate_and_get_provider(config, require_org=True):
         raise ConfigurationError(
             "No active organization set. Please select an organization."
         )
-    return get_provider(active_provider, session_key)
+    return get_provider(active_provider, session_key, session_key_expiry)
 
 
 def validate_and_store_local_path(config):

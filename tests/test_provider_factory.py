@@ -30,7 +30,8 @@ class TestProviderFactory:
     def test_get_provider_with_session_key(self, provider_name, expected_class):
         # Test that get_provider returns a provider instance with a session key
         session_key = "test_session_key"
-        provider = get_provider(provider_name, session_key)
+        expiry = "Tue, 03 Sep 2099 06:51:21 UTC"
+        provider = get_provider(provider_name, session_key, expiry)
         assert isinstance(provider, expected_class)
         assert provider.session_key == session_key
 
@@ -54,12 +55,13 @@ class TestProviderFactory:
     ):
         # Test that get_provider calls the provider's constructor
         session_key = "test_session_key"
-        get_provider(provider_name, session_key)
+        expires = "Tue, 03 Sep 2099 06:51:21 UTC"
+        get_provider(provider_name, session_key, expires)
 
         if provider_name == "claude.ai":
-            mock_claude_ai_provider.assert_called_once_with(session_key)
+            mock_claude_ai_provider.assert_called_once_with(session_key, expires)
         else:
-            mock_claude_ai_curl_provider.assert_called_once_with(session_key)
+            mock_claude_ai_curl_provider.assert_called_once_with(session_key, expires)
 
 
 if __name__ == "__main__":

@@ -15,23 +15,32 @@ def is_url_encoded(s):
 
 def _get_session_key_expiry():
     while True:
-        default_expires = datetime.datetime.now() + datetime.timedelta(days=30)
+        date_format = "%a, %d %b %Y %H:%M:%S %Z"
+        default_expires = datetime.datetime.now(
+            datetime.timezone.utc
+        ) + datetime.timedelta(days=30)
+        formatted_expires = default_expires.strftime(date_format).strip()
         expires = click.prompt(
             "Please enter the expires time for the sessionKey",
-            default=default_expires,
+            default=formatted_expires,
             type=str,
-        )
-        date_format = "%a, %d %b %Y %H:%M:%S %Z"
-        expires_on = datetime.datetime.strptime(expires, date_format)
-        return expires_on
+        ).strip()
+        try:
+            expires_on = datetime.datetime.strptime(expires, date_format)
+            return expires_on
+        except ValueError:
+            print(
+                "The entered date does not match the required format. Please try again."
+            )
 
 
 class BaseClaudeAIProvider(BaseProvider):
     BASE_URL = "https://claude.ai/api"
 
-    def __init__(self, session_key=None):
+    def __init__(self, session_key=None, session_key_expiry=None):
         self.config = ConfigManager()
         self.session_key = session_key
+        self.session_key_expiry = session_key_expiry
         self.logger = logging.getLogger(__name__)
         self._configure_logging()
 
@@ -71,20 +80,21 @@ class BaseClaudeAIProvider(BaseProvider):
                 )
                 continue
 
+            expires = _get_session_key_expiry()
             self.session_key = session_key
+            self.session_key_expiry = expires
             try:
                 organizations = self.get_organizations()
                 if organizations:
                     # Get the expires time for the cookie
-                    expiry = _get_session_key_expiry()
-                    self.config.set_session_key(session_key, expiry)
                     break
-            except ProviderError:
+            except ProviderError as e:
+                click.echo(e)
                 click.echo(
                     "Failed to retrieve organizations. Please enter a valid sessionKey."
                 )
 
-        return self.session_key
+        return self.session_key, self.session_key_expiry
 
     def get_organizations(self):
         response = self._make_request("GET", "/organizations")

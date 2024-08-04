@@ -7,7 +7,8 @@ from ..syncmanager import SyncManager
 from ..utils import (
     handle_errors,
     validate_and_get_provider,
-    validate_and_store_local_path, get_local_files,
+    validate_and_store_local_path,
+    get_local_files,
 )
 
 
@@ -67,7 +68,7 @@ def archive(config):
     if 1 <= selection <= len(projects):
         selected_project = projects[selection - 1]
         if click.confirm(
-                f"Are you sure you want to archive '{selected_project['name']}'?"
+            f"Are you sure you want to archive '{selected_project['name']}'?"
         ):
             provider.archive_project(active_organization_id, selected_project["id"])
             click.echo(f"Project '{selected_project['name']}' has been archived.")
