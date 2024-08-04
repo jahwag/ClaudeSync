@@ -1,3 +1,5 @@
+import os
+
 import click
 
 from claudesync.exceptions import ProviderError
@@ -22,7 +24,8 @@ def create(config):
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
 
-    title = click.prompt("Enter the project title")
+    default_name = os.path.basename(os.getcwd())
+    title = click.prompt("Enter the project title", default=default_name)
     description = click.prompt("Enter the project description (optional)", default="")
 
     try:
