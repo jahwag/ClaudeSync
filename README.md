@@ -171,6 +171,13 @@ If you encounter a 403 Forbidden error when using ClaudeSync, it might be due to
    claudesync api login claude.ai-curl
    ```
 
+#### WinError 206 when syncing large files
+If you encounter WinError 206 when syncing files larger than 32 KB, you can try using file input for curl data:
+
+```bash
+claudesync config set curl_use_file_input True
+```
+
 If you continue to experience issues, please check your network connection and ensure that you have the necessary permissions to access Claude.ai.
 
 ## Contributing
