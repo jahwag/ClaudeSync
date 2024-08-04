@@ -74,6 +74,7 @@ ClaudeSync bridges the gap between your local development environment and Claude
 - Login to Claude.ai: `claudesync api login claude.ai`
 - Logout: `claudesync api logout`
 - Set upload delay: `claudesync api ratelimit --delay <seconds>`
+- Set maximum file size: `claudesync api max-filesize --size <bytes>`
 
 ### Organization Management
 - List organizations: `claudesync organization ls`

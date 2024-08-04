@@ -37,7 +37,15 @@ def login(config: ConfigManager, provider):
 @click.pass_obj
 def logout(config):
     """Log out from the current AI provider."""
-    for key in ["session_key", "active_provider", "active_organization_id"]:
+    for key in [
+        "session_key",
+        "session_key_expiry",
+        "active_provider",
+        "active_organization_id",
+        "active_project_id",
+        "active_project_name",
+        "local_path",
+    ]:
         config.set(key, None)
     click.echo("Logged out successfully.")
 
