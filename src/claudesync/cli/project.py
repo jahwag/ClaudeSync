@@ -133,7 +133,7 @@ def ls(config, show_all):
 @handle_errors
 def sync(config):
     """Synchronize only the project files."""
-    provider = validate_and_get_provider(config)
+    provider = validate_and_get_provider(config, require_project=True)
 
     sync_manager = SyncManager(provider, config)
     remote_files = provider.list_files(

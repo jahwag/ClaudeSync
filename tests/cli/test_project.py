@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, ANY
 from click.testing import CliRunner
 from claudesync.cli.main import cli
 from claudesync.exceptions import ProviderError
@@ -122,6 +122,27 @@ class TestProjectCLI(unittest.TestCase):
         self.assertIn(
             "Failed to create project: Failed to create project", result.output
         )
+
+    @patch("claudesync.cli.project.validate_and_get_provider")
+    @patch("claudesync.cli.project.SyncManager")
+    @patch("claudesync.cli.project.get_local_files")
+    def test_project_sync(
+        self, mock_get_local_files, mock_sync_manager, mock_validate_and_get_provider
+    ):
+        mock_provider = MagicMock()
+        mock_validate_and_get_provider.return_value = mock_provider
+        mock_get_local_files.return_value = {"file1.txt": "hash1"}
+        mock_sync_manager_instance = MagicMock()
+        mock_sync_manager.return_value = mock_sync_manager_instance
+
+        result = self.runner.invoke(cli, ["project", "sync"])
+
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("Project sync completed successfully.", result.output)
+        mock_validate_and_get_provider.assert_called_once_with(
+            ANY, require_project=True
+        )
+        mock_sync_manager_instance.sync.assert_called_once()
 
 
 if __name__ == "__main__":

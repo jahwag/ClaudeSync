@@ -15,7 +15,7 @@ from ..chat_sync import sync_chats
 @handle_errors
 def ls(config):
     """List files in the active remote project."""
-    provider = validate_and_get_provider(config)
+    provider = validate_and_get_provider(config, require_project=True)
     active_organization_id = config.get("active_organization_id")
     active_project_id = config.get("active_project_id")
     files = provider.list_files(active_organization_id, active_project_id)
@@ -36,7 +36,7 @@ def ls(config):
 @handle_errors
 def sync(config):
     """Synchronize both projects and chats."""
-    provider = validate_and_get_provider(config)
+    provider = validate_and_get_provider(config, require_project=True)
 
     # Sync projects
     sync_manager = SyncManager(provider, config)

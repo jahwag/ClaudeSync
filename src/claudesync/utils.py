@@ -234,31 +234,34 @@ def handle_errors(func):
     return wrapper
 
 
-def validate_and_get_provider(config, require_org=True):
+def validate_and_get_provider(config, require_org=True, require_project=False):
     """
     Validates the configuration for the presence of an active provider and session key,
-    and optionally checks for an active organization ID. If validation passes, it retrieves
-    the provider instance based on the active provider name.
-
-    This function ensures that the necessary configuration settings are present before
-    attempting to interact with a provider. It raises a ConfigurationError if the required
-    settings are missing, guiding the user to perform necessary setup steps.
+    and optionally checks for an active organization ID and project ID. If validation passes,
+    it retrieves the provider instance based on the active provider name.
 
     Args:
         config (ConfigManager): The configuration manager instance containing settings.
         require_org (bool, optional): Flag to indicate whether an active organization ID
                                       is required. Defaults to True.
+        require_project (bool, optional): Flag to indicate whether an active project ID
+                                          is required. Defaults to False.
 
     Returns:
         object: An instance of the provider specified in the configuration.
 
     Raises:
         ConfigurationError: If the active provider or session key is missing, or if
-                            require_org is True and no active organization ID is set.
+                            require_org is True and no active organization ID is set,
+                            or if require_project is True and no active project ID is set.
+        ProviderError: If the session key has expired.
     """
     active_provider = config.get("active_provider")
-    session_key = config.get("session_key")
-    session_key_expiry = config.get("session_key_expiry")
+    session_key = config.get_session_key()
+    if not session_key:
+        raise ProviderError(
+            f"Session key has expired. Please run `claudesync api login {active_provider}` again."
+        )
     if not active_provider or not session_key:
         raise ConfigurationError(
             "No active provider or session key. Please login first."
@@ -267,6 +270,11 @@ def validate_and_get_provider(config, require_org=True):
         raise ConfigurationError(
             "No active organization set. Please select an organization."
         )
+    if require_project and not config.get("active_project_id"):
+        raise ConfigurationError(
+            "No active project set. Please select or create a project."
+        )
+    session_key_expiry = config.get("session_key_expiry")
     return get_provider(active_provider, session_key, session_key_expiry)
 
 

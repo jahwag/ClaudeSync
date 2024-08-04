@@ -21,6 +21,8 @@ def get_provider(
                                        provider names.
         session_key (str, optional): The session key to be used by the provider for authentication.
                                      Defaults to None.
+        session_key_expiry (str, optional): The session key expiry time.
+                                     Defaults to None.
 
     Returns:
         BaseProvider: An instance of the requested provider class if both provider_name and session_key are provided.

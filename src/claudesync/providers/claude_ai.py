@@ -5,14 +5,7 @@ from ..exceptions import ProviderError
 
 
 class ClaudeAIProvider(BaseClaudeAIProvider):
-    def __init__(self, session_key=None, session_key_expiry=None):
-        super().__init__(session_key, session_key_expiry)
-
     def _make_request(self, method, endpoint, data=None):
-        if not self.session_key_expiry:
-            raise ProviderError(
-                "Session key has expired. Please run 'claudesync api login' again."
-            )
         url = f"{self.BASE_URL}{endpoint}"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",

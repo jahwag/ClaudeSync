@@ -6,11 +6,6 @@ from ..exceptions import ProviderError
 
 class ClaudeAICurlProvider(BaseClaudeAIProvider):
     def _make_request(self, method, endpoint, data=None):
-        session_key = self.config.get_session_key()
-        if not session_key:
-            raise ProviderError(
-                "Session key has expired. Please run 'claudesync api login' again."
-            )
         url = f"{self.BASE_URL}{endpoint}"
         headers = self._prepare_headers()
 

@@ -65,7 +65,10 @@ class BaseClaudeAIProvider(BaseProvider):
         click.echo(
             "5. In the left sidebar, expand 'Cookies' and select 'https://claude.ai'"
         )
-        click.echo("6. Find the cookie named 'sessionKey' and copy its value")
+        click.echo(
+            "6. Locate the cookie named 'sessionKey' and copy its value. "
+            "Ensure that the value is not URL-encoded."
+        )
 
         while True:
             session_key = click.prompt("Please enter your sessionKey", type=str)
@@ -86,8 +89,7 @@ class BaseClaudeAIProvider(BaseProvider):
             try:
                 organizations = self.get_organizations()
                 if organizations:
-                    # Get the expires time for the cookie
-                    break
+                    break  # Exit the loop if get_organizations is successful
             except ProviderError as e:
                 click.echo(e)
                 click.echo(
