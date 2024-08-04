@@ -100,7 +100,7 @@ ClaudeSync bridges the gap between your local development environment and Claude
 - View current status: `claudesync status`
 - Set configuration values: `claudesync config set <key> <value>`
 - Get configuration values: `claudesync config get <key>`
-- List all configuration values: `claudesync config list`
+- List all configuration values: `claudesync config ls`
 
 ### Synchronization Modes
 
