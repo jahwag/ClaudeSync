@@ -3,10 +3,11 @@ import os
 import click
 
 from claudesync.exceptions import ProviderError
+from ..syncmanager import SyncManager
 from ..utils import (
     handle_errors,
     validate_and_get_provider,
-    validate_and_store_local_path,
+    validate_and_store_local_path, get_local_files,
 )
 
 
@@ -66,7 +67,7 @@ def archive(config):
     if 1 <= selection <= len(projects):
         selected_project = projects[selection - 1]
         if click.confirm(
-            f"Are you sure you want to archive '{selected_project['name']}'?"
+                f"Are you sure you want to archive '{selected_project['name']}'?"
         ):
             provider.archive_project(active_organization_id, selected_project["id"])
             click.echo(f"Project '{selected_project['name']}' has been archived.")
@@ -124,3 +125,20 @@ def ls(config, show_all):
         for project in projects:
             status = " (Archived)" if project.get("archived_at") else ""
             click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
+
+
+@project.command()
+@click.pass_obj
+@handle_errors
+def sync(config):
+    """Synchronize only the project files."""
+    provider = validate_and_get_provider(config)
+
+    sync_manager = SyncManager(provider, config)
+    remote_files = provider.list_files(
+        sync_manager.active_organization_id, sync_manager.active_project_id
+    )
+    local_files = get_local_files(config.get("local_path"))
+    sync_manager.sync(local_files, remote_files)
+
+    click.echo("Project sync completed successfully.")
