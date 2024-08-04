@@ -1,10 +1,18 @@
 import json
 import subprocess
+import tempfile
+import os
 from .base_claude_ai import BaseClaudeAIProvider
 from ..exceptions import ProviderError
+from ..config_manager import ConfigManager
 
 
 class ClaudeAICurlProvider(BaseClaudeAIProvider):
+    def __init__(self, session_key=None, session_key_expiry=None):
+        super().__init__(session_key, session_key_expiry)
+        self.config = ConfigManager()
+        self.use_file_input = self.config.get("curl_use_file_input", False)
+
     def _make_request(self, method, endpoint, data=None):
         url = f"{self.BASE_URL}{endpoint}"
         headers = self._prepare_headers()
@@ -16,10 +24,17 @@ class ClaudeAICurlProvider(BaseClaudeAIProvider):
                 command, capture_output=True, text=True, check=True, encoding="utf-8"
             )
 
+            if self.use_file_input and data:
+                os.unlink(command[-1][1:])  # Remove the temporary file
+
             return self._process_result(result, headers)
         except subprocess.CalledProcessError as e:
+            if self.use_file_input and data:
+                os.unlink(command[-1][1:])  # Remove the temporary file
             self._handle_called_process_error(e, headers)
         except UnicodeDecodeError as e:
+            if self.use_file_input and data:
+                os.unlink(command[-1][1:])  # Remove the temporary file
             self._handle_unicode_decode_error(e, headers)
 
     def _prepare_headers(self):
@@ -32,6 +47,11 @@ class ClaudeAICurlProvider(BaseClaudeAIProvider):
             "Content-Type: application/json",
         ]
 
+    def _write_data_to_temp_file(self, data):
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as temp_file:
+            json.dump(data, temp_file)
+            return temp_file.name
+
     def _build_curl_command(self, method, url, headers, data):
         command = ["curl", url, "--compressed", "-s", "-S", "-w", "%{http_code}"]
         command.extend(headers)
@@ -40,8 +60,12 @@ class ClaudeAICurlProvider(BaseClaudeAIProvider):
             command.extend(["-X", method])
 
         if data:
-            json_data = json.dumps(data)
-            command.extend(["-d", json_data])
+            if self.use_file_input:
+                temp_file_name = self._write_data_to_temp_file(data)
+                command.extend(["--data", f"@{temp_file_name}"])
+            else:
+                json_data = json.dumps(data)
+                command.extend(["-d", json_data])
 
         return command
 

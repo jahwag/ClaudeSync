@@ -41,6 +41,7 @@ class ConfigManager:
             "upload_delay": 0.5,
             "max_file_size": 32 * 1024,  # Default 32 KB
             "two_way_sync": False,  # Default to False
+            "curl_use_file_input": False,
         }
 
     def _load_config(self):
