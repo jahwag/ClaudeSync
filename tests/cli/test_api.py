@@ -11,21 +11,32 @@ class TestAPICLI(unittest.TestCase):
         self.mock_config = MagicMock()
         self.mock_provider = MagicMock()
 
+    @patch("claudesync.providers.base_claude_ai._get_session_key_expiry")
     @patch("claudesync.cli.api.get_provider")
     @patch("claudesync.cli.main.ConfigManager")
-    def test_login_success(self, mock_config_manager, mock_get_provider):
+    def test_login_success(
+        self, mock_config_manager, mock_get_provider, mock_get_session_key_expiry
+    ):
         mock_config_manager.return_value = self.mock_config
         mock_get_provider.return_value = self.mock_provider
         mock_get_provider.side_effect = lambda x=None: (
             ["claude.ai"] if x is None else self.mock_provider
         )
-        self.mock_provider.login.return_value = "test_session_key"
+        expiry = "Tue, 03 Sep 2099 06:51:21 UTC"
+        self.mock_provider.login.return_value = "test_session_key", expiry
+
+        mock_get_session_key_expiry = self.mock_config
+        mock_get_session_key_expiry.return_value = expiry
 
         result = self.runner.invoke(cli, ["api", "login", "claude.ai"])
 
+        print(
+            f"Session Key Call Args: {self.mock_config.set_session_key.call_args_list}"
+        )
+
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Logged in successfully.", result.output)
-        self.mock_config.set.assert_any_call("session_key", "test_session_key")
+        self.mock_config.set_session_key.assert_any_call("test_session_key", expiry)
         self.mock_config.set.assert_any_call("active_provider", "claude.ai")
 
     @patch("claudesync.cli.api.get_provider")

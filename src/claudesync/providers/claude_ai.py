@@ -5,9 +5,6 @@ from ..exceptions import ProviderError
 
 
 class ClaudeAIProvider(BaseClaudeAIProvider):
-    def __init__(self, session_key=None):
-        super().__init__(session_key)
-
     def _make_request(self, method, endpoint, data=None):
         url = f"{self.BASE_URL}{endpoint}"
         headers = {

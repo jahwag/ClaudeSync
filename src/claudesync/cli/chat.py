@@ -18,7 +18,7 @@ def chat():
 @handle_errors
 def sync(config):
     """Synchronize chats and their artifacts from the remote source."""
-    provider = validate_and_get_provider(config)
+    provider = validate_and_get_provider(config, require_project=True)
     sync_chats(provider, config)
 
 

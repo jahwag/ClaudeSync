@@ -5,7 +5,9 @@ from .providers.claude_ai import ClaudeAIProvider
 from .providers.claude_ai_curl import ClaudeAICurlProvider
 
 
-def get_provider(provider_name=None, session_key=None) -> BaseProvider:
+def get_provider(
+    provider_name=None, session_key=None, session_key_expiry=None
+) -> BaseProvider:
     """
     Retrieve an instance of a provider class based on the provider name and session key.
 
@@ -18,6 +20,8 @@ def get_provider(provider_name=None, session_key=None) -> BaseProvider:
         provider_name (str, optional): The name of the provider to retrieve. If None, returns a list of available
                                        provider names.
         session_key (str, optional): The session key to be used by the provider for authentication.
+                                     Defaults to None.
+        session_key_expiry (str, optional): The session key expiry time.
                                      Defaults to None.
 
     Returns:
@@ -40,4 +44,8 @@ def get_provider(provider_name=None, session_key=None) -> BaseProvider:
     if provider_class is None:
         raise ValueError(f"Unsupported provider: {provider_name}")
 
-    return provider_class(session_key) if session_key else provider_class()
+    return (
+        provider_class(session_key, session_key_expiry)
+        if session_key and session_key_expiry
+        else provider_class()
+    )

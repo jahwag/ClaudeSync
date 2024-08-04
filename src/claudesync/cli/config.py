@@ -56,7 +56,7 @@ def get(config, key):
 @config.command()
 @click.pass_obj
 @handle_errors
-def list(config):
+def ls(config):
     """List all configuration values."""
     for key, value in config.config.items():
         click.echo(f"{key}: {value}")

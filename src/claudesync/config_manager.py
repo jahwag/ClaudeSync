@@ -1,3 +1,4 @@
+import datetime
 import json
 from pathlib import Path
 
@@ -108,3 +109,21 @@ class ConfigManager:
             value = str(Path(value).expanduser())
         self.config[key] = value
         self._save_config()
+
+    def set_session_key(self, session_key, expiry: datetime):
+        self.config["session_key"] = session_key
+        self.config["session_key_expiry"] = expiry.isoformat()
+        self._save_config()
+
+    def get_session_key(self):
+        session_key = self.config.get("session_key")
+        expiry_str = self.config.get("session_key_expiry")
+
+        if not session_key or not expiry_str:
+            return None
+
+        expiry = datetime.datetime.fromisoformat(expiry_str)
+        if datetime.datetime.now() > expiry:
+            return None
+
+        return session_key

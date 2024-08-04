@@ -1,6 +1,7 @@
 import click
 
 from claudesync.provider_factory import get_provider
+from ..config_manager import ConfigManager
 from ..utils import handle_errors
 
 
@@ -14,7 +15,7 @@ def api():
 @click.argument("provider", required=False)
 @click.pass_obj
 @handle_errors
-def login(config, provider):
+def login(config: ConfigManager, provider):
     """Authenticate with an AI provider."""
     providers = get_provider()
     if not provider:
@@ -26,8 +27,8 @@ def login(config, provider):
         )
         return
     provider_instance = get_provider(provider)
-    session_key = provider_instance.login()
-    config.set("session_key", session_key)
+    session = provider_instance.login()
+    config.set_session_key(session[0], session[1])
     config.set("active_provider", provider)
     click.echo("Logged in successfully.")
 
@@ -36,7 +37,15 @@ def login(config, provider):
 @click.pass_obj
 def logout(config):
     """Log out from the current AI provider."""
-    for key in ["session_key", "active_provider", "active_organization_id"]:
+    for key in [
+        "session_key",
+        "session_key_expiry",
+        "active_provider",
+        "active_organization_id",
+        "active_project_id",
+        "active_project_name",
+        "local_path",
+    ]:
         config.set(key, None)
     click.echo("Logged out successfully.")
 

@@ -1,10 +1,14 @@
+import os
+
 import click
 
 from claudesync.exceptions import ProviderError
+from ..syncmanager import SyncManager
 from ..utils import (
     handle_errors,
     validate_and_get_provider,
     validate_and_store_local_path,
+    get_local_files,
 )
 
 
@@ -22,7 +26,8 @@ def create(config):
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
 
-    title = click.prompt("Enter the project title")
+    default_name = os.path.basename(os.getcwd())
+    title = click.prompt("Enter the project title", default=default_name)
     description = click.prompt("Enter the project description (optional)", default="")
 
     try:
@@ -121,3 +126,20 @@ def ls(config, show_all):
         for project in projects:
             status = " (Archived)" if project.get("archived_at") else ""
             click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
+
+
+@project.command()
+@click.pass_obj
+@handle_errors
+def sync(config):
+    """Synchronize only the project files."""
+    provider = validate_and_get_provider(config, require_project=True)
+
+    sync_manager = SyncManager(provider, config)
+    remote_files = provider.list_files(
+        sync_manager.active_organization_id, sync_manager.active_project_id
+    )
+    local_files = get_local_files(config.get("local_path"))
+    sync_manager.sync(local_files, remote_files)
+
+    click.echo("Project sync completed successfully.")

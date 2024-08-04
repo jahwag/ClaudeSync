@@ -1,16 +1,46 @@
+import datetime
 import logging
+import urllib
+
 import click
 from .base_provider import BaseProvider
 from ..config_manager import ConfigManager
 from ..exceptions import ProviderError
 
 
+def is_url_encoded(s):
+    decoded_s = urllib.parse.unquote(s)
+    return decoded_s != s
+
+
+def _get_session_key_expiry():
+    while True:
+        date_format = "%a, %d %b %Y %H:%M:%S %Z"
+        default_expires = datetime.datetime.now(
+            datetime.timezone.utc
+        ) + datetime.timedelta(days=30)
+        formatted_expires = default_expires.strftime(date_format).strip()
+        expires = click.prompt(
+            "Please enter the expires time for the sessionKey",
+            default=formatted_expires,
+            type=str,
+        ).strip()
+        try:
+            expires_on = datetime.datetime.strptime(expires, date_format)
+            return expires_on
+        except ValueError:
+            print(
+                "The entered date does not match the required format. Please try again."
+            )
+
+
 class BaseClaudeAIProvider(BaseProvider):
     BASE_URL = "https://claude.ai/api"
 
-    def __init__(self, session_key=None):
+    def __init__(self, session_key=None, session_key_expiry=None):
         self.config = ConfigManager()
         self.session_key = session_key
+        self.session_key_expiry = session_key_expiry
         self.logger = logging.getLogger(__name__)
         self._configure_logging()
 
@@ -35,7 +65,10 @@ class BaseClaudeAIProvider(BaseProvider):
         click.echo(
             "5. In the left sidebar, expand 'Cookies' and select 'https://claude.ai'"
         )
-        click.echo("6. Find the cookie named 'sessionKey' and copy its value")
+        click.echo(
+            "6. Locate the cookie named 'sessionKey' and copy its value. "
+            "Ensure that the value is not URL-encoded."
+        )
 
         while True:
             session_key = click.prompt("Please enter your sessionKey", type=str)
@@ -44,18 +77,26 @@ class BaseClaudeAIProvider(BaseProvider):
                     "Invalid sessionKey format. Please make sure it starts with 'sk-ant'."
                 )
                 continue
+            if is_url_encoded(session_key):
+                click.echo(
+                    "The session key appears to be URL-encoded. Please provide the decoded version."
+                )
+                continue
 
+            expires = _get_session_key_expiry()
             self.session_key = session_key
+            self.session_key_expiry = expires
             try:
                 organizations = self.get_organizations()
                 if organizations:
                     break  # Exit the loop if get_organizations is successful
-            except ProviderError:
+            except ProviderError as e:
+                click.echo(e)
                 click.echo(
                     "Failed to retrieve organizations. Please enter a valid sessionKey."
                 )
 
-        return self.session_key
+        return self.session_key, self.session_key_expiry
 
     def get_organizations(self):
         response = self._make_request("GET", "/organizations")
