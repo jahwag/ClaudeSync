@@ -84,6 +84,7 @@ ClaudeSync bridges the gap between your local development environment and Claude
 - Create a new project: `claudesync project create`
 - Archive a project: `claudesync project archive`
 - Select active project: `claudesync project select`
+- Sync projects: `claudesync project sync`
 
 ### File Management
 - List remote files: `claudesync ls`
@@ -105,6 +106,8 @@ ClaudeSync bridges the gap between your local development environment and Claude
 
 #### One-Way Sync (Default)
 By default, ClaudeSync operates in one-way sync mode, pushing changes from your local environment to Claude.ai. This ensures that your local files are the source of truth and prevents unexpected modifications to your local files.
+
+**Warning:** During synchronization, any files present on the remote server that are not available in your local environment will be automatically deleted from the remote server. Ensure that all important files are present locally before syncing to avoid unintentional data loss.
 
 #### Two-Way Sync (Experimental)
 Two-way synchronization is available as an experimental feature. This mode allows changes made on the remote Claude.ai project to be reflected in your local files. However, please be aware of the following:
