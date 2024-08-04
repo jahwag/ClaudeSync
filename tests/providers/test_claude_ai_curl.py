@@ -10,13 +10,16 @@ class TestClaudeAICurlProvider(unittest.TestCase):
     def setUp(self):
         self.provider = ClaudeAICurlProvider("test_session_key")
 
+    @patch("claudesync.config_manager.ConfigManager.get_session_key")
     @patch("subprocess.run")
-    def test_make_request_success(self, mock_run):
+    def test_make_request_success(self, mock_run, mock_get_session_key):
         # Prepare mock response
         mock_response = MagicMock()
         mock_response.stdout = json.dumps({"key": "value"}) + "200"
         mock_response.returncode = 0
         mock_run.return_value = mock_response
+
+        mock_get_session_key.return_value = "sk-ant-1234"
 
         # Make the request
         result = self.provider._make_request("GET", "/test")

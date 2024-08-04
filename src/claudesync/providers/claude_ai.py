@@ -9,6 +9,11 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
         super().__init__(session_key)
 
     def _make_request(self, method, endpoint, data=None):
+        session_key = self.config.get_session_key()
+        if not session_key:
+            raise ProviderError(
+                "Session key has expired. Please run 'claudesync api login' again."
+            )
         url = f"{self.BASE_URL}{endpoint}"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
