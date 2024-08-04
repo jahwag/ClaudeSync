@@ -1,8 +1,29 @@
+import datetime
 import logging
+import urllib
+
 import click
 from .base_provider import BaseProvider
 from ..config_manager import ConfigManager
 from ..exceptions import ProviderError
+
+
+def is_url_encoded(s):
+    decoded_s = urllib.parse.unquote(s)
+    return decoded_s != s
+
+
+def _get_session_key_expiry():
+    while True:
+        default_expires = datetime.datetime.now() + datetime.timedelta(days=30)
+        expires = click.prompt(
+            "Please enter the expires time for the sessionKey",
+            default=default_expires,
+            type=str,
+        )
+        date_format = "%a, %d %b %Y %H:%M:%S %Z"
+        expires_on = datetime.datetime.strptime(expires, date_format)
+        return expires_on
 
 
 class BaseClaudeAIProvider(BaseProvider):
@@ -44,12 +65,20 @@ class BaseClaudeAIProvider(BaseProvider):
                     "Invalid sessionKey format. Please make sure it starts with 'sk-ant'."
                 )
                 continue
+            if is_url_encoded(session_key):
+                click.echo(
+                    "The session key appears to be URL-encoded. Please provide the decoded version."
+                )
+                continue
 
             self.session_key = session_key
             try:
                 organizations = self.get_organizations()
                 if organizations:
-                    break  # Exit the loop if get_organizations is successful
+                    # Get the expires time for the cookie
+                    expiry = _get_session_key_expiry()
+                    self.config.set_session_key(session_key, expiry)
+                    break
             except ProviderError:
                 click.echo(
                     "Failed to retrieve organizations. Please enter a valid sessionKey."

@@ -110,7 +110,7 @@ class ConfigManager:
         self.config[key] = value
         self._save_config()
 
-    def set_session_key(self, session_key, expiry):
+    def set_session_key(self, session_key, expiry: datetime):
         self.config["session_key"] = session_key
         self.config["session_key_expiry"] = expiry.isoformat()
         self._save_config()
