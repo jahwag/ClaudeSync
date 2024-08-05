@@ -8,7 +8,7 @@
 
 ClaudeSync is a powerful tool that bridges your local development environment with Claude.ai projects, enabling seamless synchronization and enhancing your AI-powered workflow.
 
-![ClaudeSync example](demo.gif "ClaudeSync")
+![ClaudeSync example](claudesync.gif "ClaudeSync")
 
 ## 🌟 Key Features
 
