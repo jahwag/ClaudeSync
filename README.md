@@ -4,7 +4,9 @@
 [![Issues](https://img.shields.io/github/issues/jahwag/claudesync)](https://github.com/jahwag/claudesync/issues)
 [![PyPI version](https://badge.fury.io/py/claudesync.svg)](https://badge.fury.io/py/claudesync)
 [![Release date](https://img.shields.io/github/release-date/jahwag/claudesync)](https://github.com/jahwag/claudesync/releases)
-![PyPI - Downloads](https://img.shields.io/pypi/dd/claudesync)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+![ClaudeSync example](sample.png "ClaudeSync")
 
 ClaudeSync is a powerful tool that bridges your local development environment with Claude.ai projects, enabling seamless synchronization and enhancing your AI-powered workflow.
 
