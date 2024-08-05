@@ -77,10 +77,11 @@ def archive(config):
 
 
 @project.command()
-@click.pass_obj
+@click.pass_context
 @handle_errors
-def select(config):
+def select(ctx):
     """Set the active project for syncing."""
+    config = ctx.obj
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
     projects = provider.get_projects(active_organization_id, include_archived=False)
