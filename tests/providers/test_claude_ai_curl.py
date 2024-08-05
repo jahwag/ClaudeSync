@@ -31,7 +31,7 @@ class TestClaudeAICurlProvider(unittest.TestCase):
         mock_run.assert_called_once()
         args, kwargs = mock_run.call_args
         self.assertIn("curl", args[0])
-        self.assertIn("https://claude.ai/api/test", args[0])
+        self.assertIn("https://api.claude.ai/api/test", args[0])
         self.assertIn("--compressed", args[0])
         self.assertIn("-s", args[0])
         self.assertIn("-S", args[0])

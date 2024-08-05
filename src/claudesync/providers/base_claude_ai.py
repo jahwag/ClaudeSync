@@ -35,7 +35,7 @@ def _get_session_key_expiry():
 
 
 class BaseClaudeAIProvider(BaseProvider):
-    BASE_URL = "https://claude.ai/api"
+    BASE_URL = "https://api.claude.ai/api"
 
     def __init__(self, session_key=None, session_key_expiry=None):
         self.config = ConfigManager()
