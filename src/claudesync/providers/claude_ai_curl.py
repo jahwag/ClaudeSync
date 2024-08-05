@@ -19,6 +19,8 @@ class ClaudeAICurlProvider(BaseClaudeAIProvider):
 
         command = self._build_curl_command(method, url, headers, data)
 
+        self.logger.debug(f"Executing command: {' '.join(command)}")
+
         try:
             result = subprocess.run(
                 command, capture_output=True, text=True, check=True, encoding="utf-8"

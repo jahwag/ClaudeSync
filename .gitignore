@@ -171,3 +171,5 @@ config.json
 claudesync.log
 claude_chats
 some_value
+
+ROADMAP.md
