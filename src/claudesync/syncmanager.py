@@ -71,7 +71,7 @@ class SyncManager:
         self.update_local_timestamps(remote_files, synced_files)
 
         if self.two_way_sync:
-            with tqdm(total=len(remote_files), desc="Remote → Local") as pbar:
+            with tqdm(total=len(remote_files), desc="Local ← Remote") as pbar:
                 for remote_file in remote_files:
                     self.sync_remote_to_local(
                         remote_file, remote_files_to_delete, synced_files

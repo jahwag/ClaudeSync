@@ -1,8 +1,9 @@
 import click
 
 from claudesync.provider_factory import get_provider
-from ..config_manager import ConfigManager
 from ..utils import handle_errors
+from ..cli.organization import select as org_select
+from ..cli.project import select as proj_select
 
 
 @click.group()
@@ -13,10 +14,11 @@ def api():
 
 @api.command()
 @click.argument("provider", required=False)
-@click.pass_obj
+@click.pass_context
 @handle_errors
-def login(config: ConfigManager, provider):
+def login(ctx, provider):
     """Authenticate with an AI provider."""
+    config = ctx.obj
     providers = get_provider()
     if not provider:
         click.echo("Available providers:\n" + "\n".join(f"  - {p}" for p in providers))
@@ -31,6 +33,12 @@ def login(config: ConfigManager, provider):
     config.set_session_key(session[0], session[1])
     config.set("active_provider", provider)
     click.echo("Logged in successfully.")
+
+    # Automatically run organization select
+    ctx.invoke(org_select)
+
+    # Automatically run project select
+    ctx.invoke(proj_select)
 
 
 @api.command()
