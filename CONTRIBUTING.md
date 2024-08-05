@@ -50,7 +50,7 @@ We're excited that you're interested in contributing to ClaudeSync! This documen
 
 ## Code Style
 
-We follow the PEP 8 style guide for Python code. Please ensure your code adheres to this style.
+We follow the black style guide for Python code. Please ensure your code adheres to this style.
 
 ## Reporting Bugs
 
