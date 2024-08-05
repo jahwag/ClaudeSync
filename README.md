@@ -1,4 +1,4 @@
-# ClaudeSync: Seamless AI Project Synchronization
+# ClaudeSync
 
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Issues](https://img.shields.io/github/issues/jahwag/claudesync)](https://github.com/jahwag/claudesync/issues)
@@ -6,9 +6,9 @@
 [![Release date](https://img.shields.io/github/release-date/jahwag/claudesync)](https://github.com/jahwag/claudesync/releases)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-![ClaudeSync example](sample.png "ClaudeSync")
-
 ClaudeSync is a powerful tool that bridges your local development environment with Claude.ai projects, enabling seamless synchronization and enhancing your AI-powered workflow.
+
+![ClaudeSync example](demo.gif "ClaudeSync")
 
 ## 🌟 Key Features
 
