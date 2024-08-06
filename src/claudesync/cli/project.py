@@ -1,14 +1,15 @@
 import os
-
 import click
-
 from claudesync.exceptions import ProviderError
-from ..syncmanager import SyncManager
+from ..one_way_syncmanager import OneWaySyncManager
+from ..two_way_syncmanager import TwoWaySyncManager
+from ..utils import (
+    get_local_files,
+)
 from ..utils import (
     handle_errors,
     validate_and_get_provider,
     validate_and_store_local_path,
-    get_local_files,
 )
 
 
@@ -45,6 +46,33 @@ def create(config):
         )
 
         validate_and_store_local_path(config)
+
+        # Reset sync state
+        sync_state_file = os.path.join(config.get("local_path"), ".claudesync", "sync_state.json")
+        if os.path.exists(sync_state_file):
+            os.remove(sync_state_file)
+            click.echo("Sync state has been reset for the new project.")
+
+        # Prompt for custom instruction / system prompt
+        if click.confirm(
+            "Would you like to configure our recommended custom instruction / system prompt?",
+            default=True,
+        ):
+            prompt_template = (
+                'When processing files, prepend "// CLAUDESYNC_PATH: {relative_path}\\n" to the start of each file\'s '
+                "content, where {relative_path} is the file's path relative to the project root."
+            )
+            try:
+                provider.set_project_prompt_template(
+                    active_organization_id, new_project["uuid"], prompt_template
+                )
+                click.echo(
+                    "Custom instruction / system prompt has been set successfully."
+                )
+            except Exception as e:
+                click.echo(
+                    f"Failed to set custom instruction / system prompt: {str(e)}"
+                )
 
     except ProviderError as e:
         click.echo(f"Failed to create project: {str(e)}")
@@ -101,6 +129,12 @@ def select(ctx):
         )
 
         validate_and_store_local_path(config)
+
+        # Reset sync state
+        sync_state_file = os.path.join(config.get("local_path"), ".claudesync", "sync_state.json")
+        if os.path.exists(sync_state_file):
+            os.remove(sync_state_file)
+            click.echo("Sync state has been reset for the new project.")
     else:
         click.echo("Invalid selection. Please try again.")
 
@@ -136,11 +170,16 @@ def sync(config):
     """Synchronize only the project files."""
     provider = validate_and_get_provider(config, require_project=True)
 
-    sync_manager = SyncManager(provider, config)
+    if config.get("two_way_sync", False):
+        sync_manager = TwoWaySyncManager(provider, config)
+    else:
+        sync_manager = OneWaySyncManager(provider, config)
+
     remote_files = provider.list_files(
         sync_manager.active_organization_id, sync_manager.active_project_id
     )
     local_files = get_local_files(config.get("local_path"))
+
     sync_manager.sync(local_files, remote_files)
 
     click.echo("Project sync completed successfully.")

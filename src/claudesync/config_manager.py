@@ -1,5 +1,7 @@
 import datetime
 import json
+import os
+import subprocess
 from pathlib import Path
 
 
@@ -42,7 +44,25 @@ class ConfigManager:
             "max_file_size": 32 * 1024,  # Default 32 KB
             "two_way_sync": False,  # Default to False
             "curl_use_file_input": False,
+            "autocrlf": self._get_git_autocrlf(),
+            "prune_remote_files": False,
         }
+
+    def _get_git_autocrlf(self):
+        try:
+            result = subprocess.run(
+                ["git", "config", "--get", "core.autocrlf"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            value = result.stdout.strip().lower()
+            if value in ["true", "false", "input"]:
+                return value
+        except subprocess.CalledProcessError:
+            pass
+        # Default to 'true' on Windows, 'input' on other systems if git config is not available
+        return "true" if os.name == "nt" else "input"
 
     def _load_config(self):
         """

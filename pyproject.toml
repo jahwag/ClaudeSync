@@ -1,6 +1,6 @@
 [project]
 name = "claudesync"
-version = "0.4.9"
+version = "0.5.0"
 authors = [
     {name = "Jahziah Wagner", email = "jahziah.wagner+pypi@gmail.com"},
 ]

@@ -193,3 +193,10 @@ class BaseClaudeAIProvider(BaseProvider):
 
     def _make_request(self, method, endpoint, data=None):
         raise NotImplementedError("This method should be implemented by subclasses")
+
+    def set_project_prompt_template(self, organization_id, project_id, prompt_template):
+        """Set the prompt template for a project."""
+        data = {"prompt_template": prompt_template}
+        return self._make_request(
+            "PUT", f"/organizations/{organization_id}/projects/{project_id}", data
+        )
