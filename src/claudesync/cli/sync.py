@@ -5,8 +5,9 @@ import click
 from crontab import CronTab
 
 from claudesync.utils import get_local_files
+from ..one_way_syncmanager import OneWaySyncManager
+from ..two_way_syncmanager import TwoWaySyncManager
 from ..utils import handle_errors, validate_and_get_provider
-from ..syncmanager import SyncManager
 from ..chat_sync import sync_chats
 
 
@@ -39,7 +40,11 @@ def sync(config):
     provider = validate_and_get_provider(config, require_project=True)
 
     # Sync projects
-    sync_manager = SyncManager(provider, config)
+    if config.get("two_way_sync", False):
+        sync_manager = TwoWaySyncManager(provider, config)
+    else:
+        sync_manager = OneWaySyncManager(provider, config)
+
     remote_files = provider.list_files(
         sync_manager.active_organization_id, sync_manager.active_project_id
     )
