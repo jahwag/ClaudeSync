@@ -8,6 +8,20 @@
 
 ClaudeSync is a powerful tool that bridges your local development environment with Claude.ai projects, enabling seamless synchronization and enhancing your AI-powered workflow.
 
+> **⚠️ IMPORTANT DISCLAIMER:**
+> 
+> ClaudeSync is an independent, open-source project and is not affiliated with, endorsed by, or in any way officially connected to Anthropic or Claude.ai.
+> 
+> ClaudeSync's compliance with Anthropic's Terms of Service is currently under review. The use of session keys for automated access and the nature of the synchronization process may potentially violate Anthropic's TOS. We are actively seeking clarification from Anthropic on these matters.
+> 
+> **By using ClaudeSync, you acknowledge that:**
+> 1. You are using this tool at your own risk.
+> 2. Your use of ClaudeSync may potentially violate Anthropic's Terms of Service.
+> 3. You are responsible for any consequences that may arise from using this tool.
+> 4. ClaudeSync is not an official Anthropic product and Anthropic does not provide support for it.
+>
+> We recommend reviewing Anthropic's Terms of Service and Usage Policy before using ClaudeSync. We will update this disclaimer and the tool's functionality based on Anthropic's official response.
+
 ![ClaudeSync example](claudesync.gif "ClaudeSync")
 
 ## 🌟 Key Features
