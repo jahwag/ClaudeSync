@@ -48,6 +48,7 @@ claudesync api login claude.ai
 ```shell
 claudesync sync
 ```
+*Note: This performs a one-way sync. Any files not present locally will be deleted from the Claude.ai Project.
 
 📚 Need more details? Check our [Wiki](https://github.com/jahwag/claudesync/wiki) for comprehensive guides and FAQs.
 
