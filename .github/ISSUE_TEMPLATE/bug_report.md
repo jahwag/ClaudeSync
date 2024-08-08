@@ -28,10 +28,10 @@ If applicable, add screenshots to help explain your problem.
 **Environment (please complete the following information):**
  - OS: [e.g. Windows 10, macOS 11.4, Ubuntu 20.04]
  - Python version: [e.g. 3.8.10]
- - ClaudeSync version: [e.g. 0.3.7]
+ - ClaudeSync version: [e.g. 0.4.9]
 
 **Configuration**
-Please provide the output of `claudesync config list` (make sure to remove any sensitive information).
+Please provide the output of `claudesync config ls` (make sure to remove any sensitive information).
 
 **Additional context**
 Add any other context about the problem here. For example:
