@@ -43,8 +43,16 @@ def sync(config):
     remote_files = provider.list_files(
         sync_manager.active_organization_id, sync_manager.active_project_id
     )
-    local_files = get_local_files(config.get("local_path"))
-    sync_manager.sync(local_files, remote_files)
+    
+    local_paths = config.get_local_paths()
+    all_local_files = {}
+    for local_path in local_paths:
+        local_files = get_local_files(local_path)
+        for relative_path, checksum in local_files.items():
+            full_path = os.path.abspath(os.path.join(local_path, relative_path))
+            all_local_files[full_path] = checksum
+    
+    sync_manager.sync(all_local_files, remote_files)
 
     # Sync chats
     sync_chats(provider, config)

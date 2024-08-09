@@ -53,6 +53,41 @@ def status(config):
         value = config.get(key)
         click.echo(f"{key.replace('_', ' ').capitalize()}: {value or 'Not set'}")
 
+@cli.group()
+def path():
+    """Manage local paths for synchronization."""
+    pass
+
+@path.command(name="add")
+@click.argument("path", type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
+@click.pass_obj
+def add_path(config, path):
+    """Add a local path for synchronization."""
+    config.add_local_path(path)
+    click.echo(f"Added local path: {path}")
+
+@path.command(name="remove")
+@click.argument("path", type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True))
+@click.pass_obj
+def remove_path(config, path):
+    """Remove a local path from synchronization."""
+    config.remove_local_path(path)
+    click.echo(f"Removed local path: {path}")
+
+@path.command(name="list")
+@click.pass_obj
+def list_paths(config):
+    """List all local paths for synchronization."""
+    paths = config.get_local_paths()
+    if paths:
+        click.echo("Local paths for synchronization:")
+        for path in paths:
+            click.echo(f"  - {path}")
+    else:
+        click.echo("No local paths configured for synchronization.")
+
+# Add the new path command group to the main CLI
+cli.add_command(path)
 
 cli.add_command(api)
 cli.add_command(organization)
