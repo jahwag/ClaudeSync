@@ -199,7 +199,6 @@ def get_local_files(local_path):
 
         for filename in filenames:
             full_path = os.path.join(root, filename)
-            rel_path = os.path.relpath(full_path, local_path)
 
             if should_process_file(
                 full_path, filename, gitignore, local_path, claudeignore
