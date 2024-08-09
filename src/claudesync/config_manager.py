@@ -68,6 +68,9 @@ class ConfigManager:
                 elif key == "chat_destination":
                     # Expand user home directory for path-based settings
                     config[key] = str(Path(config[key]).expanduser())
+            if 'local_path' in config:
+                # Migrate old single path to new list format
+                config['local_paths'] = [config.pop('local_path')]                    
             return config
 
     def _save_config(self):
@@ -128,3 +131,20 @@ class ConfigManager:
             return None
 
         return session_key
+    
+    def add_local_path(self, path):
+        paths = self.config.get('local_paths', [])
+        if path not in paths:
+            paths.append(path)
+            self.config['local_paths'] = paths
+            self._save_config()
+
+    def remove_local_path(self, path):
+        paths = self.config.get('local_paths', [])
+        if path in paths:
+            paths.remove(path)
+            self.config['local_paths'] = paths
+            self._save_config()
+
+    def get_local_paths(self):
+        return self.config.get('local_paths', [])

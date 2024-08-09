@@ -31,20 +31,14 @@ def create(config):
     description = click.prompt("Enter the project description (optional)", default="")
 
     try:
-        new_project = provider.create_project(
-            active_organization_id, title, description
-        )
-        click.echo(
-            f"Project '{new_project['name']}' (uuid: {new_project['uuid']}) has been created successfully."
-        )
+        new_project = provider.create_project(active_organization_id, title, description)
+        click.echo(f"Project '{new_project['name']}' (uuid: {new_project['uuid']}) has been created successfully.")
 
         config.set("active_project_id", new_project["uuid"])
         config.set("active_project_name", new_project["name"])
-        click.echo(
-            f"Active project set to: {new_project['name']} (uuid: {new_project['uuid']})"
-        )
+        click.echo(f"Active project set to: {new_project['name']} (uuid: {new_project['uuid']})")
 
-        validate_and_store_local_path(config)
+        validate_and_store_local_paths(config)
 
     except ProviderError as e:
         click.echo(f"Failed to create project: {str(e)}")
@@ -96,11 +90,9 @@ def select(ctx):
         selected_project = projects[selection - 1]
         config.set("active_project_id", selected_project["id"])
         config.set("active_project_name", selected_project["name"])
-        click.echo(
-            f"Selected project: {selected_project['name']} (ID: {selected_project['id']})"
-        )
+        click.echo(f"Selected project: {selected_project['name']} (ID: {selected_project['id']})")
 
-        validate_and_store_local_path(config)
+        validate_and_store_local_paths(config)
     else:
         click.echo("Invalid selection. Please try again.")
 

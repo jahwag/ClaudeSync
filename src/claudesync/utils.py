@@ -188,23 +188,28 @@ def get_local_files(local_path):
     files = {}
     exclude_dirs = {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS", "claude_chats"}
 
-    for root, dirs, filenames in os.walk(local_path):
-        dirs[:] = [d for d in dirs if d not in exclude_dirs]
-        rel_root = os.path.relpath(root, local_path)
-        rel_root = "" if rel_root == "." else rel_root
+    for root, dirs, filenames in os.walk(local_path, topdown=True):
+        # Filter out directories before traversing
+        dirs[:] = [
+            d for d in dirs
+            if d not in exclude_dirs
+            and not (gitignore and gitignore.match_file(os.path.relpath(os.path.join(root, d), local_path)))
+            and not (claudeignore and claudeignore.match_file(os.path.relpath(os.path.join(root, d), local_path)))
+        ]
 
         for filename in filenames:
-            rel_path = os.path.join(rel_root, filename)
             full_path = os.path.join(root, filename)
+            rel_path = os.path.relpath(full_path, local_path)
 
             if should_process_file(
                 full_path, filename, gitignore, local_path, claudeignore
             ):
                 file_hash = process_file(full_path)
                 if file_hash:
-                    files[rel_path] = file_hash
+                    files[os.path.abspath(full_path)] = file_hash
 
     return files
+
 
 
 def handle_errors(func):
@@ -315,6 +320,33 @@ def validate_and_store_local_path(config):
         else:
             click.echo("Please enter an absolute path.")
 
+def validate_and_store_local_paths(config):
+    """
+    Prompts the user for multiple absolute paths to their local project directories and stores them in the configuration.
+    """
+    while True:
+        path = click.prompt(
+            "Enter an absolute path to a local project directory (or 'done' to finish)",
+            type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
+            default="done",
+        )
+        
+        if path.lower() == "done":
+            break
+
+        if os.path.isabs(path):
+            config.add_local_path(path)
+            click.echo(f"Local path added: {path}")
+        else:
+            click.echo("Please enter an absolute path.")
+
+    paths = config.get_local_paths()
+    if paths:
+        click.echo("Configured local paths:")
+        for path in paths:
+            click.echo(f"  - {path}")
+    else:
+        click.echo("No local paths configured. You can add them later using 'claudesync path add'.")
 
 def load_claudeignore(base_path):
     """
