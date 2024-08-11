@@ -32,6 +32,13 @@ ClaudeSync is a powerful tool that bridges your local development environment wi
 - 🔒 **Secure**: Prioritizes your data privacy and security.
 - 🛠 **Customizable**: Configurable sync intervals, file filtering, and more.
 
+## ⚠️ Prerequisites
+
+**Claude Plan Requirements:**
+
+- **Supported:** Pro
+- **Not Supported:** Free, Team
+
 ## 🚀 Quick Start
 
 1. **Install ClaudeSync:**
