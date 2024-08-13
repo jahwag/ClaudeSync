@@ -188,10 +188,17 @@ def get_local_files(local_path):
     files = {}
     exclude_dirs = {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS", "claude_chats"}
 
-    for root, dirs, filenames in os.walk(local_path):
-        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+    for root, dirs, filenames in os.walk(local_path, topdown=True):
         rel_root = os.path.relpath(root, local_path)
         rel_root = "" if rel_root == "." else rel_root
+
+        # Filter out directories before traversing
+        dirs[:] = [
+            d for d in dirs
+            if d not in exclude_dirs
+            and not (gitignore and gitignore.match_file(os.path.join(rel_root, d)))
+            and not (claudeignore and claudeignore.match_file(os.path.join(rel_root, d)))
+        ]
 
         for filename in filenames:
             rel_path = os.path.join(rel_root, filename)
