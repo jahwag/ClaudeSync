@@ -108,6 +108,7 @@ class BaseClaudeAIProvider(BaseProvider):
             if ({"chat", "claude_pro"}.issubset(set(org.get("capabilities", []))) or
                 {"chat", "raven"}.issubset(set(org.get("capabilities", []))))
         ]
+
     def get_projects(self, organization_id, include_archived=False):
         response = self._make_request(
             "GET", f"/organizations/{organization_id}/projects"
