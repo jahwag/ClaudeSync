@@ -61,24 +61,7 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
                 return json.loads(content_str)
 
         except urllib.error.HTTPError as e:
-            self.logger.error(f"Request failed: {str(e)}")
-            self.logger.error(f"Response status code: {e.code}")
-            self.logger.error(f"Response headers: {e.headers}")
-            content = e.read().decode("utf-8")
-            self.logger.error(f"Response content: {content}")
-
-            if e.code == 403:
-                error_msg = (
-                    "Received a 403 Forbidden error. Your session key might be invalid. "
-                    "Please try logging out and logging in again. If the issue persists, "
-                    "you can try using the claude.ai-curl provider as a workaround:\n"
-                    "claudesync api logout\n"
-                    "claudesync api login claude.ai-curl"
-                )
-                self.logger.error(error_msg)
-                raise ProviderError(error_msg)
-
-            raise ProviderError(f"API request failed: {str(e)}")
+            self.handle_http_error(e)
         except urllib.error.URLError as e:
             self.logger.error(f"URL Error: {str(e)}")
             raise ProviderError(f"API request failed: {str(e)}")
@@ -86,3 +69,21 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             self.logger.error(f"Failed to parse JSON response: {str(json_err)}")
             self.logger.error(f"Response content: {content_str}")
             raise ProviderError(f"Invalid JSON response from API: {str(json_err)}")
+
+    def handle_http_error(self, e):
+        self.logger.error(f"Request failed: {str(e)}")
+        self.logger.error(f"Response status code: {e.code}")
+        self.logger.error(f"Response headers: {e.headers}")
+        content = e.read().decode("utf-8")
+        self.logger.error(f"Response content: {content}")
+        if e.code == 403:
+            error_msg = (
+                "Received a 403 Forbidden error. Your session key might be invalid. "
+                "Please try logging out and logging in again. If the issue persists, "
+                "you can try using the claude.ai-curl provider as a workaround:\n"
+                "claudesync api logout\n"
+                "claudesync api login claude.ai-curl"
+            )
+            self.logger.error(error_msg)
+            raise ProviderError(error_msg)
+        raise ProviderError(f"API request failed: {str(e)}")
