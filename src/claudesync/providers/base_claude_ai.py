@@ -71,7 +71,9 @@ class BaseClaudeAIProvider(BaseProvider):
         )
 
         while True:
-            session_key = click.prompt("Please enter your sessionKey", type=str, hide_input=True)
+            session_key = click.prompt(
+                "Please enter your sessionKey", type=str, hide_input=True
+            )
             if not session_key.startswith("sk-ant"):
                 click.echo(
                     "Invalid sessionKey format. Please make sure it starts with 'sk-ant'."
@@ -105,8 +107,10 @@ class BaseClaudeAIProvider(BaseProvider):
         return [
             {"id": org["uuid"], "name": org["name"]}
             for org in response
-            if ({"chat", "claude_pro"}.issubset(set(org.get("capabilities", []))) or
-                {"chat", "raven"}.issubset(set(org.get("capabilities", []))))
+            if (
+                {"chat", "claude_pro"}.issubset(set(org.get("capabilities", [])))
+                or {"chat", "raven"}.issubset(set(org.get("capabilities", [])))
+            )
         ]
 
     def get_projects(self, organization_id, include_archived=False):

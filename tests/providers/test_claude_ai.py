@@ -7,6 +7,7 @@ import gzip
 from claudesync.providers.claude_ai import ClaudeAIProvider
 from claudesync.exceptions import ProviderError
 
+
 class TestClaudeAIProvider(unittest.TestCase):
 
     def setUp(self):
@@ -20,8 +21,8 @@ class TestClaudeAIProvider(unittest.TestCase):
     def test_make_request_success(self, mock_urlopen, mock_get_session_key):
         mock_response = MagicMock()
         mock_response.status = 200
-        mock_response.headers = {'Content-Type': 'application/json'}
-        mock_response.read.return_value = json.dumps({"key": "value"}).encode('utf-8')
+        mock_response.headers = {"Content-Type": "application/json"}
+        mock_response.read.return_value = json.dumps({"key": "value"}).encode("utf-8")
         mock_urlopen.return_value.__enter__.return_value = mock_response
 
         mock_get_session_key.return_value = "sk-ant-1234"
@@ -45,11 +46,7 @@ class TestClaudeAIProvider(unittest.TestCase):
         mock_response.status = 403
         mock_response.read.return_value = b"Forbidden"
         mock_urlopen.side_effect = urllib.error.HTTPError(
-            url="http://test.com",
-            code=403,
-            msg="Forbidden",
-            hdrs={},
-            fp=None
+            url="http://test.com", code=403, msg="Forbidden", hdrs={}, fp=None
         )
 
         mock_get_session_key.return_value = "sk-ant-1234"
@@ -64,12 +61,15 @@ class TestClaudeAIProvider(unittest.TestCase):
     def test_make_request_gzip_response(self, mock_urlopen, mock_get_session_key):
         mock_response = MagicMock()
         mock_response.status = 200
-        mock_response.headers = {'Content-Type': 'application/json', 'Content-Encoding': 'gzip'}
+        mock_response.headers = {
+            "Content-Type": "application/json",
+            "Content-Encoding": "gzip",
+        }
 
         # Create gzipped content
-        content = json.dumps({"key": "gzipped_value"}).encode('utf-8')
+        content = json.dumps({"key": "gzipped_value"}).encode("utf-8")
         gzipped_content = BytesIO()
-        with gzip.GzipFile(fileobj=gzipped_content, mode='wb') as gzip_file:
+        with gzip.GzipFile(fileobj=gzipped_content, mode="wb") as gzip_file:
             gzip_file.write(content)
 
         mock_response.read.return_value = gzipped_content.getvalue()

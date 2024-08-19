@@ -6,6 +6,7 @@ import gzip
 from .base_claude_ai import BaseClaudeAIProvider
 from ..exceptions import ProviderError
 
+
 class ClaudeAIProvider(BaseClaudeAIProvider):
     def _make_request(self, method, endpoint, data=None):
         url = f"{self.BASE_URL}{endpoint}"
@@ -32,12 +33,12 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
                 req.add_header(key, value)
 
             # Add cookies
-            cookie_string = '; '.join([f"{k}={v}" for k, v in cookies.items()])
-            req.add_header('Cookie', cookie_string)
+            cookie_string = "; ".join([f"{k}={v}" for k, v in cookies.items()])
+            req.add_header("Cookie", cookie_string)
 
             # Add data if present
             if data:
-                json_data = json.dumps(data).encode('utf-8')
+                json_data = json.dumps(data).encode("utf-8")
                 req.data = json_data
 
             # Make the request
@@ -46,12 +47,12 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
                 self.logger.debug(f"Response headers: {response.headers}")
 
                 # Handle gzip encoding
-                if response.headers.get('Content-Encoding') == 'gzip':
+                if response.headers.get("Content-Encoding") == "gzip":
                     content = gzip.decompress(response.read())
                 else:
                     content = response.read()
 
-                content_str = content.decode('utf-8')
+                content_str = content.decode("utf-8")
                 self.logger.debug(f"Response content: {content_str[:1000]}...")
 
                 if not content:
@@ -63,7 +64,7 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             self.logger.error(f"Request failed: {str(e)}")
             self.logger.error(f"Response status code: {e.code}")
             self.logger.error(f"Response headers: {e.headers}")
-            content = e.read().decode('utf-8')
+            content = e.read().decode("utf-8")
             self.logger.error(f"Response content: {content}")
 
             if e.code == 403:
