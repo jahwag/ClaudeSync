@@ -1,6 +1,6 @@
 [project]
 name = "claudesync"
-version = "0.5.0"
+version = "0.5.1"
 authors = [
     {name = "Jahziah Wagner", email = "jahziah.wagner+pypi@gmail.com"},
 ]
@@ -15,7 +15,6 @@ classifiers = [
 ]
 dependencies = [
     "Click>=8.1.7",
-    "requests>=2.32.3",
     "pathspec>=0.12.1",
     "crontab>=1.0.1",
     "click_completion>=0.5.2",

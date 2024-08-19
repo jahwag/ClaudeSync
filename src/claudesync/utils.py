@@ -194,10 +194,13 @@ def get_local_files(local_path):
 
         # Filter out directories before traversing
         dirs[:] = [
-            d for d in dirs
+            d
+            for d in dirs
             if d not in exclude_dirs
             and not (gitignore and gitignore.match_file(os.path.join(rel_root, d)))
-            and not (claudeignore and claudeignore.match_file(os.path.join(rel_root, d)))
+            and not (
+                claudeignore and claudeignore.match_file(os.path.join(rel_root, d))
+            )
         ]
 
         for filename in filenames:
