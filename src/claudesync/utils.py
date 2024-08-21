@@ -163,7 +163,7 @@ def process_file(file_path):
     return None
 
 
-def get_local_files(local_path):
+def get_local_files(local_path, category=None):
     """
     Retrieves a dictionary of local files within a specified path, applying various filters.
 
@@ -183,32 +183,40 @@ def get_local_files(local_path):
     Returns:
         dict: A dictionary where keys are relative file paths, and values are MD5 hashes of the file contents.
     """
+    config = ConfigManager()
     gitignore = load_gitignore(local_path)
     claudeignore = load_claudeignore(local_path)
     files = {}
     exclude_dirs = {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS", "claude_chats"}
 
+    categories = config.get("file_categories", {})
+    if category and category not in categories:
+        raise ValueError(f"Invalid category: {category}")
+
+    patterns = ["*"]  # Default to all files
+    if category:
+        patterns = categories[category]["patterns"]
+
+    spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
+
     for root, dirs, filenames in os.walk(local_path, topdown=True):
         rel_root = os.path.relpath(root, local_path)
         rel_root = "" if rel_root == "." else rel_root
 
-        # Filter out directories before traversing
         dirs[:] = [
             d
             for d in dirs
             if d not in exclude_dirs
-            and not (gitignore and gitignore.match_file(os.path.join(rel_root, d)))
-            and not (
-                claudeignore and claudeignore.match_file(os.path.join(rel_root, d))
-            )
+               and not (gitignore and gitignore.match_file(os.path.join(rel_root, d)))
+               and not (claudeignore and claudeignore.match_file(os.path.join(rel_root, d)))
         ]
 
         for filename in filenames:
             rel_path = os.path.join(rel_root, filename)
             full_path = os.path.join(root, filename)
 
-            if should_process_file(
-                full_path, filename, gitignore, local_path, claudeignore
+            if spec.match_file(rel_path) and should_process_file(
+                    full_path, filename, gitignore, local_path, claudeignore
             ):
                 file_hash = process_file(full_path)
                 if file_hash:

@@ -1,11 +1,9 @@
-import os
 import click
 from claudesync.exceptions import ProviderError
 from ..syncmanager import SyncManager
 from ..utils import (
     handle_errors,
     validate_and_get_provider,
-    validate_and_store_local_path,
     get_local_files,
     detect_submodules,
 )
@@ -128,10 +126,12 @@ def ls(config, show_all):
             click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
 
 
+
 @project.command()
+@click.option("--category", help="Specify the file category to sync")
 @click.pass_obj
 @handle_errors
-def sync(config):
+def sync(config, category):
     """Synchronize the project files, including submodules if they exist remotely."""
     provider = validate_and_get_provider(config, require_project=True)
 
@@ -163,7 +163,7 @@ def sync(config):
     # Sync main project
     sync_manager = SyncManager(provider, config)
     remote_files = provider.list_files(active_organization_id, active_project_id)
-    local_files = get_local_files(local_path)
+    local_files = get_local_files(local_path, category)
     sync_manager.sync(local_files, remote_files)
     click.echo(f"Main project '{active_project_name}' synced successfully.")
 
@@ -182,7 +182,7 @@ def sync(config):
         if remote_project:
             click.echo(f"Syncing submodule '{submodule_name}'...")
             submodule_path = os.path.join(local_path, local_submodule)
-            submodule_files = get_local_files(submodule_path)
+            submodule_files = get_local_files(submodule_path, category)
             remote_submodule_files = provider.list_files(
                 active_organization_id, remote_project["id"]
             )

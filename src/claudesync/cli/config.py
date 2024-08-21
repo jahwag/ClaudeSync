@@ -1,5 +1,6 @@
 import click
 
+from .category import category
 from ..exceptions import ConfigurationError
 from ..utils import handle_errors
 
@@ -60,3 +61,5 @@ def ls(config):
     """List all configuration values."""
     for key, value in config.config.items():
         click.echo(f"{key}: {value}")
+
+config.add_command(category)
