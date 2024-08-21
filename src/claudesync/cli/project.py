@@ -102,7 +102,7 @@ def select(ctx, show_all):
         selectable_projects = [
             p
             for p in projects
-            if not p["name"].startswith(f"{active_project_name}-SubModule-")
+            if "-SubModule-" not in p["name"]
         ]
 
     if not selectable_projects:
