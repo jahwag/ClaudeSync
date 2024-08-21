@@ -99,11 +99,7 @@ def select(ctx, show_all):
         selectable_projects = projects
     else:
         # Filter out submodule projects
-        selectable_projects = [
-            p
-            for p in projects
-            if "-SubModule-" not in p["name"]
-        ]
+        selectable_projects = [p for p in projects if "-SubModule-" not in p["name"]]
 
     if not selectable_projects:
         click.echo("No active projects found.")

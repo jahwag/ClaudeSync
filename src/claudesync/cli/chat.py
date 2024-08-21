@@ -232,3 +232,27 @@ def create(config, name, project):
         click.echo(f"Associated project: {project}")
     except Exception as e:
         click.echo(f"Failed to create chat conversation: {str(e)}")
+
+
+@chat.command()
+@click.argument("chat_id")
+@click.argument("message")
+@click.option("--timezone", default="UTC", help="Timezone for the message")
+@click.pass_obj
+@handle_errors
+def send(config, chat_id, message, timezone):
+    """Send a message to a specified chat."""
+    provider = validate_and_get_provider(config)
+    organization_id = config.get("active_organization_id")
+
+    if not organization_id:
+        click.echo("No active organization set.")
+        return
+
+    try:
+        response = provider.send_message(organization_id, chat_id, message, timezone)
+        click.echo(f"Message sent successfully to chat {chat_id}")
+        click.echo("Response:")
+        click.echo(response)
+    except Exception as e:
+        click.echo(f"Failed to send message: {str(e)}")

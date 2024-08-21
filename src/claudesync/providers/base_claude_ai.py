@@ -228,3 +228,19 @@ class BaseClaudeAIProvider(BaseProvider):
         import uuid
 
         return str(uuid.uuid4())
+
+    def send_message(self, organization_id, chat_id, prompt, timezone="UTC"):
+        endpoint = (
+            f"/organizations/{organization_id}/chat_conversations/{chat_id}/completion"
+        )
+        data = {
+            "prompt": prompt,
+            "timezone": timezone,
+            "attachments": [],
+            "files": [],
+            "rendering_mode": "raw",
+        }
+        response = self._make_request("POST", endpoint, data)
+        if response is None:
+            raise ProviderError("Failed to send message: No response received")
+        return response

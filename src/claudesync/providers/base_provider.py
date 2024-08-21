@@ -73,3 +73,8 @@ class BaseProvider(ABC):
     def create_chat(self, organization_id, chat_name="", project_uuid=None):
         """Create a new chat conversation in the specified organization."""
         pass
+
+    @abstractmethod
+    def send_message(self, organization_id, chat_id, prompt, timezone="UTC"):
+        """Send a message to a specified chat conversation."""
+        pass
