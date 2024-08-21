@@ -349,20 +349,23 @@ def detect_submodules(base_path, submodule_detect_filenames):
 
     This function walks through the directory tree starting from base_path,
     looking for files that indicate a submodule (e.g., pom.xml, build.gradle).
-    It returns a list of relative paths to directories containing these files.
+    It returns a list of relative paths to directories containing these files,
+    excluding the root directory.
 
     Args:
         base_path (str): The base directory path to start the search from.
         submodule_detect_filenames (list): List of filenames that indicate a submodule.
 
     Returns:
-        list: A list of relative paths to detected submodules.
+        list: A list of relative paths to detected submodules, excluding the root directory.
     """
     submodules = []
     for root, dirs, files in os.walk(base_path):
         for filename in submodule_detect_filenames:
             if filename in files:
                 relative_path = os.path.relpath(root, base_path)
-                submodules.append(relative_path)
+                # Exclude the root directory (represented by an empty string or '.')
+                if relative_path not in ('', '.'):
+                    submodules.append(relative_path)
                 break  # Stop searching this directory once a submodule is found
     return submodules
