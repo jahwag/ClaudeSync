@@ -51,24 +51,55 @@ class ConfigManager:
                 "go.mod",
             ],
             "file_categories": {
-                "all_files": {"description": "All files not ignored", "patterns": ["*"]},
+                "all_files": {
+                    "description": "All files not ignored",
+                    "patterns": ["*"],
+                },
                 "all_source_code": {
                     "description": "All source code files",
-                    "patterns": ["*.java", "*.py", "*.js", "*.ts", "*.c", "*.cpp", "*.h", "*.hpp", "*.go", "*.rs"]
+                    "patterns": [
+                        "*.java",
+                        "*.py",
+                        "*.js",
+                        "*.ts",
+                        "*.c",
+                        "*.cpp",
+                        "*.h",
+                        "*.hpp",
+                        "*.go",
+                        "*.rs",
+                    ],
                 },
                 "production_code": {
                     "description": "Production source code",
-                    "patterns": ["src/**/*.java", "src/**/*.py", "src/**/*.js", "src/**/*.ts"]
+                    "patterns": [
+                        "src/**/*.java",
+                        "src/**/*.py",
+                        "src/**/*.js",
+                        "src/**/*.ts",
+                    ],
                 },
                 "test_code": {
                     "description": "Test source code",
-                    "patterns": ["test/**/*.java", "tests/**/*.py", "**/test_*.py", "**/*Test.java"]
+                    "patterns": [
+                        "test/**/*.java",
+                        "tests/**/*.py",
+                        "**/test_*.py",
+                        "**/*Test.java",
+                    ],
                 },
                 "build_config": {
                     "description": "Build configuration files",
-                    "patterns": ["pom.xml", "build.gradle", "package.json", "setup.py", "Cargo.toml", "go.mod"]
-                }
-            }
+                    "patterns": [
+                        "pom.xml",
+                        "build.gradle",
+                        "package.json",
+                        "setup.py",
+                        "Cargo.toml",
+                        "go.mod",
+                    ],
+                },
+            },
         }
 
     def _load_config(self):
@@ -82,6 +113,7 @@ class ConfigManager:
         Returns:
             dict: The loaded configuration with default values for missing keys and expanded paths.
         """
+
         def _load_config(self):
             if not self.config_file.exists():
                 self.config_dir.mkdir(parents=True, exist_ok=True)
@@ -159,19 +191,27 @@ class ConfigManager:
             self.config["file_categories"] = {}
         self.config["file_categories"][category_name] = {
             "description": description,
-            "patterns": patterns
+            "patterns": patterns,
         }
         self._save_config()
 
     def remove_file_category(self, category_name):
-        if "file_categories" in self.config and category_name in self.config["file_categories"]:
+        if (
+            "file_categories" in self.config
+            and category_name in self.config["file_categories"]
+        ):
             del self.config["file_categories"][category_name]
             self._save_config()
 
     def update_file_category(self, category_name, description=None, patterns=None):
-        if "file_categories" in self.config and category_name in self.config["file_categories"]:
+        if (
+            "file_categories" in self.config
+            and category_name in self.config["file_categories"]
+        ):
             if description is not None:
-                self.config["file_categories"][category_name]["description"] = description
+                self.config["file_categories"][category_name][
+                    "description"
+                ] = description
             if patterns is not None:
                 self.config["file_categories"][category_name]["patterns"] = patterns
             self._save_config()

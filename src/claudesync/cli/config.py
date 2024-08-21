@@ -62,4 +62,5 @@ def ls(config):
     for key, value in config.config.items():
         click.echo(f"{key}: {value}")
 
+
 config.add_command(category)

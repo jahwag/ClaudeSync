@@ -127,7 +127,6 @@ def ls(config, show_all):
             click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
 
 
-
 @project.command()
 @click.option("--category", help="Specify the file category to sync")
 @click.pass_obj

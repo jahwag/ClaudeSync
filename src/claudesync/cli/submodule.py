@@ -6,6 +6,7 @@ from ..utils import (
     detect_submodules,
 )
 
+
 @click.group()
 def submodule():
     """Manage submodules within the current project."""

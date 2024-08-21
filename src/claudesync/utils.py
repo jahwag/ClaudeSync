@@ -207,8 +207,10 @@ def get_local_files(local_path, category=None):
             d
             for d in dirs
             if d not in exclude_dirs
-               and not (gitignore and gitignore.match_file(os.path.join(rel_root, d)))
-               and not (claudeignore and claudeignore.match_file(os.path.join(rel_root, d)))
+            and not (gitignore and gitignore.match_file(os.path.join(rel_root, d)))
+            and not (
+                claudeignore and claudeignore.match_file(os.path.join(rel_root, d))
+            )
         ]
 
         for filename in filenames:
@@ -216,7 +218,7 @@ def get_local_files(local_path, category=None):
             full_path = os.path.join(root, filename)
 
             if spec.match_file(rel_path) and should_process_file(
-                    full_path, filename, gitignore, local_path, claudeignore
+                full_path, filename, gitignore, local_path, claudeignore
             ):
                 file_hash = process_file(full_path)
                 if file_hash:
