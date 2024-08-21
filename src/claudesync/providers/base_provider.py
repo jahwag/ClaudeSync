@@ -68,3 +68,8 @@ class BaseProvider(ABC):
     def delete_chat(self, organization_id, conversation_uuids):
         """Delete specified chats for a given organization."""
         pass
+
+    @abstractmethod
+    def create_chat(self, organization_id, chat_name="", project_uuid=None):
+        """Create a new chat conversation in the specified organization."""
+        pass

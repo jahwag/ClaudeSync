@@ -136,3 +136,56 @@ def confirm_and_delete_chat(provider, organization_id, chat):
             click.echo(f"Successfully deleted chat: {chat.get('name', 'Unnamed')}")
         else:
             click.echo(f"Failed to delete chat: {chat.get('name', 'Unnamed')}")
+
+
+@chat.command()
+@click.option('--name', default="", help="Name of the chat conversation")
+@click.option('--project', help="UUID of the project to associate the chat with")
+@click.pass_obj
+@handle_errors
+def create(config, name, project):
+    """Create a new chat conversation on the active provider."""
+    provider = validate_and_get_provider(config)
+    organization_id = config.get("active_organization_id")
+    active_project_id = config.get("active_project_id")
+    active_project_name = config.get("active_project_name")
+
+    if not organization_id:
+        click.echo("No active organization set.")
+        return
+
+    if not project:
+        all_projects = provider.get_projects(organization_id)
+        if not all_projects:
+            click.echo("No projects found in the active organization.")
+            return
+
+        # Filter projects to include only the active project and its submodules
+        filtered_projects = [p for p in all_projects if p['id'] == active_project_id or
+                             (p['name'].startswith(f"{active_project_name}-SubModule-") and
+                              not p.get('archived_at'))]
+
+        if not filtered_projects:
+            click.echo("No active project or related submodules found.")
+            return
+
+        click.echo("Available projects:")
+        for idx, proj in enumerate(filtered_projects, 1):
+            project_type = "Active Project" if proj['id'] == active_project_id else "Submodule"
+            click.echo(f"{idx}. {proj['name']} (ID: {proj['id']}) - {project_type}")
+
+        while True:
+            selection = click.prompt("Enter the number of the project to associate with the chat", type=int)
+            if 1 <= selection <= len(filtered_projects):
+                project = filtered_projects[selection - 1]['id']
+                break
+            click.echo("Invalid selection. Please try again.")
+
+    try:
+        new_chat = provider.create_chat(organization_id, chat_name=name, project_uuid=project)
+        click.echo(f"Created new chat conversation: {new_chat['uuid']}")
+        if name:
+            click.echo(f"Chat name: {name}")
+        click.echo(f"Associated project: {project}")
+    except Exception as e:
+        click.echo(f"Failed to create chat conversation: {str(e)}")

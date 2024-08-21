@@ -198,3 +198,33 @@ class BaseClaudeAIProvider(BaseProvider):
 
     def _make_request(self, method, endpoint, data=None):
         raise NotImplementedError("This method should be implemented by subclasses")
+
+    def create_chat(self, organization_id, chat_name="", project_uuid=None):
+        """
+        Create a new chat conversation in the specified organization.
+
+        Args:
+            organization_id (str): The UUID of the organization.
+            chat_name (str, optional): The name of the chat. Defaults to an empty string.
+            project_uuid (str, optional): The UUID of the project to associate the chat with. Defaults to None.
+
+        Returns:
+            dict: The created chat conversation data.
+
+        Raises:
+            ProviderError: If the chat creation fails.
+        """
+        data = {
+            "uuid": self._generate_uuid(),
+            "name": chat_name,
+            "project_uuid": project_uuid,
+        }
+        return self._make_request(
+            "POST", f"/organizations/{organization_id}/chat_conversations", data
+        )
+
+    def _generate_uuid(self):
+        """Generate a UUID for the chat conversation."""
+        import uuid
+
+        return str(uuid.uuid4())
