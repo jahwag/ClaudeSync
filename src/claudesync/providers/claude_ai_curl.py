@@ -1,3 +1,4 @@
+import io
 import json
 import subprocess
 import tempfile
@@ -127,3 +128,28 @@ class ClaudeAICurlProvider(BaseClaudeAIProvider):
         )
         self.logger.error(error_message)
         raise ProviderError(error_message)
+
+    def _make_request_stream(self, method, endpoint, data=None):
+        url = f"{self.BASE_URL}{endpoint}"
+        headers = [
+            "-H",
+            "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
+            "-H",
+            f"Cookie: sessionKey={self.session_key}",
+            "-H",
+            "Content-Type: application/json",
+            "-H",
+            "Accept: text/event-stream",
+        ]
+
+        command = ["curl", "-N", "-s", url, "-X", method] + headers
+        if data:
+            command.extend(["-d", json.dumps(data)])
+
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
+        return io.TextIOWrapper(process.stdout)

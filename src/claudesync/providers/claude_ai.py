@@ -87,3 +87,23 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             self.logger.error(error_msg)
             raise ProviderError(error_msg)
         raise ProviderError(f"API request failed: {str(e)}")
+
+    def _make_request_stream(self, method, endpoint, data=None):
+        url = f"{self.BASE_URL}{endpoint}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
+            "Cookie": f"sessionKey={self.session_key}",
+        }
+
+        req = urllib.request.Request(url, method=method, headers=headers)
+        if data:
+            req.data = json.dumps(data).encode("utf-8")
+
+        try:
+            return urllib.request.urlopen(req)
+        except urllib.error.HTTPError as e:
+            self.handle_http_error(e)
+        except urllib.error.URLError as e:
+            raise ProviderError(f"API request failed: {str(e)}")

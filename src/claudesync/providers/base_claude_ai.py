@@ -1,6 +1,8 @@
 import datetime
+import json
 import logging
 import urllib
+import sseclient
 
 import click
 from .base_provider import BaseProvider
@@ -229,6 +231,11 @@ class BaseClaudeAIProvider(BaseProvider):
 
         return str(uuid.uuid4())
 
+    def _make_request_stream(self, method, endpoint, data=None):
+        # This method should be implemented by subclasses to return a response object
+        # that can be used with sseclient
+        raise NotImplementedError("This method should be implemented by subclasses")
+
     def send_message(self, organization_id, chat_id, prompt, timezone="UTC"):
         endpoint = (
             f"/organizations/{organization_id}/chat_conversations/{chat_id}/completion"
@@ -238,9 +245,16 @@ class BaseClaudeAIProvider(BaseProvider):
             "timezone": timezone,
             "attachments": [],
             "files": [],
-            "rendering_mode": "raw",
         }
-        response = self._make_request("POST", endpoint, data)
-        if response is None:
-            raise ProviderError("Failed to send message: No response received")
-        return response
+        response = self._make_request_stream("POST", endpoint, data)
+        client = sseclient.SSEClient(response)
+        for event in client.events():
+            if event.data:
+                try:
+                    yield json.loads(event.data)
+                except json.JSONDecodeError:
+                    yield {"error": "Failed to parse JSON"}
+            if event.event == "error":
+                yield {"error": event.data}
+            if event.event == "done":
+                break

@@ -252,19 +252,25 @@ def send(config, message, chat, timezone):
     message = ' '.join(message)  # Join all message parts into a single string
 
     try:
-        if chat:
-            # Send message to existing chat
-            response = provider.send_message(organization_id, chat, message, timezone)
-            click.echo(f"Message sent successfully to chat {chat}")
-        else:
+        if not chat:
             # Create a new chat and send message
             new_chat = provider.create_chat(organization_id)
-            chat_id = new_chat['uuid']
-            response = provider.send_message(organization_id, chat_id, message, timezone)
-            click.echo(f"New chat created with ID: {chat_id}")
-            click.echo(f"Message sent successfully to the new chat")
+            chat = new_chat['uuid']
+            click.echo(f"New chat created with ID: {chat}")
 
-        click.echo("Response:")
-        click.echo(response)
+        # Send message and process the streaming response
+        for event in provider.send_message(organization_id, chat, message, timezone):
+            if 'completion' in event:
+                click.echo(event['completion'], nl=False)
+            elif 'content' in event:
+                click.echo(event['content'], nl=False)
+            elif 'error' in event:
+                click.echo(f"\nError: {event['error']}")
+            elif 'message_limit' in event:
+                click.echo(f"\nRemaining messages: {event['message_limit']['remaining']}")
+
+        click.echo()  # Print a newline at the end of the response
+
     except Exception as e:
         click.echo(f"Failed to send message: {str(e)}")
+

@@ -19,6 +19,7 @@ dependencies = [
     "crontab>=1.0.1",
     "click_completion>=0.5.2",
     "tqdm>=4.66.4",
+    "sseclient-py>=1.8.0"
 ]
 keywords = [
     "sync",
