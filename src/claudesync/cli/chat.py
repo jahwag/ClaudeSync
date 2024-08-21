@@ -235,13 +235,13 @@ def create(config, name, project):
 
 
 @chat.command()
-@click.argument("chat_id")
-@click.argument("message")
-@click.option("--timezone", default="UTC", help="Timezone for the message")
+@click.argument('message', nargs=-1, required=True)
+@click.option('--chat', help='UUID of the chat to send the message to')
+@click.option('--timezone', default='UTC', help='Timezone for the message')
 @click.pass_obj
 @handle_errors
-def send(config, chat_id, message, timezone):
-    """Send a message to a specified chat."""
+def send(config, message, chat, timezone):
+    """Send a message to a specified chat or create a new chat and send the message."""
     provider = validate_and_get_provider(config)
     organization_id = config.get("active_organization_id")
 
@@ -249,9 +249,21 @@ def send(config, chat_id, message, timezone):
         click.echo("No active organization set.")
         return
 
+    message = ' '.join(message)  # Join all message parts into a single string
+
     try:
-        response = provider.send_message(organization_id, chat_id, message, timezone)
-        click.echo(f"Message sent successfully to chat {chat_id}")
+        if chat:
+            # Send message to existing chat
+            response = provider.send_message(organization_id, chat, message, timezone)
+            click.echo(f"Message sent successfully to chat {chat}")
+        else:
+            # Create a new chat and send message
+            new_chat = provider.create_chat(organization_id)
+            chat_id = new_chat['uuid']
+            response = provider.send_message(organization_id, chat_id, message, timezone)
+            click.echo(f"New chat created with ID: {chat_id}")
+            click.echo(f"Message sent successfully to the new chat")
+
         click.echo("Response:")
         click.echo(response)
     except Exception as e:
