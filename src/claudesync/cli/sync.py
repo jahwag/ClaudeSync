@@ -4,10 +4,7 @@ import sys
 import click
 from crontab import CronTab
 
-from claudesync.utils import get_local_files
 from ..utils import handle_errors, validate_and_get_provider
-from ..syncmanager import SyncManager
-from ..chat_sync import sync_chats
 
 
 @click.command()
@@ -29,26 +26,6 @@ def ls(config):
             click.echo(
                 f"  - {file['file_name']} (ID: {file['uuid']}, Created: {file['created_at']})"
             )
-
-
-@click.command()
-@click.pass_obj
-@handle_errors
-def sync(config):
-    """Synchronize both projects and chats."""
-    provider = validate_and_get_provider(config, require_project=True)
-
-    # Sync projects
-    sync_manager = SyncManager(provider, config)
-    remote_files = provider.list_files(
-        sync_manager.active_organization_id, sync_manager.active_project_id
-    )
-    local_files = get_local_files(config.get("local_path"))
-    sync_manager.sync(local_files, remote_files)
-
-    # Sync chats
-    sync_chats(provider, config)
-    click.echo("Project and chat sync completed successfully.")
 
 
 def validate_local_path(local_path):

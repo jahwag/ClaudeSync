@@ -7,7 +7,7 @@ from claudesync.config_manager import ConfigManager
 from .api import api
 from .organization import organization
 from .project import project
-from .sync import ls, sync, schedule
+from .sync import ls, schedule
 from .config import config
 import logging
 
@@ -58,7 +58,6 @@ cli.add_command(api)
 cli.add_command(organization)
 cli.add_command(project)
 cli.add_command(ls)
-cli.add_command(sync)
 cli.add_command(schedule)
 cli.add_command(config)
 cli.add_command(chat)

@@ -163,7 +163,7 @@ def process_file(file_path):
     return None
 
 
-def get_local_files(local_path):
+def get_local_files(local_path, category=None):
     """
     Retrieves a dictionary of local files within a specified path, applying various filters.
 
@@ -183,16 +183,26 @@ def get_local_files(local_path):
     Returns:
         dict: A dictionary where keys are relative file paths, and values are MD5 hashes of the file contents.
     """
+    config = ConfigManager()
     gitignore = load_gitignore(local_path)
     claudeignore = load_claudeignore(local_path)
     files = {}
     exclude_dirs = {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS", "claude_chats"}
 
+    categories = config.get("file_categories", {})
+    if category and category not in categories:
+        raise ValueError(f"Invalid category: {category}")
+
+    patterns = ["*"]  # Default to all files
+    if category:
+        patterns = categories[category]["patterns"]
+
+    spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
+
     for root, dirs, filenames in os.walk(local_path, topdown=True):
         rel_root = os.path.relpath(root, local_path)
         rel_root = "" if rel_root == "." else rel_root
 
-        # Filter out directories before traversing
         dirs[:] = [
             d
             for d in dirs
@@ -207,7 +217,7 @@ def get_local_files(local_path):
             rel_path = os.path.join(rel_root, filename)
             full_path = os.path.join(root, filename)
 
-            if should_process_file(
+            if spec.match_file(rel_path) and should_process_file(
                 full_path, filename, gitignore, local_path, claudeignore
             ):
                 file_hash = process_file(full_path)
@@ -268,13 +278,13 @@ def validate_and_get_provider(config, require_org=True, require_project=False):
     """
     active_provider = config.get("active_provider")
     session_key = config.get_session_key()
-    if not session_key:
-        raise ProviderError(
-            f"Session key has expired. Please run `claudesync api login {active_provider}` again."
-        )
     if not active_provider or not session_key:
         raise ConfigurationError(
             "No active provider or session key. Please login first."
+        )
+    if not session_key:
+        raise ProviderError(
+            f"Session key has expired. Please run `claudesync api login {active_provider}` again."
         )
     if require_org and not config.get("active_organization_id"):
         raise ConfigurationError(
@@ -342,3 +352,32 @@ def load_claudeignore(base_path):
         with open(claudeignore_path, "r") as f:
             return pathspec.PathSpec.from_lines("gitwildmatch", f)
     return None
+
+
+def detect_submodules(base_path, submodule_detect_filenames):
+    """
+    Detects submodules within a project based on specific filenames.
+
+    This function walks through the directory tree starting from base_path,
+    looking for files that indicate a submodule (e.g., pom.xml, build.gradle).
+    It returns a list of tuples containing the relative path to the submodule
+    and the filename that caused it to be identified as a submodule.
+
+    Args:
+        base_path (str): The base directory path to start the search from.
+        submodule_detect_filenames (list): List of filenames that indicate a submodule.
+
+    Returns:
+        list: A list of tuples (relative_path, detected_filename) for detected submodules,
+              excluding the root directory.
+    """
+    submodules = []
+    for root, dirs, files in os.walk(base_path):
+        for filename in submodule_detect_filenames:
+            if filename in files:
+                relative_path = os.path.relpath(root, base_path)
+                # Exclude the root directory (represented by an empty string or '.')
+                if relative_path not in ("", "."):
+                    submodules.append((relative_path, filename))
+                break  # Stop searching this directory once a submodule is found
+    return submodules

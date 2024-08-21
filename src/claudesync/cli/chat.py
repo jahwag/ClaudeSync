@@ -1,3 +1,5 @@
+import os
+
 import click
 import logging
 from ..exceptions import ProviderError
@@ -136,3 +138,197 @@ def confirm_and_delete_chat(provider, organization_id, chat):
             click.echo(f"Successfully deleted chat: {chat.get('name', 'Unnamed')}")
         else:
             click.echo(f"Failed to delete chat: {chat.get('name', 'Unnamed')}")
+
+
+@chat.command()
+@click.option("--name", default="", help="Name of the chat conversation")
+@click.option("--project", help="UUID of the project to associate the chat with")
+@click.pass_obj
+@handle_errors
+def create(config, name, project):
+    """Create a new chat conversation on the active provider."""
+    provider = validate_and_get_provider(config)
+    organization_id = config.get("active_organization_id")
+    active_project_id = config.get("active_project_id")
+    active_project_name = config.get("active_project_name")
+    local_path = config.get("local_path")
+
+    if not organization_id:
+        click.echo("No active organization set.")
+        return
+
+    if not project:
+        project = select_project(
+            active_project_id,
+            active_project_name,
+            local_path,
+            organization_id,
+            provider,
+        )
+        if project is None:
+            return
+
+    try:
+        new_chat = provider.create_chat(
+            organization_id, chat_name=name, project_uuid=project
+        )
+        click.echo(f"Created new chat conversation: {new_chat['uuid']}")
+        if name:
+            click.echo(f"Chat name: {name}")
+        click.echo(f"Associated project: {project}")
+    except Exception as e:
+        click.echo(f"Failed to create chat conversation: {str(e)}")
+
+
+@chat.command()
+@click.argument("message", nargs=-1, required=True)
+@click.option("--chat", help="UUID of the chat to send the message to")
+@click.option("--timezone", default="UTC", help="Timezone for the message")
+@click.pass_obj
+@handle_errors
+def send(config, message, chat, timezone):
+    """Send a message to a specified chat or create a new chat and send the message."""
+    provider = validate_and_get_provider(config)
+    organization_id = config.get("active_organization_id")
+    active_project_id = config.get("active_project_id")
+    active_project_name = config.get("active_project_name")
+    local_path = config.get("local_path")
+
+    if not organization_id:
+        click.echo("No active organization set.")
+        return
+
+    message = " ".join(message)  # Join all message parts into a single string
+
+    try:
+        chat = create_chat(
+            active_project_id,
+            active_project_name,
+            chat,
+            local_path,
+            organization_id,
+            provider,
+        )
+        if chat is None:
+            return
+
+        # Send message and process the streaming response
+        for event in provider.send_message(organization_id, chat, message, timezone):
+            if "completion" in event:
+                click.echo(event["completion"], nl=False)
+            elif "content" in event:
+                click.echo(event["content"], nl=False)
+            elif "error" in event:
+                click.echo(f"\nError: {event['error']}")
+            elif "message_limit" in event:
+                click.echo(
+                    f"\nRemaining messages: {event['message_limit']['remaining']}"
+                )
+
+        click.echo()  # Print a newline at the end of the response
+
+    except Exception as e:
+        click.echo(f"Failed to send message: {str(e)}")
+
+
+def create_chat(
+    active_project_id, active_project_name, chat, local_path, organization_id, provider
+):
+    if not chat:
+        selected_project = select_project(
+            active_project_id,
+            active_project_name,
+            local_path,
+            organization_id,
+            provider,
+        )
+        if selected_project is None:
+            return
+
+        # Create a new chat with the selected project
+        new_chat = provider.create_chat(organization_id, project_uuid=selected_project)
+        chat = new_chat["uuid"]
+        click.echo(f"New chat created with ID: {chat}")
+    return chat
+
+
+def select_project(
+    active_project_id, active_project_name, local_path, organization_id, provider
+):
+    all_projects = provider.get_projects(organization_id)
+    if not all_projects:
+        click.echo("No projects found in the active organization.")
+        return None
+
+    # Filter projects to include only the active project and its submodules
+    filtered_projects = [
+        p
+        for p in all_projects
+        if p["id"] == active_project_id
+        or (
+            p["name"].startswith(f"{active_project_name}-SubModule-")
+            and not p.get("archived_at")
+        )
+    ]
+
+    if not filtered_projects:
+        click.echo("No active project or related submodules found.")
+        return None
+
+    # Determine the current working directory
+    current_dir = os.path.abspath(os.getcwd())
+
+    default_project = get_default_project(
+        active_project_id,
+        active_project_name,
+        current_dir,
+        filtered_projects,
+        local_path,
+    )
+
+    click.echo("Available projects:")
+    for idx, proj in enumerate(filtered_projects, 1):
+        project_type = (
+            "Active Project" if proj["id"] == active_project_id else "Submodule"
+        )
+        default_marker = " (default)" if idx - 1 == default_project else ""
+        click.echo(
+            f"{idx}. {proj['name']} (ID: {proj['id']}) - {project_type}{default_marker}"
+        )
+
+    while True:
+        prompt = "Enter the number of the project to associate with the chat"
+        if default_project is not None:
+            default_project_name = filtered_projects[default_project]["name"]
+            prompt += f" (default: {default_project + 1} - {default_project_name})"
+        selection = click.prompt(
+            prompt,
+            type=int,
+            default=default_project + 1 if default_project is not None else None,
+        )
+        if 1 <= selection <= len(filtered_projects):
+            project = filtered_projects[selection - 1]["id"]
+            break
+        click.echo("Invalid selection. Please try again.")
+    return project
+
+
+def get_default_project(
+    active_project_id, active_project_name, current_dir, filtered_projects, local_path
+):
+    # Find the project that matches the current directory
+    default_project = None
+    for idx, proj in enumerate(filtered_projects):
+        if proj["id"] == active_project_id:
+            project_path = os.path.abspath(local_path)
+        else:
+            submodule_name = proj["name"].replace(
+                f"{active_project_name}-SubModule-", ""
+            )
+            project_path = os.path.abspath(
+                os.path.join(local_path, "services", submodule_name)
+            )
+        if current_dir.startswith(project_path):
+            default_project = idx
+            break
+    return default_project

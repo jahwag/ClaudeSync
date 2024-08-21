@@ -3,6 +3,8 @@ import urllib.error
 import urllib.parse
 import json
 import gzip
+from datetime import datetime, timezone
+
 from .base_claude_ai import BaseClaudeAIProvider
 from ..exceptions import ProviderError
 
@@ -71,11 +73,11 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             raise ProviderError(f"Invalid JSON response from API: {str(json_err)}")
 
     def handle_http_error(self, e):
-        self.logger.error(f"Request failed: {str(e)}")
-        self.logger.error(f"Response status code: {e.code}")
-        self.logger.error(f"Response headers: {e.headers}")
+        self.logger.debug(f"Request failed: {str(e)}")
+        self.logger.debug(f"Response status code: {e.code}")
+        self.logger.debug(f"Response headers: {e.headers}")
         content = e.read().decode("utf-8")
-        self.logger.error(f"Response content: {content}")
+        self.logger.debug(f"Response content: {content}")
         if e.code == 403:
             error_msg = (
                 "Received a 403 Forbidden error. Your session key might be invalid. "
@@ -86,4 +88,36 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             )
             self.logger.error(error_msg)
             raise ProviderError(error_msg)
+        if e.code == 429:
+            try:
+                error_data = json.loads(content)
+                resets_at_unix = json.loads(error_data["error"]["message"])["resetsAt"]
+                resets_at_local = datetime.fromtimestamp(
+                    resets_at_unix, tz=timezone.utc
+                ).astimezone()
+                formatted_time = resets_at_local.strftime("%a %b %d %Y %H:%M:%S %Z%z")
+                print(f"Message limit exceeded. Try again after {formatted_time}")
+            except (KeyError, json.JSONDecodeError) as parse_error:
+                print(f"Failed to parse error response: {parse_error}")
+            raise ProviderError("HTTP 429: Too Many Requests")
         raise ProviderError(f"API request failed: {str(e)}")
+
+    def _make_request_stream(self, method, endpoint, data=None):
+        url = f"{self.BASE_URL}{endpoint}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
+            "Cookie": f"sessionKey={self.session_key}",
+        }
+
+        req = urllib.request.Request(url, method=method, headers=headers)
+        if data:
+            req.data = json.dumps(data).encode("utf-8")
+
+        try:
+            return urllib.request.urlopen(req)
+        except urllib.error.HTTPError as e:
+            self.handle_http_error(e)
+        except urllib.error.URLError as e:
+            raise ProviderError(f"API request failed: {str(e)}")
