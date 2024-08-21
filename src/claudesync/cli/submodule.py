@@ -52,7 +52,10 @@ def create(config):
         return
 
     submodule_detect_filenames = config.get("submodule_detect_filenames", [])
-    submodules = detect_submodules(local_path, submodule_detect_filenames)
+    submodules_with_files = detect_submodules(local_path, submodule_detect_filenames)
+
+    # Extract only the submodule paths from the list of tuples
+    submodules = [submodule for submodule, _ in submodules_with_files]
 
     if not submodules:
         click.echo("No submodules detected in the current project.")

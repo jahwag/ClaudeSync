@@ -192,7 +192,8 @@ def create(config, name, project):
         while True:
             prompt = "Enter the number of the project to associate with the chat"
             if default_project is not None:
-                prompt += f" (default: {default_project + 1})"
+                default_project_name = filtered_projects[default_project]['name']
+                prompt += f" (default: {default_project + 1} - {default_project_name})"
             selection = click.prompt(prompt, type=int, default=default_project + 1 if default_project is not None else None)
             if 1 <= selection <= len(filtered_projects):
                 project = filtered_projects[selection - 1]['id']
