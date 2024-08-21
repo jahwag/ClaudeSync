@@ -343,6 +343,7 @@ def load_claudeignore(base_path):
             return pathspec.PathSpec.from_lines("gitwildmatch", f)
     return None
 
+
 def detect_submodules(base_path, submodule_detect_filenames):
     """
     Detects submodules within a project based on specific filenames.
@@ -366,7 +367,7 @@ def detect_submodules(base_path, submodule_detect_filenames):
             if filename in files:
                 relative_path = os.path.relpath(root, base_path)
                 # Exclude the root directory (represented by an empty string or '.')
-                if relative_path not in ('', '.'):
+                if relative_path not in ("", "."):
                     submodules.append((relative_path, filename))
                 break  # Stop searching this directory once a submodule is found
     return submodules

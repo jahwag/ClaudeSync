@@ -11,7 +11,6 @@ from ..utils import (
 )
 
 
-
 @click.group()
 def project():
     """Manage ai projects within the active organization."""
@@ -133,22 +132,83 @@ def ls(config, show_all):
 @click.pass_obj
 @handle_errors
 def sync(config):
-    """Synchronize only the project files."""
+    """Synchronize the project files, including submodules if they exist remotely."""
     provider = validate_and_get_provider(config, require_project=True)
 
-    sync_manager = SyncManager(provider, config)
-    remote_files = provider.list_files(
-        sync_manager.active_organization_id, sync_manager.active_project_id
-    )
-    local_files = get_local_files(config.get("local_path"))
-    sync_manager.sync(local_files, remote_files)
+    active_organization_id = config.get("active_organization_id")
+    active_project_id = config.get("active_project_id")
+    active_project_name = config.get("active_project_name")
+    local_path = config.get("local_path")
 
-    click.echo("Project sync completed successfully.")
+    if not local_path:
+        click.echo("No local path set. Please select or create a project first.")
+        return
+
+    # Detect local submodules
+    submodule_detect_filenames = config.get("submodule_detect_filenames", [])
+    local_submodules = detect_submodules(local_path, submodule_detect_filenames)
+
+    # Fetch all remote projects
+    all_remote_projects = provider.get_projects(
+        active_organization_id, include_archived=False
+    )
+
+    # Find remote submodule projects
+    remote_submodule_projects = [
+        project
+        for project in all_remote_projects
+        if project["name"].startswith(f"{active_project_name}-SubModule-")
+    ]
+
+    # Sync main project
+    sync_manager = SyncManager(provider, config)
+    remote_files = provider.list_files(active_organization_id, active_project_id)
+    local_files = get_local_files(local_path)
+    sync_manager.sync(local_files, remote_files)
+    click.echo(f"Main project '{active_project_name}' synced successfully.")
+
+    # Sync submodules
+    for local_submodule, detected_file in local_submodules:
+        submodule_name = os.path.basename(local_submodule)
+        remote_project = next(
+            (
+                proj
+                for proj in remote_submodule_projects
+                if proj["name"].endswith(f"-{submodule_name}")
+            ),
+            None,
+        )
+
+        if remote_project:
+            click.echo(f"Syncing submodule '{submodule_name}'...")
+            submodule_path = os.path.join(local_path, local_submodule)
+            submodule_files = get_local_files(submodule_path)
+            remote_submodule_files = provider.list_files(
+                active_organization_id, remote_project["id"]
+            )
+
+            # Create a new SyncManager for the submodule
+            submodule_config = config.config.copy()
+            submodule_config["active_project_id"] = remote_project["id"]
+            submodule_config["active_project_name"] = remote_project["name"]
+            submodule_config["local_path"] = submodule_path
+            submodule_sync_manager = SyncManager(provider, submodule_config)
+
+            submodule_sync_manager.sync(submodule_files, remote_submodule_files)
+            click.echo(f"Submodule '{submodule_name}' synced successfully.")
+        else:
+            click.echo(
+                f"No remote project found for submodule '{submodule_name}'. Skipping sync."
+            )
+
+    click.echo("Project sync completed successfully, including available submodules.")
+
 
 @project.group()
 def submodules():
     """Manage submodules within the current project."""
     pass
+
 
 @submodules.command()
 @click.pass_obj
@@ -208,6 +268,10 @@ def create(config):
                 f"{i}. Created project '{new_project_name}' (ID: {new_project['uuid']}) for submodule '{submodule_name}'"
             )
         except ProviderError as e:
-            click.echo(f"Failed to create project for submodule '{submodule_name}': {str(e)}")
+            click.echo(
+                f"Failed to create project for submodule '{submodule_name}': {str(e)}"
+            )
 
-    click.echo("\nSubmodule projects created successfully. You can now select and sync these projects individually.")
+    click.echo(
+        "\nSubmodule projects created successfully. You can now select and sync these projects individually."
+    )
