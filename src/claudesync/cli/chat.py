@@ -173,12 +173,16 @@ def create(config, name, project):
             return
 
         # Determine the current working directory
-        current_dir = os.getcwd()
+        current_dir = os.path.abspath(os.getcwd())
 
         # Find the project that matches the current directory
         default_project = None
         for idx, proj in enumerate(filtered_projects):
-            project_path = os.path.join(local_path, proj['name'].replace(f"{active_project_name}-SubModule-", ""))
+            if proj['id'] == active_project_id:
+                project_path = os.path.abspath(local_path)
+            else:
+                submodule_name = proj['name'].replace(f"{active_project_name}-SubModule-", "")
+                project_path = os.path.abspath(os.path.join(local_path, 'services', submodule_name))
             if current_dir.startswith(project_path):
                 default_project = idx
                 break
