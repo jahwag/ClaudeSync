@@ -1,3 +1,5 @@
+import os
+
 import click
 from claudesync.exceptions import ProviderError
 from ..utils import (

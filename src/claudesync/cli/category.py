@@ -47,7 +47,7 @@ def update(config, name, description, patterns):
 @category.command()
 @click.pass_obj
 @handle_errors
-def list(config):
+def ls(config):
     """List all file categories."""
     categories = config.get("file_categories", {})
     if not categories:

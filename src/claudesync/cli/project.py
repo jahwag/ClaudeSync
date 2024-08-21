@@ -1,3 +1,5 @@
+import os
+
 import click
 from claudesync.exceptions import ProviderError
 from .submodule import submodule
@@ -7,6 +9,7 @@ from ..utils import (
     validate_and_get_provider,
     get_local_files,
     detect_submodules,
+    validate_and_store_local_path,
 )
 
 

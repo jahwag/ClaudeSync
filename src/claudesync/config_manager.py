@@ -113,24 +113,22 @@ class ConfigManager:
         Returns:
             dict: The loaded configuration with default values for missing keys and expanded paths.
         """
+        if not self.config_file.exists():
+            self.config_dir.mkdir(parents=True, exist_ok=True)
+            return self._get_default_config()
 
-        def _load_config(self):
-            if not self.config_file.exists():
-                self.config_dir.mkdir(parents=True, exist_ok=True)
-                return self._get_default_config()
-
-            with open(self.config_file, "r") as f:
-                config = json.load(f)
-                defaults = self._get_default_config()
-                for key, value in defaults.items():
-                    if key not in config:
-                        config[key] = value
-                    elif key == "file_categories":
-                        # Merge default categories with user-defined categories
-                        for category, category_data in value.items():
-                            if category not in config[key]:
-                                config[key][category] = category_data
-                return config
+        with open(self.config_file, "r") as f:
+            config = json.load(f)
+            defaults = self._get_default_config()
+            for key, value in defaults.items():
+                if key not in config:
+                    config[key] = value
+                elif key == "file_categories":
+                    # Merge default categories with user-defined categories
+                    for category, category_data in value.items():
+                        if category not in config[key]:
+                            config[key][category] = category_data
+            return config
 
     def _save_config(self):
         """
