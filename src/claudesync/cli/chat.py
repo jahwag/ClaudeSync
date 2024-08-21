@@ -1,3 +1,5 @@
+import os
+
 import click
 import logging
 from ..exceptions import ProviderError
@@ -149,6 +151,7 @@ def create(config, name, project):
     organization_id = config.get("active_organization_id")
     active_project_id = config.get("active_project_id")
     active_project_name = config.get("active_project_name")
+    local_path = config.get("local_path")
 
     if not organization_id:
         click.echo("No active organization set.")
@@ -169,13 +172,28 @@ def create(config, name, project):
             click.echo("No active project or related submodules found.")
             return
 
+        # Determine the current working directory
+        current_dir = os.getcwd()
+
+        # Find the project that matches the current directory
+        default_project = None
+        for idx, proj in enumerate(filtered_projects):
+            project_path = os.path.join(local_path, proj['name'].replace(f"{active_project_name}-SubModule-", ""))
+            if current_dir.startswith(project_path):
+                default_project = idx
+                break
+
         click.echo("Available projects:")
         for idx, proj in enumerate(filtered_projects, 1):
             project_type = "Active Project" if proj['id'] == active_project_id else "Submodule"
-            click.echo(f"{idx}. {proj['name']} (ID: {proj['id']}) - {project_type}")
+            default_marker = " (default)" if idx - 1 == default_project else ""
+            click.echo(f"{idx}. {proj['name']} (ID: {proj['id']}) - {project_type}{default_marker}")
 
         while True:
-            selection = click.prompt("Enter the number of the project to associate with the chat", type=int)
+            prompt = "Enter the number of the project to associate with the chat"
+            if default_project is not None:
+                prompt += f" (default: {default_project + 1})"
+            selection = click.prompt(prompt, type=int, default=default_project + 1 if default_project is not None else None)
             if 1 <= selection <= len(filtered_projects):
                 project = filtered_projects[selection - 1]['id']
                 break
