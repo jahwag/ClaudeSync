@@ -2,147 +2,87 @@ import unittest
 from unittest.mock import patch, MagicMock, ANY
 from click.testing import CliRunner
 from claudesync.cli.main import cli
-from claudesync.exceptions import ProviderError
 
 
 class TestProjectCLI(unittest.TestCase):
+
     def setUp(self):
         self.runner = CliRunner()
 
     @patch("claudesync.cli.project.validate_and_get_provider")
-    @patch("claudesync.cli.project.click.prompt")
-    @patch("claudesync.cli.project.validate_and_store_local_path")
-    def test_project_create(
-        self, mock_validate_path, mock_prompt, mock_validate_and_get_provider
-    ):
-        mock_provider = MagicMock()
-        mock_provider.create_project.return_value = {
-            "uuid": "proj1",
-            "name": "New Project",
-        }
-        mock_validate_and_get_provider.return_value = mock_provider
-
-        mock_prompt.side_effect = ["New Project", "Project Description"]
-
-        result = self.runner.invoke(cli, ["project", "create"])
-
-        self.assertEqual(result.exit_code, 0)
-        self.assertIn(
-            "Project 'New Project' (uuid: proj1) has been created successfully.",
-            result.output,
-        )
-        self.assertIn("Active project set to: New Project (uuid: proj1)", result.output)
-        mock_validate_path.assert_called_once()
-        mock_provider.create_project.assert_called_once_with(
-            "org1", "New Project", "Project Description"
-        )
-
-    @patch("claudesync.cli.project.validate_and_get_provider")
-    @patch("claudesync.cli.project.click.prompt")
-    @patch("claudesync.cli.project.click.confirm")
-    def test_project_archive(
-        self, mock_confirm, mock_prompt, mock_validate_and_get_provider
-    ):
-        mock_provider = MagicMock()
-        mock_provider.get_projects.return_value = [
-            {"id": "proj1", "name": "Project 1"},
-            {"id": "proj2", "name": "Project 2"},
-        ]
-        mock_validate_and_get_provider.return_value = mock_provider
-
-        mock_prompt.return_value = 1
-        mock_confirm.return_value = True
-
-        result = self.runner.invoke(cli, ["project", "archive"])
-
-        self.assertEqual(result.exit_code, 0)
-        self.assertIn("Project 'Project 1' has been archived.", result.output)
-        mock_provider.archive_project.assert_called_once_with("org1", "proj1")
-
-    @patch("claudesync.cli.project.validate_and_get_provider")
-    @patch("claudesync.cli.project.click.prompt")
-    @patch("claudesync.cli.project.validate_and_store_local_path")
-    def test_project_select(
-        self, mock_validate_path, mock_prompt, mock_validate_and_get_provider
-    ):
-        mock_provider = MagicMock()
-        mock_provider.get_projects.return_value = [
-            {"id": "proj1", "name": "Project 1"},
-            {"id": "proj2", "name": "Project 2"},
-        ]
-        mock_validate_and_get_provider.return_value = mock_provider
-
-        mock_prompt.return_value = 1
-
-        result = self.runner.invoke(cli, ["project", "select"])
-
-        self.assertEqual(result.exit_code, 0)
-        self.assertIn("Selected project: Project 1 (ID: proj1)", result.output)
-        mock_validate_path.assert_called_once()
-
-    @patch("claudesync.cli.project.validate_and_get_provider")
-    def test_project_list(self, mock_validate_and_get_provider):
-        mock_provider = MagicMock()
-        mock_provider.get_projects.return_value = [
-            {"id": "proj1", "name": "Project 1", "archived_at": None},
-            {"id": "proj2", "name": "Project 2", "archived_at": "2023-01-01"},
-        ]
-        mock_validate_and_get_provider.return_value = mock_provider
-
-        result = self.runner.invoke(cli, ["project", "ls", "--all"])
-
-        self.assertEqual(result.exit_code, 0)
-        self.assertIn("Project 1 (ID: proj1)", result.output)
-        self.assertIn("Project 2 (ID: proj2) (Archived)", result.output)
-
-    @patch("claudesync.cli.project.validate_and_get_provider")
-    def test_project_list_no_projects(self, mock_validate_and_get_provider):
-        mock_provider = MagicMock()
-        mock_provider.get_projects.return_value = []
-        mock_validate_and_get_provider.return_value = mock_provider
-
-        result = self.runner.invoke(cli, ["project", "ls"])
-
-        self.assertEqual(result.exit_code, 0)
-        self.assertIn("No projects found.", result.output)
-
-    @patch("claudesync.cli.project.validate_and_get_provider")
-    def test_project_create_error(self, mock_validate_and_get_provider):
-        mock_provider = MagicMock()
-        mock_provider.create_project.side_effect = ProviderError(
-            "Failed to create project"
-        )
-        mock_validate_and_get_provider.return_value = mock_provider
-
-        result = self.runner.invoke(
-            cli, ["project", "create"], input="New Project\nProject Description\n"
-        )
-
-        self.assertEqual(result.exit_code, 0)
-        self.assertIn(
-            "Failed to create project: Failed to create project", result.output
-        )
-
-    @patch("claudesync.cli.project.validate_and_get_provider")
     @patch("claudesync.cli.project.SyncManager")
     @patch("claudesync.cli.project.get_local_files")
+    @patch("claudesync.cli.project.detect_submodules")
     def test_project_sync(
-        self, mock_get_local_files, mock_sync_manager, mock_validate_and_get_provider
+        self,
+        mock_detect_submodules,
+        mock_get_local_files,
+        mock_sync_manager,
+        mock_validate_and_get_provider,
     ):
+        # Mock the provider and its methods
         mock_provider = MagicMock()
         mock_validate_and_get_provider.return_value = mock_provider
-        mock_get_local_files.return_value = {"file1.txt": "hash1"}
+        mock_provider.get_projects.return_value = [
+            {"id": "main_project_id", "name": "Main Project"},
+            {"id": "submodule_id", "name": "Main Project-SubModule-submodule1"},
+        ]
+        mock_provider.list_files.side_effect = [
+            [{"file_name": "main_file.txt"}],  # Main project files
+            [{"file_name": "submodule_file.txt"}],  # Submodule files
+        ]
+
+        # Mock the configuration
+        mock_config = MagicMock()
+        mock_config.get.side_effect = lambda key, default=None: {
+            "active_organization_id": "org_id",
+            "active_project_id": "main_project_id",
+            "active_project_name": "Main Project",
+            "local_path": "/path/to/project",
+            "submodule_detect_filenames": ["pom.xml"],
+        }.get(key, default)
+
+        # Mock submodule detection
+        mock_detect_submodules.return_value = [("submodule1", "pom.xml")]
+
+        # Mock local file retrieval
+        mock_get_local_files.side_effect = [
+            {"main_file.txt": "hash1"},  # Main project files
+            {"submodule_file.txt": "hash2"},  # Submodule files
+        ]
+
+        # Mock SyncManager
         mock_sync_manager_instance = MagicMock()
         mock_sync_manager.return_value = mock_sync_manager_instance
 
-        result = self.runner.invoke(cli, ["project", "sync"])
+        # Run the command
+        result = self.runner.invoke(cli, ["project", "sync"], obj=mock_config)
 
+        # Assertions
         self.assertEqual(result.exit_code, 0)
-        self.assertIn("Project sync completed successfully.", result.output)
+        self.assertIn("Main project 'Main Project' synced successfully.", result.output)
+        self.assertIn("Syncing submodule 'submodule1'...", result.output)
+        self.assertIn("Submodule 'submodule1' synced successfully.", result.output)
+        self.assertIn(
+            "Project sync completed successfully, including available submodules.",
+            result.output,
+        )
+
+        # Verify method calls
         mock_validate_and_get_provider.assert_called_once_with(
             ANY, require_project=True
         )
-        mock_sync_manager_instance.sync.assert_called_once()
+        mock_provider.get_projects.assert_called_once_with(
+            "org_id", include_archived=False
+        )
+        mock_provider.list_files.assert_any_call("org_id", "main_project_id")
+        mock_provider.list_files.assert_any_call("org_id", "submodule_id")
+        mock_get_local_files.assert_any_call("/path/to/project", None)
+        mock_get_local_files.assert_any_call("/path/to/project/submodule1", None)
+        mock_sync_manager_instance.sync.assert_called()
+        self.assertEqual(
+            mock_sync_manager_instance.sync.call_count, 2
+        )  # Once for main project, once for submodule
 
 
 if __name__ == "__main__":

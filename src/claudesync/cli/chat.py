@@ -141,8 +141,8 @@ def confirm_and_delete_chat(provider, organization_id, chat):
 
 
 @chat.command()
-@click.option('--name', default="", help="Name of the chat conversation")
-@click.option('--project', help="UUID of the project to associate the chat with")
+@click.option("--name", default="", help="Name of the chat conversation")
+@click.option("--project", help="UUID of the project to associate the chat with")
 @click.pass_obj
 @handle_errors
 def create(config, name, project):
@@ -164,9 +164,15 @@ def create(config, name, project):
             return
 
         # Filter projects to include only the active project and its submodules
-        filtered_projects = [p for p in all_projects if p['id'] == active_project_id or
-                             (p['name'].startswith(f"{active_project_name}-SubModule-") and
-                              not p.get('archived_at'))]
+        filtered_projects = [
+            p
+            for p in all_projects
+            if p["id"] == active_project_id
+            or (
+                p["name"].startswith(f"{active_project_name}-SubModule-")
+                and not p.get("archived_at")
+            )
+        ]
 
         if not filtered_projects:
             click.echo("No active project or related submodules found.")
@@ -178,34 +184,48 @@ def create(config, name, project):
         # Find the project that matches the current directory
         default_project = None
         for idx, proj in enumerate(filtered_projects):
-            if proj['id'] == active_project_id:
+            if proj["id"] == active_project_id:
                 project_path = os.path.abspath(local_path)
             else:
-                submodule_name = proj['name'].replace(f"{active_project_name}-SubModule-", "")
-                project_path = os.path.abspath(os.path.join(local_path, 'services', submodule_name))
+                submodule_name = proj["name"].replace(
+                    f"{active_project_name}-SubModule-", ""
+                )
+                project_path = os.path.abspath(
+                    os.path.join(local_path, "services", submodule_name)
+                )
             if current_dir.startswith(project_path):
                 default_project = idx
                 break
 
         click.echo("Available projects:")
         for idx, proj in enumerate(filtered_projects, 1):
-            project_type = "Active Project" if proj['id'] == active_project_id else "Submodule"
+            project_type = (
+                "Active Project" if proj["id"] == active_project_id else "Submodule"
+            )
             default_marker = " (default)" if idx - 1 == default_project else ""
-            click.echo(f"{idx}. {proj['name']} (ID: {proj['id']}) - {project_type}{default_marker}")
+            click.echo(
+                f"{idx}. {proj['name']} (ID: {proj['id']}) - {project_type}{default_marker}"
+            )
 
         while True:
             prompt = "Enter the number of the project to associate with the chat"
             if default_project is not None:
-                default_project_name = filtered_projects[default_project]['name']
+                default_project_name = filtered_projects[default_project]["name"]
                 prompt += f" (default: {default_project + 1} - {default_project_name})"
-            selection = click.prompt(prompt, type=int, default=default_project + 1 if default_project is not None else None)
+            selection = click.prompt(
+                prompt,
+                type=int,
+                default=default_project + 1 if default_project is not None else None,
+            )
             if 1 <= selection <= len(filtered_projects):
-                project = filtered_projects[selection - 1]['id']
+                project = filtered_projects[selection - 1]["id"]
                 break
             click.echo("Invalid selection. Please try again.")
 
     try:
-        new_chat = provider.create_chat(organization_id, chat_name=name, project_uuid=project)
+        new_chat = provider.create_chat(
+            organization_id, chat_name=name, project_uuid=project
+        )
         click.echo(f"Created new chat conversation: {new_chat['uuid']}")
         if name:
             click.echo(f"Chat name: {name}")
