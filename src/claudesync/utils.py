@@ -278,13 +278,13 @@ def validate_and_get_provider(config, require_org=True, require_project=False):
     """
     active_provider = config.get("active_provider")
     session_key = config.get_session_key()
-    if not session_key:
-        raise ProviderError(
-            f"Session key has expired. Please run `claudesync api login {active_provider}` again."
-        )
     if not active_provider or not session_key:
         raise ConfigurationError(
             "No active provider or session key. Please login first."
+        )
+    if not session_key:
+        raise ProviderError(
+            f"Session key has expired. Please run `claudesync api login {active_provider}` again."
         )
     if require_org and not config.get("active_organization_id"):
         raise ConfigurationError(
