@@ -69,7 +69,7 @@ def archive(config):
     if 1 <= selection <= len(projects):
         selected_project = projects[selection - 1]
         if click.confirm(
-            f"Are you sure you want to archive '{selected_project['name']}'?"
+                f"Are you sure you want to archive '{selected_project['name']}'?"
         ):
             provider.archive_project(active_organization_id, selected_project["id"])
             click.echo(f"Project '{selected_project['name']}' has been archived.")
@@ -78,23 +78,35 @@ def archive(config):
 
 
 @project.command()
+@click.option('-a', '--all', 'show_all', is_flag=True, help="Include submodule projects in the selection")
 @click.pass_context
 @handle_errors
-def select(ctx):
+def select(ctx, show_all):
     """Set the active project for syncing."""
     config = ctx.obj
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
+    active_project_name = config.get("active_project_name")
     projects = provider.get_projects(active_organization_id, include_archived=False)
-    if not projects:
+
+    if show_all:
+        selectable_projects = projects
+    else:
+        # Filter out submodule projects
+        selectable_projects = [p for p in projects if not p['name'].startswith(f"{active_project_name}-SubModule-")]
+
+    if not selectable_projects:
         click.echo("No active projects found.")
         return
+
     click.echo("Available projects:")
-    for idx, project in enumerate(projects, 1):
-        click.echo(f"  {idx}. {project['name']} (ID: {project['id']})")
+    for idx, project in enumerate(selectable_projects, 1):
+        project_type = "Main Project" if not project['name'].startswith(f"{active_project_name}-SubModule-") else "Submodule"
+        click.echo(f"  {idx}. {project['name']} (ID: {project['id']}) - {project_type}")
+
     selection = click.prompt("Enter the number of the project to select", type=int)
-    if 1 <= selection <= len(projects):
-        selected_project = projects[selection - 1]
+    if 1 <= selection <= len(selectable_projects):
+        selected_project = selectable_projects[selection - 1]
         config.set("active_project_id", selected_project["id"])
         config.set("active_project_name", selected_project["name"])
         click.echo(
