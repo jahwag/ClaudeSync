@@ -99,7 +99,7 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
                 print(f"Message limit exceeded. Try again after {formatted_time}")
             except (KeyError, json.JSONDecodeError) as parse_error:
                 print(f"Failed to parse error response: {parse_error}")
-            raise ProviderError(f"HTTP 429: Too Many Requests")
+            raise ProviderError("HTTP 429: Too Many Requests")
         raise ProviderError(f"API request failed: {str(e)}")
 
     def _make_request_stream(self, method, endpoint, data=None):

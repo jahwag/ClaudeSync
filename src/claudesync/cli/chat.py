@@ -158,69 +158,15 @@ def create(config, name, project):
         return
 
     if not project:
-        all_projects = provider.get_projects(organization_id)
-        if not all_projects:
-            click.echo("No projects found in the active organization.")
+        project = select_project(
+            active_project_id,
+            active_project_name,
+            local_path,
+            organization_id,
+            provider,
+        )
+        if project is None:
             return
-
-        # Filter projects to include only the active project and its submodules
-        filtered_projects = [
-            p
-            for p in all_projects
-            if p["id"] == active_project_id
-            or (
-                p["name"].startswith(f"{active_project_name}-SubModule-")
-                and not p.get("archived_at")
-            )
-        ]
-
-        if not filtered_projects:
-            click.echo("No active project or related submodules found.")
-            return
-
-        # Determine the current working directory
-        current_dir = os.path.abspath(os.getcwd())
-
-        # Find the project that matches the current directory
-        default_project = None
-        for idx, proj in enumerate(filtered_projects):
-            if proj["id"] == active_project_id:
-                project_path = os.path.abspath(local_path)
-            else:
-                submodule_name = proj["name"].replace(
-                    f"{active_project_name}-SubModule-", ""
-                )
-                project_path = os.path.abspath(
-                    os.path.join(local_path, "services", submodule_name)
-                )
-            if current_dir.startswith(project_path):
-                default_project = idx
-                break
-
-        click.echo("Available projects:")
-        for idx, proj in enumerate(filtered_projects, 1):
-            project_type = (
-                "Active Project" if proj["id"] == active_project_id else "Submodule"
-            )
-            default_marker = " (default)" if idx - 1 == default_project else ""
-            click.echo(
-                f"{idx}. {proj['name']} (ID: {proj['id']}) - {project_type}{default_marker}"
-            )
-
-        while True:
-            prompt = "Enter the number of the project to associate with the chat"
-            if default_project is not None:
-                default_project_name = filtered_projects[default_project]["name"]
-                prompt += f" (default: {default_project + 1} - {default_project_name})"
-            selection = click.prompt(
-                prompt,
-                type=int,
-                default=default_project + 1 if default_project is not None else None,
-            )
-            if 1 <= selection <= len(filtered_projects):
-                project = filtered_projects[selection - 1]["id"]
-                break
-            click.echo("Invalid selection. Please try again.")
 
     try:
         new_chat = provider.create_chat(
@@ -255,82 +201,16 @@ def send(config, message, chat, timezone):
     message = " ".join(message)  # Join all message parts into a single string
 
     try:
-        if not chat:
-            # Get all projects
-            all_projects = provider.get_projects(organization_id)
-            if not all_projects:
-                click.echo("No projects found in the active organization.")
-                return
-
-            # Filter projects to include only the active project and its submodules
-            filtered_projects = [
-                p
-                for p in all_projects
-                if p["id"] == active_project_id
-                or (
-                    p["name"].startswith(f"{active_project_name}-SubModule-")
-                    and not p.get("archived_at")
-                )
-            ]
-
-            if not filtered_projects:
-                click.echo("No active project or related submodules found.")
-                return
-
-            # Determine the current working directory
-            current_dir = os.path.abspath(os.getcwd())
-
-            # Find the project that matches the current directory
-            default_project = None
-            for idx, proj in enumerate(filtered_projects):
-                if proj["id"] == active_project_id:
-                    project_path = os.path.abspath(local_path)
-                else:
-                    submodule_name = proj["name"].replace(
-                        f"{active_project_name}-SubModule-", ""
-                    )
-                    project_path = os.path.abspath(
-                        os.path.join(local_path, "services", submodule_name)
-                    )
-                if current_dir.startswith(project_path):
-                    default_project = idx
-                    break
-
-            click.echo("Available projects:")
-            for idx, proj in enumerate(filtered_projects, 1):
-                project_type = (
-                    "Active Project" if proj["id"] == active_project_id else "Submodule"
-                )
-                default_marker = " (default)" if idx - 1 == default_project else ""
-                click.echo(
-                    f"{idx}. {proj['name']} (ID: {proj['id']}) - {project_type}{default_marker}"
-                )
-
-            while True:
-                prompt = "Enter the number of the project to associate with the chat"
-                if default_project is not None:
-                    default_project_name = filtered_projects[default_project]["name"]
-                    prompt += (
-                        f" (default: {default_project + 1} - {default_project_name})"
-                    )
-                selection = click.prompt(
-                    prompt,
-                    type=int,
-                    default=(
-                        default_project + 1 if default_project is not None else None
-                    ),
-                )
-                if 1 <= selection <= len(filtered_projects):
-                    selected_project = filtered_projects[selection - 1]["id"]
-                    break
-                click.echo("Invalid selection. Please try again.")
-
-            # Create a new chat with the selected project
-            new_chat = provider.create_chat(
-                organization_id, project_uuid=selected_project
-            )
-            chat = new_chat["uuid"]
-            click.echo(f"New chat created with ID: {chat}")
+        chat = create_chat(
+            active_project_id,
+            active_project_name,
+            chat,
+            local_path,
+            organization_id,
+            provider,
+        )
+        if chat is None:
+            return
 
         # Send message and process the streaming response
         for event in provider.send_message(organization_id, chat, message, timezone):
@@ -349,3 +229,106 @@ def send(config, message, chat, timezone):
 
     except Exception as e:
         click.echo(f"Failed to send message: {str(e)}")
+
+
+def create_chat(
+    active_project_id, active_project_name, chat, local_path, organization_id, provider
+):
+    if not chat:
+        selected_project = select_project(
+            active_project_id,
+            active_project_name,
+            local_path,
+            organization_id,
+            provider,
+        )
+        if selected_project is None:
+            return
+
+        # Create a new chat with the selected project
+        new_chat = provider.create_chat(organization_id, project_uuid=selected_project)
+        chat = new_chat["uuid"]
+        click.echo(f"New chat created with ID: {chat}")
+    return chat
+
+
+def select_project(
+    active_project_id, active_project_name, local_path, organization_id, provider
+):
+    all_projects = provider.get_projects(organization_id)
+    if not all_projects:
+        click.echo("No projects found in the active organization.")
+        return None
+
+    # Filter projects to include only the active project and its submodules
+    filtered_projects = [
+        p
+        for p in all_projects
+        if p["id"] == active_project_id
+        or (
+            p["name"].startswith(f"{active_project_name}-SubModule-")
+            and not p.get("archived_at")
+        )
+    ]
+
+    if not filtered_projects:
+        click.echo("No active project or related submodules found.")
+        return None
+
+    # Determine the current working directory
+    current_dir = os.path.abspath(os.getcwd())
+
+    default_project = get_default_project(
+        active_project_id,
+        active_project_name,
+        current_dir,
+        filtered_projects,
+        local_path,
+    )
+
+    click.echo("Available projects:")
+    for idx, proj in enumerate(filtered_projects, 1):
+        project_type = (
+            "Active Project" if proj["id"] == active_project_id else "Submodule"
+        )
+        default_marker = " (default)" if idx - 1 == default_project else ""
+        click.echo(
+            f"{idx}. {proj['name']} (ID: {proj['id']}) - {project_type}{default_marker}"
+        )
+
+    while True:
+        prompt = "Enter the number of the project to associate with the chat"
+        if default_project is not None:
+            default_project_name = filtered_projects[default_project]["name"]
+            prompt += f" (default: {default_project + 1} - {default_project_name})"
+        selection = click.prompt(
+            prompt,
+            type=int,
+            default=default_project + 1 if default_project is not None else None,
+        )
+        if 1 <= selection <= len(filtered_projects):
+            project = filtered_projects[selection - 1]["id"]
+            break
+        click.echo("Invalid selection. Please try again.")
+    return project
+
+
+def get_default_project(
+    active_project_id, active_project_name, current_dir, filtered_projects, local_path
+):
+    # Find the project that matches the current directory
+    default_project = None
+    for idx, proj in enumerate(filtered_projects):
+        if proj["id"] == active_project_id:
+            project_path = os.path.abspath(local_path)
+        else:
+            submodule_name = proj["name"].replace(
+                f"{active_project_name}-SubModule-", ""
+            )
+            project_path = os.path.abspath(
+                os.path.join(local_path, "services", submodule_name)
+            )
+        if current_dir.startswith(project_path):
+            default_project = idx
+            break
+    return default_project
