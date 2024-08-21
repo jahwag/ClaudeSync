@@ -167,8 +167,8 @@ def ls(config):
         click.echo("No submodules detected in the current project.")
     else:
         click.echo("Detected submodules:")
-        for submodule in submodules:
-            click.echo(f"  - {submodule}")
+        for submodule, detected_file in submodules:
+            click.echo(f"  - {submodule} [{detected_file}]")
 
 
 @submodules.command()
