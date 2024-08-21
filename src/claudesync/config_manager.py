@@ -42,6 +42,14 @@ class ConfigManager:
             "max_file_size": 32 * 1024,  # Default 32 KB
             "two_way_sync": False,  # Default to False
             "curl_use_file_input": False,
+            "submodule_detect_filenames": [
+                "pom.xml",
+                "build.gradle",
+                "package.json",
+                "setup.py",
+                "Cargo.toml",
+                "go.mod",
+            ],  # Default filenames for submodule detection
         }
 
     def _load_config(self):

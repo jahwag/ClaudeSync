@@ -1,7 +1,5 @@
 import os
-
 import click
-
 from claudesync.exceptions import ProviderError
 from ..syncmanager import SyncManager
 from ..utils import (
@@ -9,7 +7,9 @@ from ..utils import (
     validate_and_get_provider,
     validate_and_store_local_path,
     get_local_files,
+    detect_submodules,
 )
+
 
 
 @click.group()
@@ -144,3 +144,24 @@ def sync(config):
     sync_manager.sync(local_files, remote_files)
 
     click.echo("Project sync completed successfully.")
+
+@project.command()
+@click.pass_obj
+@handle_errors
+def submodules(config):
+    """List all detected submodules in the current project."""
+    local_path = config.get("local_path")
+    if not local_path:
+        click.echo("No local path set. Please select or create a project first.")
+        return
+
+    submodule_detect_filenames = config.get("submodule_detect_filenames", [])
+    submodules = detect_submodules(local_path, submodule_detect_filenames)
+
+    if not submodules:
+        click.echo("No submodules detected in the current project.")
+    else:
+        click.echo("Detected submodules:")
+        for submodule in submodules:
+            click.echo(f"  - {submodule}")
+
