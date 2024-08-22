@@ -4,6 +4,8 @@ from claudesync.provider_factory import get_provider
 from ..utils import handle_errors
 from ..cli.organization import select as org_select
 from ..cli.project import select as proj_select
+from ..cli.submodule import create as submodule_create
+from ..cli.project import create as project_create
 
 
 @click.group()
@@ -37,8 +39,21 @@ def login(ctx, provider):
     # Automatically run organization select
     ctx.invoke(org_select)
 
-    # Automatically run project select
-    ctx.invoke(proj_select)
+    use_existing_project = click.confirm(
+        "Would you like to select an existing project to use?", default=True
+    )
+    if use_existing_project:
+        ctx.invoke(proj_select)
+    else:
+        ctx.invoke(project_create)
+        ctx.invoke(submodule_create)
+
+    delete_remote_files = click.confirm(
+        "Should ClaudeSync prune remote files not present in your local workspace? This feature may be enabled later "
+        "through `claudesync config set prune_remote_files=True`",
+        default=True,
+    )
+    config.set("prune_remote_files", delete_remote_files)
 
 
 @api.command()

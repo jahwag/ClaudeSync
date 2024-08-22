@@ -3,6 +3,7 @@ import time
 import logging
 from datetime import datetime, timezone
 
+import click
 from tqdm import tqdm
 
 from claudesync.utils import compute_md5_hash
@@ -77,6 +78,13 @@ class SyncManager:
                         remote_file, remote_files_to_delete, synced_files
                     )
                     pbar.update(1)
+        self.prune_remote_files(self.config, pbar, remote_files, remote_files_to_delete)
+
+    def prune_remote_files(self, config, pbar, remote_files, remote_files_to_delete):
+        if not config.get("prune_remote_files"):
+            click.echo("Remote pruning is not enabled.")
+            return
+
         for file_to_delete in list(remote_files_to_delete):
             self.delete_remote_files(file_to_delete, remote_files)
             pbar.update(1)

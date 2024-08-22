@@ -99,6 +99,7 @@ class ConfigManager:
                         "go.mod",
                     ],
                 },
+                "prune_remote_files": True,
             },
         }
 

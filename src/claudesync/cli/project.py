@@ -28,7 +28,7 @@ def create(config):
     active_organization_id = config.get("active_organization_id")
 
     default_name = os.path.basename(os.getcwd())
-    title = click.prompt("Enter the project title", default=default_name)
+    title = click.prompt("Enter the new project title", default=default_name)
     description = click.prompt("Enter the project description (optional)", default="")
 
     try:
@@ -114,7 +114,9 @@ def select(ctx, show_all):
         )
         click.echo(f"  {idx}. {project['name']} (ID: {project['id']}) - {project_type}")
 
-    selection = click.prompt("Enter the number of the project to select", type=int)
+    selection = click.prompt(
+        "Enter the number of the project to select", type=int, default=1
+    )
     if 1 <= selection <= len(selectable_projects):
         selected_project = selectable_projects[selection - 1]
         config.set("active_project_id", selected_project["id"])
