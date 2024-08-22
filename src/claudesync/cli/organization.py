@@ -42,7 +42,11 @@ def select(ctx):
     click.echo("Available organizations with required capabilities:")
     for idx, org in enumerate(organizations, 1):
         click.echo(f"  {idx}. {org['name']} (ID: {org['id']})")
-    selection = click.prompt("Enter the number of the organization to select", type=int)
+    selection = click.prompt(
+        "Enter the number of the organization you want to work with",
+        type=int,
+        default=1,
+    )
     if 1 <= selection <= len(organizations):
         selected_org = organizations[selection - 1]
         config.set("active_organization_id", selected_org["id"])

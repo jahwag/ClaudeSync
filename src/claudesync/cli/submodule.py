@@ -22,7 +22,10 @@ def ls(config):
     """List all detected submodules in the current project."""
     local_path = config.get("local_path")
     if not local_path:
-        click.echo("No local path set. Please select or create a project first.")
+        click.echo(
+            "No local path set for this project. Please select an existing project or create a new one using "
+            "'claudesync project select' or 'claudesync project create'."
+        )
         return
 
     submodule_detect_filenames = config.get("submodule_detect_filenames", [])
@@ -48,7 +51,10 @@ def create(config):
     local_path = config.get("local_path")
 
     if not local_path:
-        click.echo("No local path set. Please select or create a project first.")
+        click.echo(
+            "No local path set for this project. Please select an existing project or create a new one using "
+            "'claudesync project select' or 'claudesync project create'."
+        )
         return
 
     submodule_detect_filenames = config.get("submodule_detect_filenames", [])
