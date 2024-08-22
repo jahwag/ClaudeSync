@@ -31,10 +31,28 @@ def login(ctx, provider):
         )
         return
     provider_instance = get_provider(provider)
-    session = provider_instance.login()
-    config.set_session_key(session[0], session[1])
-    config.set("active_provider", provider)
-    click.echo("Logged in successfully.")
+
+    # Check for existing valid session key
+    existing_session_key = config.get_session_key()
+    existing_session_key_expiry = config.get("session_key_expiry")
+
+    if existing_session_key and existing_session_key_expiry:
+        use_existing = click.confirm(
+            "An existing session key was found. Would you like to use it?", default=True
+        )
+        if use_existing:
+            config.set("active_provider", provider)
+            click.echo("Logged in successfully using existing session key.")
+        else:
+            session = provider_instance.login()
+            config.set_session_key(session[0], session[1])
+            config.set("active_provider", provider)
+            click.echo("Logged in successfully with new session key.")
+    else:
+        session = provider_instance.login()
+        config.set_session_key(session[0], session[1])
+        config.set("active_provider", provider)
+        click.echo("Logged in successfully.")
 
     # Automatically run organization select
     ctx.invoke(org_select)
