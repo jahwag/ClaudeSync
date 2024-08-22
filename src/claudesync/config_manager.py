@@ -42,6 +42,7 @@ class ConfigManager:
             "max_file_size": 32 * 1024,
             "two_way_sync": False,
             "curl_use_file_input": False,
+            "prune_remote_files": False,
             "submodule_detect_filenames": [
                 "pom.xml",
                 "build.gradle",
@@ -99,7 +100,6 @@ class ConfigManager:
                         "go.mod",
                     ],
                 },
-                "prune_remote_files": True,
             },
         }
 
