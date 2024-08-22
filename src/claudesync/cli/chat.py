@@ -49,7 +49,7 @@ def ls(config):
 @click.pass_obj
 @handle_errors
 def rm(config, delete_all):
-    """Delete chats. Use -a to delete all chats, or select a chat to delete."""
+    """Delete chat conversations. Use -a to delete all chats, or run without -a to select specific chats to delete."""
     provider = validate_and_get_provider(config)
     organization_id = config.get("active_organization_id")
 

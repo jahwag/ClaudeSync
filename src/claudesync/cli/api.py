@@ -40,7 +40,9 @@ def login(ctx, provider):
     ctx.invoke(org_select)
 
     use_existing_project = click.confirm(
-        "Would you like to select an existing project to use?", default=True
+        "Would you like to select an existing project, or create a new one? (Selecting 'No' will prompt you to create "
+        "a new project)",
+        default=True,
     )
     if use_existing_project:
         ctx.invoke(proj_select)
@@ -49,8 +51,8 @@ def login(ctx, provider):
         ctx.invoke(submodule_create)
 
     delete_remote_files = click.confirm(
-        "Should ClaudeSync prune remote files not present in your local workspace? This feature may be enabled later "
-        "through `claudesync config set prune_remote_files=True`",
+        "Do you want ClaudeSync to automatically delete remote files that are not present in your local workspace? ("
+        "You can change this setting later with claudesync config set prune_remote_files=True|False)",
         default=True,
     )
     config.set("prune_remote_files", delete_remote_files)

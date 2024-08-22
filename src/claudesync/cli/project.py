@@ -28,7 +28,7 @@ def create(config):
     active_organization_id = config.get("active_organization_id")
 
     default_name = os.path.basename(os.getcwd())
-    title = click.prompt("Enter the new project title", default=default_name)
+    title = click.prompt("Enter a title for your new project", default=default_name)
     description = click.prompt("Enter the project description (optional)", default="")
 
     try:
@@ -69,7 +69,8 @@ def archive(config):
     if 1 <= selection <= len(projects):
         selected_project = projects[selection - 1]
         if click.confirm(
-            f"Are you sure you want to archive '{selected_project['name']}'?"
+            f"Are you sure you want to archive the project '{selected_project['name']}'?"
+            f"Archived projects cannot be modified but can still be viewed."
         ):
             provider.archive_project(active_organization_id, selected_project["id"])
             click.echo(f"Project '{selected_project['name']}' has been archived.")
@@ -168,7 +169,10 @@ def sync(config, category):
     local_path = config.get("local_path")
 
     if not local_path:
-        click.echo("No local path set. Please select or create a project first.")
+        click.echo(
+            "No local path set for this project. Please select an existing project or create a new one using "
+            "'claudesync project select' or 'claudesync project create'."
+        )
         return
 
     # Detect local submodules
