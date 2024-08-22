@@ -36,8 +36,8 @@ ClaudeSync is a powerful tool that bridges your local development environment wi
 
 **Claude Plan Requirements:**
 
-- **Supported:** Pro
-- **Not Supported:** Free, Team
+- **Supported:** Pro, Team
+- **Not Supported:** Free
 
 ## 🚀 Quick Start
 
@@ -53,7 +53,7 @@ claudesync api login claude.ai
 
 3. **Start syncing:**
 ```shell
-claudesync sync
+claudesync project sync
 ```
 *Note: This performs a one-way sync. Any files not present locally will be deleted from the Claude.ai Project.
 
