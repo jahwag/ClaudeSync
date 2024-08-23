@@ -76,8 +76,22 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
         self.logger.debug(f"Request failed: {str(e)}")
         self.logger.debug(f"Response status code: {e.code}")
         self.logger.debug(f"Response headers: {e.headers}")
-        content = e.read().decode("utf-8")
-        self.logger.debug(f"Response content: {content}")
+
+        try:
+            # Check if the content is gzip-encoded
+            if e.headers.get('Content-Encoding') == 'gzip':
+                content = gzip.decompress(e.read())
+            else:
+                content = e.read()
+
+            # Try to decode the content as UTF-8
+            content_str = content.decode('utf-8')
+        except UnicodeDecodeError:
+            # If UTF-8 decoding fails, try to decode as ISO-8859-1
+            content_str = content.decode('iso-8859-1')
+
+        self.logger.debug(f"Response content: {content_str}")
+
         if e.code == 403:
             error_msg = (
                 "Received a 403 Forbidden error. Your session key might be invalid. "
@@ -88,19 +102,21 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             )
             self.logger.error(error_msg)
             raise ProviderError(error_msg)
-        if e.code == 429:
+        elif e.code == 429:
             try:
-                error_data = json.loads(content)
+                error_data = json.loads(content_str)
                 resets_at_unix = json.loads(error_data["error"]["message"])["resetsAt"]
-                resets_at_local = datetime.fromtimestamp(
-                    resets_at_unix, tz=timezone.utc
-                ).astimezone()
+                resets_at_local = datetime.fromtimestamp(resets_at_unix, tz=timezone.utc).astimezone()
                 formatted_time = resets_at_local.strftime("%a %b %d %Y %H:%M:%S %Z%z")
-                print(f"Message limit exceeded. Try again after {formatted_time}")
+                error_msg = f"Message limit exceeded. Try again after {formatted_time}"
             except (KeyError, json.JSONDecodeError) as parse_error:
-                print(f"Failed to parse error response: {parse_error}")
-            raise ProviderError("HTTP 429: Too Many Requests")
-        raise ProviderError(f"API request failed: {str(e)}")
+                error_msg = f"HTTP 429: Too Many Requests. Failed to parse error response: {parse_error}"
+            self.logger.error(error_msg)
+            raise ProviderError(error_msg)
+        else:
+            error_msg = f"API request failed with status code {e.code}: {content_str}"
+            self.logger.error(error_msg)
+            raise ProviderError(error_msg)
 
     def _make_request_stream(self, method, endpoint, data=None):
         url = f"{self.BASE_URL}{endpoint}"
