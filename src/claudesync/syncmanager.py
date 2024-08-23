@@ -1,3 +1,4 @@
+import functools
 import os
 import time
 import logging
@@ -10,6 +11,26 @@ from claudesync.utils import compute_md5_hash
 from claudesync.exceptions import ProviderError
 
 logger = logging.getLogger(__name__)
+
+
+def retry_on_403(max_retries=3, delay=1):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            for attempt in range(max_retries):
+                try:
+                    return func(self, *args, **kwargs)
+                except ProviderError as e:
+                    if "403 Forbidden" in str(e) and attempt < max_retries - 1:
+                        self.logger.warning(
+                            f"Received 403 error. Retrying in {delay} seconds... (Attempt {attempt + 1}/{max_retries})")
+                        time.sleep(delay)
+                    else:
+                        raise
+
+        return wrapper
+
+    return decorator
 
 
 class SyncManager:
@@ -34,29 +55,6 @@ class SyncManager:
         self.two_way_sync = config.get("two_way_sync", False)
         self.max_retries = 3  # Maximum number of retries for 403 errors
         self.retry_delay = 1  # Delay between retries in seconds
-
-    def retry_on_403(func):
-        """
-        Decorator to retry a function on 403 Forbidden error.
-
-        This decorator will retry the wrapped function up to max_retries times
-        if a ProviderError with a 403 Forbidden message is encountered.
-        """
-
-        def wrapper(self, *args, **kwargs):
-            for attempt in range(self.max_retries):
-                try:
-                    return func(self, *args, **kwargs)
-                except ProviderError as e:
-                    if "403 Forbidden" in str(e) and attempt < self.max_retries - 1:
-                        logger.warning(
-                            f"Received 403 error. Retrying in {self.retry_delay} seconds..."
-                        )
-                        time.sleep(self.retry_delay)
-                    else:
-                        raise
-
-        return wrapper
 
     def sync(self, local_files, remote_files):
         """
@@ -100,12 +98,12 @@ class SyncManager:
 
     @retry_on_403
     def update_existing_file(
-        self,
-        local_file,
-        local_checksum,
-        remote_file,
-        remote_files_to_delete,
-        synced_files,
+            self,
+            local_file,
+            local_checksum,
+            remote_file,
+            remote_files_to_delete,
+            synced_files,
     ):
         """
         Update an existing file on the remote if it has changed locally.
@@ -128,7 +126,7 @@ class SyncManager:
                 )
                 pbar.update(1)
                 with open(
-                    os.path.join(self.local_path, local_file), "r", encoding="utf-8"
+                        os.path.join(self.local_path, local_file), "r", encoding="utf-8"
                 ) as file:
                     content = file.read()
                 self.provider.upload_file(
@@ -153,7 +151,7 @@ class SyncManager:
         """
         logger.debug(f"Uploading new file {local_file} to remote...")
         with open(
-            os.path.join(self.local_path, local_file), "r", encoding="utf-8"
+                os.path.join(self.local_path, local_file), "r", encoding="utf-8"
         ) as file:
             content = file.read()
         with tqdm(total=1, desc=f"Uploading {local_file}", leave=False) as pbar:
@@ -204,7 +202,7 @@ class SyncManager:
             )
 
     def update_existing_local_file(
-        self, local_file_path, remote_file, remote_files_to_delete, synced_files
+            self, local_file_path, remote_file, remote_files_to_delete, synced_files
     ):
         """
         Update an existing local file if the remote version is newer.
@@ -232,7 +230,7 @@ class SyncManager:
                 remote_files_to_delete.remove(remote_file["file_name"])
 
     def create_new_local_file(
-        self, local_file_path, remote_file, remote_files_to_delete, synced_files
+            self, local_file_path, remote_file, remote_files_to_delete, synced_files
     ):
         """
         Create a new local file from a remote file.
@@ -247,7 +245,7 @@ class SyncManager:
             f"Creating new local file {remote_file['file_name']} from remote..."
         )
         with tqdm(
-            total=1, desc=f"Creating {remote_file['file_name']}", leave=False
+                total=1, desc=f"Creating {remote_file['file_name']}", leave=False
         ) as pbar:
             with open(local_file_path, "w", encoding="utf-8") as file:
                 file.write(remote_file["content"])
