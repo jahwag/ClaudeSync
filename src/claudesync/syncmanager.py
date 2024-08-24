@@ -16,20 +16,21 @@ logger = logging.getLogger(__name__)
 def retry_on_403(max_retries=3, delay=1):
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(self, *args, **kwargs):
+        def wrapper(*args, **kwargs):
+            self = args[0] if len(args) > 0 else None
             for attempt in range(max_retries):
                 try:
-                    return func(self, *args, **kwargs)
+                    return func(*args, **kwargs)
                 except ProviderError as e:
                     if "403 Forbidden" in str(e) and attempt < max_retries - 1:
-                        self.logger.warning(
-                            f"Received 403 error. Retrying in {delay} seconds... (Attempt {attempt + 1}/{max_retries})")
+                        if self and hasattr(self, 'logger'):
+                            self.logger.warning(f"Received 403 error. Retrying in {delay} seconds... (Attempt {attempt + 1}/{max_retries})")
+                        else:
+                            print(f"Received 403 error. Retrying in {delay} seconds... (Attempt {attempt + 1}/{max_retries})")
                         time.sleep(delay)
                     else:
                         raise
-
         return wrapper
-
     return decorator
 
 
@@ -96,7 +97,7 @@ class SyncManager:
 
         self.prune_remote_files(remote_files, remote_files_to_delete)
 
-    @retry_on_403
+    @retry_on_403()
     def update_existing_file(
             self,
             local_file,
@@ -140,7 +141,7 @@ class SyncManager:
             synced_files.add(local_file)
         remote_files_to_delete.remove(local_file)
 
-    @retry_on_403
+    @retry_on_403()
     def upload_new_file(self, local_file, synced_files):
         """
         Upload a new file to the remote project.
@@ -269,7 +270,7 @@ class SyncManager:
         for file_to_delete in list(remote_files_to_delete):
             self.delete_remote_files(file_to_delete, remote_files)
 
-    @retry_on_403
+    @retry_on_403()
     def delete_remote_files(self, file_to_delete, remote_files):
         """
         Delete a file from the remote project that no longer exists locally.
