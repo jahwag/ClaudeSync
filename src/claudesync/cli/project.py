@@ -176,7 +176,7 @@ def sync(config, category):
     remote_files = provider.list_files(active_organization_id, active_project_id)
     local_files = get_local_files(local_path, category)
     sync_manager.sync(local_files, remote_files)
-    click.echo(f"Main project '{active_project_name}' synced successfully.")
+    click.echo(f"Main project '{active_project_name}' synced successfully: https://claude.ai/project/{active_project_id}")
 
     # Sync submodules
     for local_submodule, detected_file in local_submodules:
@@ -200,11 +200,13 @@ def sync(config, category):
             submodule_sync_manager = SyncManager(provider, submodule_config)
 
             submodule_sync_manager.sync(submodule_files, remote_submodule_files)
-            click.echo(f"Submodule '{submodule_name}' synced successfully.")
+            click.echo(f"Submodule '{submodule_name}' synced successfully: "
+                       f"https://claude.ai/project/{remote_project['id']}")
         else:
             click.echo(f"No remote project found for submodule '{submodule_name}'. Skipping sync.")
 
-    click.echo("Project sync completed successfully, including available submodules.")
+    if len(local_submodules) > 0:
+        click.echo("Project sync completed successfully, including available submodules.")
 
 @project.command()
 @click.option("-a", "--include-archived", is_flag=True, help="Include archived projects")
