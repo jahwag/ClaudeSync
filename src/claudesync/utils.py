@@ -1,6 +1,8 @@
 import os
 import hashlib
 from functools import wraps
+from pathlib import Path
+
 import click
 import pathspec
 import logging
@@ -365,12 +367,7 @@ def load_claudeignore(base_path):
 
 def detect_submodules(base_path, submodule_detect_filenames):
     """
-    Detects submodules within a project based on specific filenames.
-
-    This function walks through the directory tree starting from base_path,
-    looking for files that indicate a submodule (e.g., pom.xml, build.gradle).
-    It returns a list of tuples containing the relative path to the submodule
-    and the filename that caused it to be identified as a submodule.
+    Detects submodules within a project based on specific filenames, respecting .gitignore and .claudeignore.
 
     Args:
         base_path (str): The base directory path to start the search from.
@@ -378,15 +375,36 @@ def detect_submodules(base_path, submodule_detect_filenames):
 
     Returns:
         list: A list of tuples (relative_path, detected_filename) for detected submodules,
-              excluding the root directory.
+              excluding the root directory and respecting ignore files.
     """
     submodules = []
+    base_path = Path(base_path)
+    gitignore = load_gitignore(base_path)
+    claudeignore = load_claudeignore(base_path)
+
     for root, dirs, files in os.walk(base_path):
+        rel_root = Path(root).relative_to(base_path)
+
+        # Check if the current directory should be ignored
+        if gitignore and gitignore.match_file(str(rel_root)):
+            dirs[:] = []  # Don't descend into this directory
+            continue
+        if claudeignore and claudeignore.match_file(str(rel_root)):
+            dirs[:] = []  # Don't descend into this directory
+            continue
+
         for filename in submodule_detect_filenames:
             if filename in files:
-                relative_path = os.path.relpath(root, base_path)
+                relative_path = str(rel_root)
                 # Exclude the root directory (represented by an empty string or '.')
                 if relative_path not in ("", "."):
+                    # Check if the file itself should be ignored
+                    file_path = rel_root / filename
+                    if (gitignore and gitignore.match_file(str(file_path))) or \
+                            (claudeignore and claudeignore.match_file(str(file_path))):
+                        continue
                     submodules.append((relative_path, filename))
                 break  # Stop searching this directory once a submodule is found
+
     return submodules
+

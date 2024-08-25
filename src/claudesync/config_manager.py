@@ -41,6 +41,14 @@ class ConfigManager:
             "two_way_sync": False,
             "curl_use_file_input": False,
             "prune_remote_files": False,
+            "submodule_detect_filenames": [
+                "pom.xml",
+                "build.gradle",
+                "package.json",
+                "setup.py",
+                "Cargo.toml",
+                "go.mod",
+            ],
             "file_categories": {
                 "all_files": {
                     "description": "All files not ignored",
