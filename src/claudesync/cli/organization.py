@@ -1,11 +1,10 @@
 import click
-
 from ..utils import handle_errors, validate_and_get_provider
 
 
 @click.group()
 def organization():
-    """Manage ai organizations."""
+    """Manage AI organizations."""
     pass
 
 
@@ -49,9 +48,16 @@ def select(ctx):
     )
     if 1 <= selection <= len(organizations):
         selected_org = organizations[selection - 1]
-        config.set("active_organization_id", selected_org["id"])
+        config.set("active_organization_id", selected_org["id"], local=True)
         click.echo(
             f"Selected organization: {selected_org['name']} (ID: {selected_org['id']})"
+        )
+
+        # Clear project-related settings when changing organization
+        config.set("active_project_id", None, local=True)
+        config.set("active_project_name", None, local=True)
+        click.echo(
+            "Project settings cleared. Please select or create a new project for this organization."
         )
     else:
         click.echo("Invalid selection. Please try again.")

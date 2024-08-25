@@ -26,7 +26,7 @@ click_completion.init()
 @click.group()
 @click.pass_context
 def cli(ctx):
-    """ClaudeSync: Synchronize local files with ai projects."""
+    """ClaudeSync: Synchronize local files with AI projects."""
     ctx.obj = ConfigManager()
 
 
@@ -52,17 +52,20 @@ def status(config):
         "active_organization_id",
         "active_project_id",
         "active_project_name",
-        "local_path",
         "log_level",
     ]:
         value = config.get(key)
         click.echo(f"{key.replace('_', ' ').capitalize()}: {value or 'Not set'}")
 
+    local_path = config.get_local_path()
+    click.echo(f"Local path: {local_path or 'Not set'}")
+
 
 @cli.command()
 @click.pass_context
-def upgrade(config):
+def upgrade(ctx):
     """Upgrade ClaudeSync to the latest version and reset configuration, preserving sessionKey."""
+    config = ctx.obj
     current_version = get_distribution("claudesync").version
 
     # Check for the latest version
@@ -82,21 +85,8 @@ def upgrade(config):
         click.echo(f"Unable to check for the latest version: {str(e)}")
         click.echo("Proceeding with the upgrade process.")
 
-    config_path = os.path.expanduser("~/.claudesync/config.json")
-    session_key = None
-    session_key_expiry = None
-
-    # Read existing configuration
-    if os.path.exists(config_path):
-        with open(config_path, "r") as f:
-            old_config = json.load(f)
-            session_key = old_config.get("session_key")
-            session_key_expiry = old_config.get("session_key_expiry")
-
-        # Backup existing configuration
-        backup_path = f"{config_path}.v{current_version}.bak"
-        os.rename(config_path, backup_path)
-        click.echo(f"Existing configuration backed up to: {backup_path}")
+    session_key = config.get_session_key()
+    session_key_expiry = config.get("session_key_expiry")
 
     # Upgrade ClaudeSync
     click.echo(f"Upgrading ClaudeSync from v{current_version} to v{latest_version}...")
@@ -108,31 +98,21 @@ def upgrade(config):
             "Failed to upgrade ClaudeSync. Please try manually: pip install --upgrade claudesync"
         )
 
-    # Create new configuration with preserved sessionKey
+    # Preserve the session key and its expiry
     if session_key and session_key_expiry:
-        new_config = {
-            "session_key": session_key,
-            "session_key_expiry": session_key_expiry,
-        }
-        with open(config_path, "w") as f:
-            json.dump(new_config, f, indent=2)
-        click.echo("New configuration created with preserved sessionKey.")
+        config.set_session_key(session_key, session_key_expiry)
+        click.echo("Session key preserved in the new configuration.")
     else:
-        click.echo("No sessionKey found in the old configuration.")
+        click.echo("No valid session key found in the old configuration.")
 
     # Inform user about the upgrade process
     click.echo("\nUpgrade process completed:")
     click.echo(
-        f"1. Your previous configuration (v{current_version}) has been backed up."
+        f"1. ClaudeSync has been upgraded from v{current_version} to v{latest_version}."
     )
+    click.echo("2. Your session key has been preserved (if it existed and was valid).")
     click.echo(
-        f"2. ClaudeSync has been upgraded from v{current_version} to v{latest_version}."
-    )
-    click.echo(
-        "3. A new configuration has been created, preserving your sessionKey if it existed."
-    )
-    click.echo(
-        "\nPlease run 'claudesync api login' to complete your configuration setup."
+        "\nPlease run 'claudesync api login' to complete your configuration setup if needed."
     )
 
 

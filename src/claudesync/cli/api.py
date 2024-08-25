@@ -1,4 +1,5 @@
 import click
+from datetime import datetime, timedelta
 
 from claudesync.provider_factory import get_provider
 from ..utils import handle_errors
@@ -7,12 +8,10 @@ from ..cli.project import select as proj_select
 from ..cli.submodule import create as submodule_create
 from ..cli.project import create as project_create
 
-
 @click.group()
 def api():
-    """Manage api."""
+    """Manage API."""
     pass
-
 
 @api.command()
 @click.argument("provider", required=False)
@@ -26,9 +25,7 @@ def login(ctx, provider):
         click.echo("Available providers:\n" + "\n".join(f"  - {p}" for p in providers))
         return
     if provider not in providers:
-        click.echo(
-            f"Error: Unknown provider '{provider}'. Available: {', '.join(providers)}"
-        )
+        click.echo(f"Error: Unknown provider '{provider}'. Available: {', '.join(providers)}")
         return
     provider_instance = get_provider(provider)
 
@@ -41,25 +38,24 @@ def login(ctx, provider):
             "An existing session key was found. Would you like to use it?", default=True
         )
         if use_existing:
-            config.set("active_provider", provider)
+            config.set("active_provider", provider, local=True)
             click.echo("Logged in successfully using existing session key.")
         else:
             session = provider_instance.login()
             config.set_session_key(session[0], session[1])
-            config.set("active_provider", provider)
+            config.set("active_provider", provider, local=True)
             click.echo("Logged in successfully with new session key.")
     else:
         session = provider_instance.login()
         config.set_session_key(session[0], session[1])
-        config.set("active_provider", provider)
+        config.set("active_provider", provider, local=True)
         click.echo("Logged in successfully.")
 
     # Automatically run organization select
     ctx.invoke(org_select)
 
     use_existing_project = click.confirm(
-        "Would you like to select an existing project, or create a new one? (Selecting 'No' will prompt you to create "
-        "a new project)",
+        "Would you like to select an existing project, or create a new one? (Selecting 'No' will prompt you to create a new project)",
         default=True,
     )
     if use_existing_project:
@@ -69,29 +65,27 @@ def login(ctx, provider):
         ctx.invoke(submodule_create)
 
     delete_remote_files = click.confirm(
-        "Do you want ClaudeSync to automatically delete remote files that are not present in your local workspace? ("
-        "You can change this setting later with claudesync config set prune_remote_files=True|False)",
+        "Do you want ClaudeSync to automatically delete remote files that are not present in your local workspace? "
+        "(You can change this setting later with claudesync config set prune_remote_files=True|False)",
         default=True,
     )
     config.set("prune_remote_files", delete_remote_files)
-
 
 @api.command()
 @click.pass_obj
 def logout(config):
     """Log out from the current AI provider."""
-    for key in [
+    keys_to_clear = [
         "session_key",
         "session_key_expiry",
         "active_provider",
         "active_organization_id",
         "active_project_id",
         "active_project_name",
-        "local_path",
-    ]:
-        config.set(key, None)
+    ]
+    for key in keys_to_clear:
+        config.set(key, None, local=True)
     click.echo("Logged out successfully.")
-
 
 @api.command()
 @click.option("--delay", type=float, required=True, help="Upload delay in seconds")
@@ -104,7 +98,6 @@ def ratelimit(config, delay):
         return
     config.set("upload_delay", delay)
     click.echo(f"Upload delay set to {delay} seconds.")
-
 
 @api.command()
 @click.option("--size", type=int, required=True, help="Maximum file size in bytes")

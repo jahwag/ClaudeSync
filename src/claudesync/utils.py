@@ -187,7 +187,16 @@ def get_local_files(local_path, category=None):
     gitignore = load_gitignore(local_path)
     claudeignore = load_claudeignore(local_path)
     files = {}
-    exclude_dirs = {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS", "claude_chats"}
+    exclude_dirs = {
+        ".git",
+        ".svn",
+        ".hg",
+        ".bzr",
+        "_darcs",
+        "CVS",
+        "claude_chats",
+        ".claudesync",
+    }
 
     categories = config.get("file_categories", {})
     if category and category not in categories:

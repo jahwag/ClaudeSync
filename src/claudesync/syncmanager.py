@@ -57,7 +57,7 @@ class SyncManager:
         self.config = config
         self.active_organization_id = config.get("active_organization_id")
         self.active_project_id = config.get("active_project_id")
-        self.local_path = config.get("local_path")
+        self.local_path = config.get_local_path()
         self.upload_delay = config.get("upload_delay", 0.5)
         self.two_way_sync = config.get("two_way_sync", False)
         self.max_retries = 3  # Maximum number of retries for 403 errors
