@@ -238,8 +238,10 @@ def sync(config, category):
 
 
 @project.command()
-@click.option('-a', '--include-archived', is_flag=True, help='Include archived projects')
-@click.option('-y', '--yes', is_flag=True, help='Skip confirmation prompt')
+@click.option(
+    "-a", "--include-archived", is_flag=True, help="Include archived projects"
+)
+@click.option("-y", "--yes", is_flag=True, help="Skip confirmation prompt")
 @click.pass_obj
 @handle_errors
 def truncate(config, include_archived, yes):
@@ -247,7 +249,9 @@ def truncate(config, include_archived, yes):
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
 
-    projects = provider.get_projects(active_organization_id, include_archived=include_archived)
+    projects = provider.get_projects(
+        active_organization_id, include_archived=include_archived
+    )
 
     if not projects:
         click.echo("No projects found.")
@@ -258,26 +262,34 @@ def truncate(config, include_archived, yes):
         for project in projects:
             status = " (Archived)" if project.get("archived_at") else ""
             click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
-        if not click.confirm("Are you sure you want to continue? This may take some time."):
+        if not click.confirm(
+            "Are you sure you want to continue? This may take some time."
+        ):
             click.echo("Operation cancelled.")
             return
 
     with tqdm(total=len(projects), desc="Deleting files from projects") as pbar:
         for project in projects:
-            delete_files_from_project(provider, active_organization_id, project['id'], project['name'])
+            delete_files_from_project(
+                provider, active_organization_id, project["id"], project["name"]
+            )
             pbar.update(1)
 
     click.echo("All files have been deleted from all projects.")
+
 
 @retry_on_403()
 def delete_files_from_project(provider, organization_id, project_id, project_name):
     try:
         files = provider.list_files(organization_id, project_id)
-        with tqdm(total=len(files), desc=f"Deleting files from {project_name}", leave=False) as file_pbar:
+        with tqdm(
+            total=len(files), desc=f"Deleting files from {project_name}", leave=False
+        ) as file_pbar:
             for file in files:
-                provider.delete_file(organization_id, project_id, file['uuid'])
+                provider.delete_file(organization_id, project_id, file["uuid"])
                 file_pbar.update(1)
     except ProviderError as e:
         click.echo(f"Error deleting files from project {project_name}: {str(e)}")
+
 
 project.add_command(submodule)

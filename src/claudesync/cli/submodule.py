@@ -87,7 +87,8 @@ def create(config):
 
         if existing_project:
             click.echo(
-                f"{i}. Submodule '{submodule_name}' already exists as project '{new_project_name}' (ID: {existing_project['id']}). Skipping."
+                f"{i}. Submodule '{submodule_name}' already exists as project "
+                f"'{new_project_name}' (ID: {existing_project['id']}). Skipping."
             )
         else:
             description = f"Submodule '{submodule_name}' for project '{active_project_name}' (ID: {active_project_id})"

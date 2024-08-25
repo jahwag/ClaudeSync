@@ -79,16 +79,16 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
 
         try:
             # Check if the content is gzip-encoded
-            if e.headers.get('Content-Encoding') == 'gzip':
+            if e.headers.get("Content-Encoding") == "gzip":
                 content = gzip.decompress(e.read())
             else:
                 content = e.read()
 
             # Try to decode the content as UTF-8
-            content_str = content.decode('utf-8')
+            content_str = content.decode("utf-8")
         except UnicodeDecodeError:
             # If UTF-8 decoding fails, try to decode as ISO-8859-1
-            content_str = content.decode('iso-8859-1')
+            content_str = content.decode("iso-8859-1")
 
         self.logger.debug(f"Response content: {content_str}")
 
@@ -106,7 +106,9 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             try:
                 error_data = json.loads(content_str)
                 resets_at_unix = json.loads(error_data["error"]["message"])["resetsAt"]
-                resets_at_local = datetime.fromtimestamp(resets_at_unix, tz=timezone.utc).astimezone()
+                resets_at_local = datetime.fromtimestamp(
+                    resets_at_unix, tz=timezone.utc
+                ).astimezone()
                 formatted_time = resets_at_local.strftime("%a %b %d %Y %H:%M:%S %Z%z")
                 error_msg = f"Message limit exceeded. Try again after {formatted_time}"
             except (KeyError, json.JSONDecodeError) as parse_error:
