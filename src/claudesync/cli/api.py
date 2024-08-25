@@ -1,5 +1,4 @@
 import click
-from datetime import datetime, timedelta
 
 from claudesync.provider_factory import get_provider
 from ..utils import handle_errors
@@ -8,10 +7,12 @@ from ..cli.project import select as proj_select
 from ..cli.submodule import create as submodule_create
 from ..cli.project import create as project_create
 
+
 @click.group()
 def api():
     """Manage API."""
     pass
+
 
 @api.command()
 @click.argument("provider", required=False)
@@ -25,7 +26,9 @@ def login(ctx, provider):
         click.echo("Available providers:\n" + "\n".join(f"  - {p}" for p in providers))
         return
     if provider not in providers:
-        click.echo(f"Error: Unknown provider '{provider}'. Available: {', '.join(providers)}")
+        click.echo(
+            f"Error: Unknown provider '{provider}'. Available: {', '.join(providers)}"
+        )
         return
     provider_instance = get_provider(provider)
 
@@ -55,7 +58,8 @@ def login(ctx, provider):
     ctx.invoke(org_select)
 
     use_existing_project = click.confirm(
-        "Would you like to select an existing project, or create a new one? (Selecting 'No' will prompt you to create a new project)",
+        "Would you like to select an existing project, or create a new one? "
+        "(Selecting 'No' will prompt you to create a new project)",
         default=True,
     )
     if use_existing_project:
@@ -70,6 +74,7 @@ def login(ctx, provider):
         default=True,
     )
     config.set("prune_remote_files", delete_remote_files)
+
 
 @api.command()
 @click.pass_obj
@@ -87,6 +92,7 @@ def logout(config):
         config.set(key, None, local=True)
     click.echo("Logged out successfully.")
 
+
 @api.command()
 @click.option("--delay", type=float, required=True, help="Upload delay in seconds")
 @click.pass_obj
@@ -98,6 +104,7 @@ def ratelimit(config, delay):
         return
     config.set("upload_delay", delay)
     click.echo(f"Upload delay set to {delay} seconds.")
+
 
 @api.command()
 @click.option("--size", type=int, required=True, help="Maximum file size in bytes")

@@ -1,7 +1,7 @@
 import json
-import os
 from pathlib import Path
 from datetime import datetime
+
 
 class ConfigManager:
     """
@@ -91,7 +91,9 @@ class ConfigManager:
         """
         self.local_config_dir = self._find_local_config_dir()
         if self.local_config_dir:
-            local_config_file = self.local_config_dir / ".claudesync" / "config.local.json"
+            local_config_file = (
+                self.local_config_dir / ".claudesync" / "config.local.json"
+            )
             if local_config_file.exists():
                 with open(local_config_file, "r") as f:
                     self.local_config = json.load(f)
@@ -156,7 +158,9 @@ class ConfigManager:
         Creates the .claudesync directory if it doesn't exist.
         """
         if self.local_config_dir:
-            local_config_file = self.local_config_dir / ".claudesync" / "config.local.json"
+            local_config_file = (
+                self.local_config_dir / ".claudesync" / "config.local.json"
+            )
             with open(local_config_file, "w") as f:
                 json.dump(self.local_config, f, indent=2)
 
@@ -215,7 +219,10 @@ class ConfigManager:
         Args:
             category_name (str): The name of the category to remove.
         """
-        if "file_categories" in self.global_config and category_name in self.global_config["file_categories"]:
+        if (
+            "file_categories" in self.global_config
+            and category_name in self.global_config["file_categories"]
+        ):
             del self.global_config["file_categories"][category_name]
             self._save_global_config()
 
@@ -228,9 +235,16 @@ class ConfigManager:
             description (str, optional): The new description for the category. If None, the description is not updated.
             patterns (list, optional): The new list of file patterns for the category. If None, the patterns are not updated.
         """
-        if "file_categories" in self.global_config and category_name in self.global_config["file_categories"]:
+        if (
+            "file_categories" in self.global_config
+            and category_name in self.global_config["file_categories"]
+        ):
             if description is not None:
-                self.global_config["file_categories"][category_name]["description"] = description
+                self.global_config["file_categories"][category_name][
+                    "description"
+                ] = description
             if patterns is not None:
-                self.global_config["file_categories"][category_name]["patterns"] = patterns
+                self.global_config["file_categories"][category_name][
+                    "patterns"
+                ] = patterns
             self._save_global_config()
