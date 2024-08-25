@@ -20,10 +20,10 @@ def submodule():
 @handle_errors
 def ls(config):
     """List all detected submodules in the current project."""
-    local_path = config.get("local_path")
+    local_path = config.get_local_path()
     if not local_path:
         click.echo(
-            "No local path set for this project. Please select an existing project or create a new one using "
+            "No local project path found. Please select an existing project or create a new one using "
             "'claudesync project select' or 'claudesync project create'."
         )
         return
@@ -48,11 +48,11 @@ def create(config):
     active_organization_id = config.get("active_organization_id")
     active_project_id = config.get("active_project_id")
     active_project_name = config.get("active_project_name")
-    local_path = config.get("local_path")
+    local_path = config.get_local_path()
 
     if not local_path:
         click.echo(
-            "No local path set for this project. Please select an existing project or create a new one using "
+            "No local project path found. Please select an existing project or create a new one using "
             "'claudesync project select' or 'claudesync project create'."
         )
         return
