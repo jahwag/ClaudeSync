@@ -65,7 +65,7 @@ class ConfigManager:
                     config[key] = value
             return config
 
-    def _find_local_config_dir(self):
+    def _find_local_config_dir(self, max_depth=100):
         """
         Finds the nearest directory containing a .claudesync folder.
 
@@ -77,10 +77,20 @@ class ConfigManager:
         """
         current_dir = Path.cwd()
         root_dir = Path(current_dir.root)
+        depth = 0  # Initialize depth counter
+
         while current_dir != root_dir:
             if (current_dir / ".claudesync").is_dir():
                 return current_dir
+
             current_dir = current_dir.parent
+            depth += 1  # Increment depth counter
+
+            # Sanity check: stop if max_depth is reached
+            if depth > max_depth:
+                print("Sanity check: Maximum directory depth reached.")
+                return None
+
         return None
 
     def _load_local_config(self):
