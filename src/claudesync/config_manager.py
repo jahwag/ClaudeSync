@@ -88,7 +88,6 @@ class ConfigManager:
 
             # Sanity check: stop if max_depth is reached
             if depth > max_depth:
-                print("Sanity check: Maximum directory depth reached.")
                 return None
 
         return None

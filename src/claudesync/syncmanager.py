@@ -28,7 +28,7 @@ def retry_on_403(max_retries=3, delay=1):
                                 f"Received 403 error. Retrying in {delay} seconds... (Attempt {attempt + 1}/{max_retries})"
                             )
                         else:
-                            print(
+                            self.logger.warning(
                                 f"Received 403 error. Retrying in {delay} seconds... (Attempt {attempt + 1}/{max_retries})"
                             )
                         time.sleep(delay)

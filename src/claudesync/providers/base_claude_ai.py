@@ -31,7 +31,7 @@ def _get_session_key_expiry():
             expires_on = datetime.datetime.strptime(expires, date_format)
             return expires_on
         except ValueError:
-            print(
+            click.echo(
                 "The entered date does not match the required format. Please try again."
             )
 
