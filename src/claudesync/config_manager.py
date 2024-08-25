@@ -41,6 +41,56 @@ class ConfigManager:
             "two_way_sync": False,
             "curl_use_file_input": False,
             "prune_remote_files": False,
+            "file_categories": {
+                "all_files": {
+                    "description": "All files not ignored",
+                    "patterns": ["*"],
+                },
+                "all_source_code": {
+                    "description": "All source code files",
+                    "patterns": [
+                        "*.java",
+                        "*.py",
+                        "*.js",
+                        "*.ts",
+                        "*.c",
+                        "*.cpp",
+                        "*.h",
+                        "*.hpp",
+                        "*.go",
+                        "*.rs",
+                    ],
+                },
+                "production_code": {
+                    "description": "Production source code",
+                    "patterns": [
+                        "src/**/*.java",
+                        "src/**/*.py",
+                        "src/**/*.js",
+                        "src/**/*.ts",
+                    ],
+                },
+                "test_code": {
+                    "description": "Test source code",
+                    "patterns": [
+                        "test/**/*.java",
+                        "tests/**/*.py",
+                        "**/test_*.py",
+                        "**/*Test.java",
+                    ],
+                },
+                "build_config": {
+                    "description": "Build configuration files",
+                    "patterns": [
+                        "pom.xml",
+                        "build.gradle",
+                        "package.json",
+                        "setup.py",
+                        "Cargo.toml",
+                        "go.mod",
+                    ],
+                },
+            },
         }
 
     def _load_global_config(self):
@@ -257,3 +307,21 @@ class ConfigManager:
                     "patterns"
                 ] = patterns
             self._save_global_config()
+
+    def set_default_category(self, category):
+        """
+        Sets the default category for synchronization in the local configuration.
+
+        Args:
+            category (str): The name of the category to set as default.
+        """
+        self.set("default_sync_category", category, local=True)
+
+    def get_default_category(self):
+        """
+        Retrieves the default category for synchronization from the local configuration.
+
+        Returns:
+            str or None: The default category if set, otherwise None.
+        """
+        return self.get("default_sync_category")

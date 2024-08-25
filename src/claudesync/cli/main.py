@@ -131,6 +131,11 @@ def sync(config, category):
     """Synchronize the project files, including submodules if they exist remotely."""
     provider = validate_and_get_provider(config, require_project=True)
 
+    if not category:
+        category = config.get_default_category()
+        if category:
+            click.echo(f"Using default category: {category}")
+
     active_organization_id = config.get("active_organization_id")
     active_project_id = config.get("active_project_id")
     active_project_name = config.get("active_project_name")

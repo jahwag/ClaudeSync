@@ -59,3 +59,13 @@ def ls(config):
             click.echo("Patterns:")
             for pattern in data["patterns"]:
                 click.echo(f"  - {pattern}")
+
+
+@category.command()
+@click.argument("category", required=True)
+@click.pass_obj
+@handle_errors
+def set_default(config, category):
+    """Set the default category for synchronization."""
+    config.set_default_category(category)
+    click.echo(f"Default sync category set to: {category}")
