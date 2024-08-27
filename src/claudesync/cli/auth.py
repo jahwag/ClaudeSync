@@ -2,19 +2,19 @@ import click
 
 from claudesync.provider_factory import get_provider
 from ..utils import handle_errors
-from ..cli.organization import select as org_select
-from ..cli.project import select as proj_select
-from ..cli.submodule import init as submodule_create
-from ..cli.project import init as project_create
+from ..cli.organization import set as org_select
+from ..cli.project import set as proj_select
+from ..cli.submodule import add as submodule_add
+from ..cli.project import create as project_create
 
 
 @click.group()
-def api():
-    """Manage API."""
+def auth():
+    """Manage authentication."""
     pass
 
 
-@api.command()
+@auth.command()
 @click.argument("provider", required=False)
 @click.pass_context
 @handle_errors
@@ -66,7 +66,7 @@ def login(ctx, provider):
         ctx.invoke(proj_select)
     else:
         ctx.invoke(project_create)
-        ctx.invoke(submodule_create)
+        ctx.invoke(submodule_add)
 
     delete_remote_files = click.confirm(
         "Do you want ClaudeSync to automatically delete remote files that are not present in your local workspace? "
@@ -76,7 +76,7 @@ def login(ctx, provider):
     config.set("prune_remote_files", delete_remote_files)
 
 
-@api.command()
+@auth.command()
 @click.pass_obj
 def logout(config):
     """Log out from the current AI provider."""
@@ -91,29 +91,3 @@ def logout(config):
     for key in keys_to_clear:
         config.set(key, None, local=True)
     click.echo("Logged out successfully.")
-
-
-@api.command()
-@click.option("--delay", type=float, required=True, help="Upload delay in seconds")
-@click.pass_obj
-@handle_errors
-def ratelimit(config, delay):
-    """Set the delay between file uploads during sync."""
-    if delay < 0:
-        click.echo("Error: Upload delay must be a non-negative number.")
-        return
-    config.set("upload_delay", delay)
-    click.echo(f"Upload delay set to {delay} seconds.")
-
-
-@api.command()
-@click.option("--size", type=int, required=True, help="Maximum file size in bytes")
-@click.pass_obj
-@handle_errors
-def max_filesize(config, size):
-    """Set the maximum file size for syncing."""
-    if size < 0:
-        click.echo("Error: Maximum file size must be a non-negative number.")
-        return
-    config.set("max_file_size", size)
-    click.echo(f"Maximum file size set to {size} bytes.")

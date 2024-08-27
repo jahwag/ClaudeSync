@@ -1,3 +1,5 @@
+import json
+
 import click
 
 from .category import category
@@ -59,8 +61,12 @@ def get(config, key):
 @handle_errors
 def ls(config):
     """List all configuration values."""
-    for key, value in config.config.items():
-        click.echo(f"{key}: {value}")
+    # Combine global and local configurations
+    combined_config = config.global_config.copy()
+    combined_config.update(config.local_config)
+
+    # Print the combined configuration as JSON
+    click.echo(json.dumps(combined_config, indent=2, sort_keys=True))
 
 
 config.add_command(category)

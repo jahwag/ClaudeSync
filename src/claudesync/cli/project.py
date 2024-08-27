@@ -4,6 +4,7 @@ import click
 from tqdm import tqdm
 
 from claudesync.exceptions import ProviderError
+from .file import file
 from .submodule import submodule
 from ..syncmanager import retry_on_403
 from ..utils import (
@@ -21,7 +22,7 @@ def project():
 @project.command()
 @click.pass_obj
 @handle_errors
-def init(config):
+def create(config):
     """Initializes a new project in the active organization."""
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
@@ -105,7 +106,7 @@ def archive(config):
 )
 @click.pass_context
 @handle_errors
-def select(ctx, show_all):
+def set(ctx, show_all):
     """Set the active project for syncing."""
     config = ctx.obj
     provider = validate_and_get_provider(config)
@@ -222,11 +223,14 @@ def delete_files_from_project(provider, organization_id, project_id, project_nam
         with tqdm(
             total=len(files), desc=f"Deleting files from {project_name}", leave=False
         ) as file_pbar:
-            for file in files:
-                provider.delete_file(organization_id, project_id, file["uuid"])
+            for current_file in files:
+                provider.delete_file(organization_id, project_id, current_file["uuid"])
                 file_pbar.update(1)
     except ProviderError as e:
         click.echo(f"Error deleting files from project {project_name}: {str(e)}")
 
 
 project.add_command(submodule)
+project.add_command(file)
+
+__all__ = ["project"]

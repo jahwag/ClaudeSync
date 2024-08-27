@@ -16,10 +16,10 @@ from claudesync.utils import (
     detect_submodules,
     get_local_files,
 )
-from .api import api
+from .auth import auth
 from .organization import organization
 from .project import project
-from .sync import ls, schedule
+from .sync import schedule
 from .config import config
 import logging
 
@@ -48,24 +48,6 @@ def install_completion(shell):
         click.echo("Shell is set to '%s'" % shell)
     click_completion.install(shell=shell)
     click.echo("Completion installed.")
-
-
-@cli.command()
-@click.pass_obj
-def status(config):
-    """Display current configuration status."""
-    for key in [
-        "active_provider",
-        "active_organization_id",
-        "active_project_id",
-        "active_project_name",
-        "log_level",
-    ]:
-        value = config.get(key)
-        click.echo(f"{key.replace('_', ' ').capitalize()}: {value or 'Not set'}")
-
-    local_path = config.get_local_path()
-    click.echo(f"Local path: {local_path or 'Not set'}")
 
 
 @cli.command()
@@ -119,7 +101,7 @@ def upgrade(ctx):
     )
     click.echo("2. Your session key has been preserved (if it existed and was valid).")
     click.echo(
-        "\nPlease run 'claudesync api login' to complete your configuration setup if needed."
+        "\nPlease run 'claudesync auth login' to complete your configuration setup if needed."
     )
 
 
@@ -127,7 +109,7 @@ def upgrade(ctx):
 @click.option("--category", help="Specify the file category to sync")
 @click.pass_obj
 @handle_errors
-def sync(config, category):
+def push(config, category):
     """Synchronize the project files, including submodules if they exist remotely."""
     provider = validate_and_get_provider(config, require_project=True)
 
@@ -216,10 +198,9 @@ def sync(config, category):
         )
 
 
-cli.add_command(api)
+cli.add_command(auth)
 cli.add_command(organization)
 cli.add_command(project)
-cli.add_command(ls)
 cli.add_command(schedule)
 cli.add_command(config)
 cli.add_command(chat)

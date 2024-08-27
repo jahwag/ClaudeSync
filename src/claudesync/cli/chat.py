@@ -18,7 +18,7 @@ def chat():
 @chat.command()
 @click.pass_obj
 @handle_errors
-def sync(config):
+def pull(config):
     """Synchronize chats and their artifacts from the remote source."""
     provider = validate_and_get_provider(config, require_project=True)
     sync_chats(provider, config)
@@ -74,16 +74,16 @@ def delete_all_chats(provider, organization_id):
     """Delete all chats for the given organization."""
     if click.confirm("Are you sure you want to delete all chats?"):
         total_deleted = 0
-        with click.progressbar(length=100, label="Deleting chats") as bar:
-            while True:
-                chats = provider.get_chat_conversations(organization_id)
-                if not chats:
-                    break
-                uuids_to_delete = [chat["uuid"] for chat in chats[:50]]
-                deleted, _ = delete_chats(provider, organization_id, uuids_to_delete)
-                total_deleted += deleted
-                bar.update(len(uuids_to_delete))
-        click.echo(f"Chat deletion complete. Total chats deleted: {total_deleted}")
+    with click.progressbar(length=100, label="Deleting chats") as bar:
+        while True:
+            chats = provider.get_chat_conversations(organization_id)
+            if not chats:
+                break
+            uuids_to_delete = [chat["uuid"] for chat in chats[:50]]
+            deleted, _ = delete_chats(provider, organization_id, uuids_to_delete)
+            total_deleted += deleted
+            bar.update(len(uuids_to_delete))
+    click.echo(f"Chat deletion complete. Total chats deleted: {total_deleted}")
 
 
 def delete_single_chat(provider, organization_id):
@@ -145,8 +145,8 @@ def confirm_and_delete_chat(provider, organization_id, chat):
 @click.option("--project", help="UUID of the project to associate the chat with")
 @click.pass_obj
 @handle_errors
-def create(config, name, project):
-    """Create a new chat conversation on the active provider."""
+def init(config, name, project):
+    """Initializes a new chat conversation on the active provider."""
     provider = validate_and_get_provider(config)
     organization_id = config.get("active_organization_id")
     active_project_id = config.get("active_project_id")
@@ -186,7 +186,7 @@ def create(config, name, project):
 @click.option("--timezone", default="UTC", help="Timezone for the message")
 @click.pass_obj
 @handle_errors
-def send(config, message, chat, timezone):
+def message(config, message, chat, timezone):
     """Send a message to a specified chat or create a new chat and send the message."""
     provider = validate_and_get_provider(config)
     organization_id = config.get("active_organization_id")

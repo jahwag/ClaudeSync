@@ -26,7 +26,7 @@ def add(config, name, description, patterns):
 @click.argument("name")
 @click.pass_obj
 @handle_errors
-def remove(config, name):
+def rm(config, name):
     """Remove a file category."""
     config.remove_file_category(name)
     click.echo(f"File category '{name}' removed successfully.")

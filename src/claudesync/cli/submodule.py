@@ -43,7 +43,7 @@ def ls(config):
 @submodule.command()
 @click.pass_obj
 @handle_errors
-def init(config):
+def add(config):
     """Initializes new projects for each detected submodule that doesn't already exist remotely."""
     provider = validate_and_get_provider(config, require_project=True)
     active_organization_id = config.get("active_organization_id")

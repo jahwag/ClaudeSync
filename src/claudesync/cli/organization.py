@@ -28,7 +28,7 @@ def ls(config):
 @organization.command()
 @click.pass_context
 @handle_errors
-def select(ctx):
+def set(ctx):
     """Set the active organization."""
     config = ctx.obj
     provider = validate_and_get_provider(config, require_org=False)
