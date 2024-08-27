@@ -74,8 +74,6 @@ class SyncManager:
         remote_files_to_delete = set(rf["file_name"] for rf in remote_files)
         synced_files = set()
 
-        click.echo("Syncing inside " + self.local_path)
-
         with tqdm(total=len(local_files), desc="Local → Remote") as pbar:
             for local_file, local_checksum in local_files.items():
                 remote_file = next(

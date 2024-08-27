@@ -6,7 +6,7 @@ import sseclient
 
 import click
 from .base_provider import BaseProvider
-from ..config_manager import ConfigManager
+from ..configmanager import FileConfigManager
 from ..exceptions import ProviderError
 
 
@@ -40,7 +40,7 @@ class BaseClaudeAIProvider(BaseProvider):
     BASE_URL = "https://api.claude.ai/api"
 
     def __init__(self, session_key=None, session_key_expiry=None):
-        self.config = ConfigManager()
+        self.config = FileConfigManager()
         self.session_key = session_key
         self.session_key_expiry = session_key_expiry
         self.logger = logging.getLogger(__name__)

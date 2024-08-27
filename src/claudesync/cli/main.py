@@ -9,7 +9,7 @@ import urllib.request
 from pkg_resources import get_distribution
 
 from claudesync.cli.chat import chat
-from claudesync.config_manager import ConfigManager
+from claudesync.configmanager import FileConfigManager, InMemoryConfigManager
 from claudesync.syncmanager import SyncManager
 from claudesync.utils import (
     handle_errors,
@@ -34,7 +34,7 @@ click_completion.init()
 @click.pass_context
 def cli(ctx):
     """ClaudeSync: Synchronize local files with AI projects."""
-    ctx.obj = ConfigManager()
+    ctx.obj = FileConfigManager()
 
 
 @cli.command()
@@ -147,7 +147,7 @@ def push(config, category, uberproject):
 
     if current_submodule:
         # We're in a submodule, so only sync this submodule
-        click.echo(f"Syncing submodule: {current_submodule['active_project_name']}")
+        click.echo(f"Syncing submodule {current_submodule['active_project_name']} [{current_dir}]")
         sync_submodule(provider, config, current_submodule, category)
     else:
         # Sync main project
@@ -156,11 +156,13 @@ def push(config, category, uberproject):
 
         if uberproject:
             # Include submodule files in the parent project
-            local_files = get_local_files(local_path, category, include_submodules=True)
+            local_files = get_local_files(
+                config, local_path, category, include_submodules=True
+            )
         else:
             # Exclude submodule files from the parent project
             local_files = get_local_files(
-                local_path, category, include_submodules=False
+                config, local_path, category, include_submodules=False
             )
 
         sync_manager.sync(local_files, remote_files)
@@ -175,13 +177,14 @@ def push(config, category, uberproject):
 
 def sync_submodule(provider, config, submodule, category):
     submodule_path = Path(config.get_local_path()) / submodule["relative_path"]
-    submodule_files = get_local_files(str(submodule_path), category)
+    submodule_files = get_local_files(config, str(submodule_path), category)
     remote_submodule_files = provider.list_files(
         submodule["active_organization_id"], submodule["active_project_id"]
     )
 
     # Create a new ConfigManager instance for the submodule
-    submodule_config = config.copy()
+    submodule_config = InMemoryConfigManager()
+    submodule_config.load_from_file_config(config)
     submodule_config.set(
         "active_project_id", submodule["active_project_id"], local=True
     )

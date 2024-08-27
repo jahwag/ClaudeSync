@@ -3,13 +3,13 @@ from unittest.mock import MagicMock, patch
 from datetime import datetime, timedelta
 from click.testing import CliRunner
 from claudesync.cli.main import cli
-from claudesync.config_manager import ConfigManager
+from claudesync.configmanager import InMemoryConfigManager
 
 
 class TestAPICLI(unittest.TestCase):
     def setUp(self):
         self.runner = CliRunner()
-        self.config_mock = MagicMock(spec=ConfigManager)
+        self.config_mock = MagicMock(spec=InMemoryConfigManager)
 
     @patch("claudesync.cli.api.get_provider")
     def test_login_provider_error(self, mock_get_provider):

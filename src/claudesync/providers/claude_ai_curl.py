@@ -4,14 +4,14 @@ import subprocess
 import tempfile
 import os
 from .base_claude_ai import BaseClaudeAIProvider
+from ..configmanager import FileConfigManager
 from ..exceptions import ProviderError
-from ..config_manager import ConfigManager
 
 
 class ClaudeAICurlProvider(BaseClaudeAIProvider):
     def __init__(self, session_key=None, session_key_expiry=None):
         super().__init__(session_key, session_key_expiry)
-        self.config = ConfigManager()
+        self.config = FileConfigManager()
         self.use_file_input = self.config.get("curl_use_file_input", False)
 
     def _make_request(self, method, endpoint, data=None):

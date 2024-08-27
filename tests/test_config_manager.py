@@ -3,7 +3,8 @@ import json
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
-from claudesync.config_manager import ConfigManager
+
+from claudesync.configmanager import InMemoryConfigManager
 
 
 class TestConfigManager(unittest.TestCase):
@@ -25,7 +26,7 @@ class TestConfigManager(unittest.TestCase):
         with open(self.config_file, "w") as f:
             json.dump({"existing_key": "value"}, f)
 
-        config = ConfigManager()
+        config = InMemoryConfigManager()
         self.assertEqual(config.get("existing_key"), "value")
         self.assertEqual(config.get("log_level"), "INFO")
         self.assertEqual(config.get("upload_delay"), 0.5)
@@ -33,21 +34,21 @@ class TestConfigManager(unittest.TestCase):
     @patch("pathlib.Path.home")
     def test_get_existing_key(self, mock_home):
         mock_home.return_value = Path(self.temp_dir)
-        config = ConfigManager()
+        config = InMemoryConfigManager()
         config.set("test_key", "test_value")
         self.assertEqual(config.get("test_key"), "test_value")
 
     @patch("pathlib.Path.home")
     def test_get_non_existing_key(self, mock_home):
         mock_home.return_value = Path(self.temp_dir)
-        config = ConfigManager()
+        config = InMemoryConfigManager()
         self.assertIsNone(config.get("non_existing_key"))
         self.assertEqual(config.get("non_existing_key", "default"), "default")
 
     @patch("pathlib.Path.home")
     def test_set_and_save(self, mock_home):
         mock_home.return_value = Path(self.temp_dir)
-        config = ConfigManager()
+        config = InMemoryConfigManager()
         config.set("new_key", "new_value")
 
         # Check if the new value is in the instance
@@ -61,7 +62,7 @@ class TestConfigManager(unittest.TestCase):
     @patch("pathlib.Path.home")
     def test_update_existing_value(self, mock_home):
         mock_home.return_value = Path(self.temp_dir)
-        config = ConfigManager()
+        config = InMemoryConfigManager()
         config.set("update_key", "original_value")
         config.set("update_key", "updated_value")
 

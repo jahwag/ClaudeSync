@@ -1,13 +1,12 @@
-import copy
 import json
 import os
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
-import click
+from claudesync.configmanager.base_config_manager import BaseConfigManager
 
 
-class ConfigManager:
+class FileConfigManager(BaseConfigManager):
     """
     Manages the configuration for ClaudeSync, handling both global and local (project-specific) settings.
 
@@ -23,90 +22,13 @@ class ConfigManager:
 
         Sets up paths for global and local configuration files and loads both configurations.
         """
+        super().__init__()
         self.global_config_dir = Path.home() / ".claudesync"
         self.global_config_file = self.global_config_dir / "config.json"
         self.global_config = self._load_global_config()
         self.local_config = {}
         self.local_config_dir = None
         self._load_local_config()
-
-    def _get_default_config(self):
-        """
-        Returns the default configuration dictionary.
-
-        This method centralizes the default configuration settings, making it easier to manage and update defaults.
-
-        Returns:
-            dict: The default configuration settings.
-        """
-        return {
-            "log_level": "INFO",
-            "upload_delay": 0.5,
-            "max_file_size": 32 * 1024,
-            "two_way_sync": False,
-            "curl_use_file_input": False,
-            "prune_remote_files": True,
-            "submodule_detect_filenames": [
-                "pom.xml",
-                "build.gradle",
-                "package.json",
-                "setup.py",
-                "Cargo.toml",
-                "go.mod",
-            ],
-            "file_categories": {
-                "all_files": {
-                    "description": "All files not ignored",
-                    "patterns": ["*"],
-                },
-                "all_source_code": {
-                    "description": "All source code files",
-                    "patterns": [
-                        "*.java",
-                        "*.py",
-                        "*.js",
-                        "*.ts",
-                        "*.c",
-                        "*.cpp",
-                        "*.h",
-                        "*.hpp",
-                        "*.go",
-                        "*.rs",
-                    ],
-                },
-                "production_code": {
-                    "description": "Production source code",
-                    "patterns": [
-                        "src/**/*.java",
-                        "src/**/*.py",
-                        "src/**/*.js",
-                        "src/**/*.ts",
-                    ],
-                },
-                "test_code": {
-                    "description": "Test source code",
-                    "patterns": [
-                        "test/**/*.java",
-                        "tests/**/*.py",
-                        "**/test_*.py",
-                        "**/*Test.java",
-                    ],
-                },
-                "build_config": {
-                    "description": "Build configuration files",
-                    "patterns": [
-                        "pom.xml",
-                        "build.gradle",
-                        "package.json",
-                        "setup.py",
-                        "Cargo.toml",
-                        "go.mod",
-                        "pyproject.toml",
-                        "requirements.txt",
-                    ],
-                },
-            },
-        }
 
     def _load_global_config(self):
         """
@@ -336,24 +258,6 @@ class ConfigManager:
                 ] = patterns
             self._save_global_config()
 
-    def set_default_category(self, category):
-        """
-        Sets the default category for synchronization in the local configuration.
-
-        Args:
-            category (str): The name of the category to set as default.
-        """
-        self.set("default_sync_category", category, local=True)
-
-    def get_default_category(self):
-        """
-        Retrieves the default category for synchronization from the local configuration.
-
-        Returns:
-            str or None: The default category if set, otherwise None.
-        """
-        return self.get("default_sync_category")
-
     def clear_all_session_keys(self):
         """
         Removes all stored session keys.
@@ -394,22 +298,3 @@ class ConfigManager:
             if session_key and expiry > datetime.now():
                 providers.append(provider)
         return providers
-
-    def copy(self):
-        """
-        Create a deep copy of the current ConfigManager instance.
-
-        This method creates a new ConfigManager instance with copies of all
-        configuration data, ensuring that modifications to the copy do not
-        affect the original instance.
-
-        Returns:
-            ConfigManager: A new ConfigManager instance with copied configuration data.
-        """
-        new_instance = ConfigManager()
-        new_instance.global_config = copy.deepcopy(self.global_config)
-        new_instance.local_config = copy.deepcopy(self.local_config)
-        new_instance.global_config_dir = self.global_config_dir
-        new_instance.global_config_file = self.global_config_file
-        new_instance.local_config_dir = self.local_config_dir
-        return new_instance

@@ -6,12 +6,11 @@ from pathlib import Path
 import click
 import pathspec
 import logging
+
 from claudesync.exceptions import ConfigurationError, ProviderError
 from claudesync.provider_factory import get_provider
-from claudesync.config_manager import ConfigManager
 
 logger = logging.getLogger(__name__)
-config_manager = ConfigManager()
 
 
 def normalize_and_calculate_md5(content):
@@ -96,7 +95,9 @@ def compute_md5_hash(content):
     return hashlib.md5(content.encode("utf-8")).hexdigest()
 
 
-def should_process_file(file_path, filename, gitignore, base_path, claudeignore):
+def should_process_file(
+    config_manager, file_path, filename, gitignore, base_path, claudeignore
+):
     """
     Determines whether a file should be processed based on various criteria.
 
@@ -165,11 +166,12 @@ def process_file(file_path):
     return None
 
 
-def get_local_files(local_path, category=None, include_submodules=False):
+def get_local_files(config, local_path, category=None, include_submodules=False):
     """
     Retrieves a dictionary of local files within a specified path, applying various filters.
 
     Args:
+        config: config manager to use
         local_path (str): The base directory path to search for files.
         category (str, optional): The file category to filter by.
         include_submodules (bool, optional): Whether to include files from submodules.
@@ -177,7 +179,6 @@ def get_local_files(local_path, category=None, include_submodules=False):
     Returns:
         dict: A dictionary where keys are relative file paths, and values are MD5 hashes of the file contents.
     """
-    config = ConfigManager()
     gitignore = load_gitignore(local_path)
     claudeignore = load_claudeignore(local_path)
     files = {}
@@ -230,7 +231,7 @@ def get_local_files(local_path, category=None, include_submodules=False):
             full_path = os.path.join(root, filename)
 
             if spec.match_file(rel_path) and should_process_file(
-                full_path, filename, gitignore, local_path, claudeignore
+                config, full_path, filename, gitignore, local_path, claudeignore
             ):
                 file_hash = process_file(full_path)
                 if file_hash:

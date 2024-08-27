@@ -2,6 +2,7 @@ import unittest
 import os
 import tempfile
 
+from claudesync.configmanager import InMemoryConfigManager
 from claudesync.utils import (
     compute_md5_hash,
     load_gitignore,
@@ -56,7 +57,7 @@ class TestUtils(unittest.TestCase):
             with open(os.path.join(tmpdir, ".gitignore"), "w") as f:
                 f.write("*.log\n/build\ntarget")
 
-            local_files = get_local_files(tmpdir)
+            local_files = get_local_files(InMemoryConfigManager(), tmpdir)
             print(local_files)
 
             self.assertIn("file1.txt", local_files)
@@ -94,7 +95,7 @@ class TestUtils(unittest.TestCase):
             with open(os.path.join(tmpdir, ".claudeignore"), "w") as f:
                 f.write("*.log\n/build/\n")
 
-            local_files = get_local_files(tmpdir)
+            local_files = get_local_files(InMemoryConfigManager(), tmpdir)
 
             self.assertIn("file1.txt", local_files)
             self.assertNotIn("file2.log", local_files)

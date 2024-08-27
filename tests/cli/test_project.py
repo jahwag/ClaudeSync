@@ -2,13 +2,13 @@ import unittest
 from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
 from claudesync.cli.main import cli
-from claudesync.config_manager import ConfigManager
+from claudesync.configmanager import InMemoryConfigManager
 
 
 class TestProjectCLI(unittest.TestCase):
     def setUp(self):
         self.runner = CliRunner()
-        self.config_mock = MagicMock(spec=ConfigManager)
+        self.config_mock = MagicMock(spec=InMemoryConfigManager)
 
     @patch("claudesync.cli.project.validate_and_get_provider")
     def test_project_sync_no_local_path(self, mock_validate_and_get_provider):
