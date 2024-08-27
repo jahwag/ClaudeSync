@@ -1,17 +1,14 @@
-import json
-import os
 import click
-from tqdm import tqdm
+import os
 
-from claudesync.exceptions import ProviderError
+from ..utils import handle_errors, validate_and_get_provider
+from ..exceptions import ProviderError, ConfigurationError
+from tqdm import tqdm
 from .file import file
 from .submodule import submodule
 from ..syncmanager import retry_on_403
-from ..utils import (
-    handle_errors,
-    validate_and_get_provider,
-)
-
+from claudesync.cli.organization import set as set_organization
+from claudesync.cli.submodule import create as create_submodule
 
 @click.group()
 def project():
@@ -23,19 +20,36 @@ def project():
 @click.pass_obj
 @handle_errors
 def create(config):
-    """Initializes a new project in the active organization."""
-    provider = validate_and_get_provider(config)
-    active_organization_id = config.get("active_organization_id")
+    """Creates a new project for the selected provider."""
+    available_providers = config.get_providers_with_session_keys()
 
-    if not active_organization_id:
-        click.echo("No active organization set. Please select an organization first.")
+    if not available_providers:
+        click.echo(
+            "No authenticated providers found. Please authenticate first using 'claudesync auth login <provider>'."
+        )
         return
 
-    default_name = os.path.basename(os.getcwd())
-    title = click.prompt("Enter a title for your new project", default=default_name)
-    description = click.prompt("Enter the project description (optional)", default="")
+    click.echo("Available authenticated providers:")
+    for idx, provider in enumerate(available_providers, 1):
+        click.echo(f"{idx}. {provider}")
+
+    provider_idx = click.prompt("Select a provider", type=int, default=1)
+    provider_name = available_providers[provider_idx - 1]
+    config.set_active_provider(provider_name)
+    click.echo("Provider successfully set.")
+
+    ctx = click.get_current_context()
+    ctx.invoke(set_organization)
+    active_organization_id = config.get("active_organization_id")
 
     try:
+        provider = validate_and_get_provider(config)
+        default_name = os.path.basename(os.getcwd())
+        title = click.prompt("Enter a title for your new project", default=default_name)
+        description = click.prompt(
+            "Enter the project description (optional)", default=""
+        )
+
         new_project = provider.create_project(
             active_organization_id, title, description
         )
@@ -43,29 +57,26 @@ def create(config):
             f"Project '{new_project['name']}' (uuid: {new_project['uuid']}) has been created successfully."
         )
 
-        # Set the new project as the active project in the local configuration
         config.set("active_project_id", new_project["uuid"], local=True)
         config.set("active_project_name", new_project["name"], local=True)
         click.echo(
             f"Active project set to: {new_project['name']} (uuid: {new_project['uuid']})"
         )
 
-        # Create .claudesync directory in the current working directory
         claudesync_dir = os.path.join(os.getcwd(), ".claudesync")
         os.makedirs(claudesync_dir, exist_ok=True)
         click.echo(f"Created .claudesync directory in {os.getcwd()}")
 
-        # Create an empty config.local.json file
-        local_config_file = os.path.join(claudesync_dir, "config.local.json")
-        with open(local_config_file, "w") as f:
-            json.dump({}, f)
-        click.echo(f"Created empty config.local.json in {claudesync_dir}")
+        config._save_local_config()
+        click.echo(f"Created config.local.json in {claudesync_dir}")
+
+        ctx.invoke(create_submodule)
 
         click.echo(
-            "Project setup complete. You can now start syncing files with this project."
+            "\nProject setup complete. You can now start syncing files with this project."
         )
 
-    except ProviderError as e:
+    except (ProviderError, ConfigurationError) as e:
         click.echo(f"Failed to create project: {str(e)}")
 
 

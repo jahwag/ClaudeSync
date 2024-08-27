@@ -287,24 +287,28 @@ def validate_and_get_provider(config, require_org=True, require_project=False):
                             or if require_project is True and no active project ID is set.
         ProviderError: If the session key has expired.
     """
-    active_provider = config.get("active_provider")
-    session_key, session_key_expiry = config.get_session_key()
-    if not active_provider or not session_key:
+    active_provider = config.get_active_provider()
+    if not active_provider:
         raise ConfigurationError(
-            "No active provider or session key. Please login first."
+            "No active provider set. Please select a provider for this project."
         )
+
+    session_key, session_key_expiry = config.get_session_key(active_provider)
     if not session_key:
-        raise ProviderError(
-            f"Session key has expired. Please run `claudesync api login {active_provider}` again."
+        raise ConfigurationError(
+            f"No valid session key found for {active_provider}. Please log in again."
         )
+
     if require_org and not config.get("active_organization_id"):
         raise ConfigurationError(
             "No active organization set. Please select an organization."
         )
+
     if require_project and not config.get("active_project_id"):
         raise ConfigurationError(
             "No active project set. Please select or create a project."
         )
+
     return get_provider(active_provider, session_key, session_key_expiry)
 
 

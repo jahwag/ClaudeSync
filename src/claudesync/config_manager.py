@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from datetime import datetime
 
@@ -222,8 +223,6 @@ class ConfigManager:
     def _save_local_config(self):
         """
         Saves the current local configuration to the .claudesync/config.local.json file.
-
-        Creates the .claudesync directory if it doesn't exist.
         """
         if self.local_config_dir:
             local_config_file = (
@@ -241,6 +240,7 @@ class ConfigManager:
             session_key (str): The session key to set.
             expiry (datetime): The expiry datetime for the session key.
         """
+        self.global_config_dir.mkdir(parents=True, exist_ok=True)
         provider_key_file = self.global_config_dir / f"{provider}.key"
         with open(provider_key_file, "w") as f:
             json.dump(
@@ -248,18 +248,17 @@ class ConfigManager:
                 f,
             )
 
-    def get_session_key(self):
+    def get_session_key(self, provider):
         """
-        Retrieves the session key for the active provider if it's still valid.
+        Retrieves the session key for the specified provider if it's still valid.
+
+        Args:
+            provider (str): The name of the provider.
 
         Returns:
             tuple: A tuple containing the session key and expiry if valid, (None, None) otherwise.
         """
-        active_provider = self.get("active_provider")
-        if not active_provider:
-            return None, None
-
-        provider_key_file = self.global_config_dir / f"{active_provider}.key"
+        provider_key_file = self.global_config_dir / f"{provider}.key"
         if not provider_key_file.exists():
             return None, None
 
@@ -349,3 +348,44 @@ class ConfigManager:
             str or None: The default category if set, otherwise None.
         """
         return self.get("default_sync_category")
+
+    def clear_all_session_keys(self):
+        """
+        Removes all stored session keys.
+        """
+        for file in self.global_config_dir.glob("*.key"):
+            os.remove(file)
+
+    def get_active_provider(self):
+        """
+        Retrieves the active provider from the local configuration.
+
+        Returns:
+            str: The name of the active provider, or None if not set.
+        """
+        return self.local_config.get("active_provider")
+
+    def set_active_provider(self, provider):
+        """
+        Sets the active provider in the local configuration.
+
+        Args:
+            provider (str): The name of the provider to set as active.
+        """
+        self.local_config["active_provider"] = provider
+        self._save_local_config()
+
+    def get_providers_with_session_keys(self):
+        """
+        Retrieves a list of providers that have valid session keys.
+
+        Returns:
+            list: A list of provider names with valid session keys.
+        """
+        providers = []
+        for file in self.global_config_dir.glob("*.key"):
+            provider = file.stem
+            session_key, expiry = self.get_session_key(provider)
+            if session_key and expiry > datetime.now():
+                providers.append(provider)
+        return providers
