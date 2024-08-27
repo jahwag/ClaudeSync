@@ -400,11 +400,11 @@ def detect_submodules(base_path, submodule_detect_filenames):
                 if relative_path not in ("", "."):
                     # Check if the file itself should be ignored
                     file_path = rel_root / filename
-                    if (gitignore and gitignore.match_file(str(file_path))) or \
-                            (claudeignore and claudeignore.match_file(str(file_path))):
+                    if (gitignore and gitignore.match_file(str(file_path))) or (
+                        claudeignore and claudeignore.match_file(str(file_path))
+                    ):
                         continue
                     submodules.append((relative_path, filename))
                 break  # Stop searching this directory once a submodule is found
 
     return submodules
-

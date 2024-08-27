@@ -4,8 +4,8 @@ from claudesync.provider_factory import get_provider
 from ..utils import handle_errors
 from ..cli.organization import select as org_select
 from ..cli.project import select as proj_select
-from ..cli.submodule import create as submodule_create
-from ..cli.project import create as project_create
+from ..cli.submodule import init as submodule_create
+from ..cli.project import init as project_create
 
 
 @click.group()

@@ -21,8 +21,8 @@ def project():
 @project.command()
 @click.pass_obj
 @handle_errors
-def create(config):
-    """Create a new project in the active organization."""
+def init(config):
+    """Initializes a new project in the active organization."""
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
 

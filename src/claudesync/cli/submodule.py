@@ -43,8 +43,8 @@ def ls(config):
 @submodule.command()
 @click.pass_obj
 @handle_errors
-def create(config):
-    """Create new projects for each detected submodule that doesn't already exist remotely."""
+def init(config):
+    """Initializes new projects for each detected submodule that doesn't already exist remotely."""
     provider = validate_and_get_provider(config, require_project=True)
     active_organization_id = config.get("active_organization_id")
     active_project_id = config.get("active_project_id")
@@ -97,14 +97,14 @@ def create(config):
                 f"{i}. Submodule '{submodule_name}' already exists as project "
                 f"'{new_project_name}' (ID: {existing_project['id']}). Updating local config."
             )
-            project_id = existing_project['id']
+            project_id = existing_project["id"]
         else:
             description = f"Submodule '{submodule_name}' for project '{active_project_name}' (ID: {active_project_id})"
             try:
                 new_project = provider.create_project(
                     active_organization_id, new_project_name, description
                 )
-                project_id = new_project['uuid']
+                project_id = new_project["uuid"]
                 click.echo(
                     f"{i}. Created project '{new_project_name}' (ID: {project_id}) for submodule '{submodule_name}'"
                 )
@@ -120,11 +120,18 @@ def create(config):
             "active_organization_id": active_organization_id,
             "active_project_id": project_id,
             "active_project_name": new_project_name,
-            "relative_path": submodule
+            "relative_path": submodule,
         }
 
         # Check if submodule already exists in config and update it, or append new entry
-        submodule_index = next((index for (index, d) in enumerate(local_config["submodules"]) if d["relative_path"] == submodule), None)
+        submodule_index = next(
+            (
+                index
+                for (index, d) in enumerate(local_config["submodules"])
+                if d["relative_path"] == submodule
+            ),
+            None,
+        )
         if submodule_index is not None:
             local_config["submodules"][submodule_index] = submodule_config
         else:
