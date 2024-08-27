@@ -1,8 +1,9 @@
+from pathlib import Path
+
 import click
 import click_completion
 import click_completion.core
 import json
-import os
 import subprocess
 import urllib.request
 from pkg_resources import get_distribution
@@ -13,7 +14,6 @@ from claudesync.syncmanager import SyncManager
 from claudesync.utils import (
     handle_errors,
     validate_and_get_provider,
-    detect_submodules,
     get_local_files,
 )
 from .auth import auth
@@ -107,9 +107,10 @@ def upgrade(ctx):
 
 @cli.command()
 @click.option("--category", help="Specify the file category to sync")
+@click.option("-a", "--all", "sync_all", is_flag=True, help="Sync all submodules")
 @click.pass_obj
 @handle_errors
-def push(config, category):
+def push(config, category, sync_all):
     """Synchronize the project files, including submodules if they exist remotely."""
     provider = validate_and_get_provider(config, require_project=True)
 
@@ -130,72 +131,57 @@ def push(config, category):
         )
         return
 
-    # Detect local submodules
-    submodule_detect_filenames = config.get("submodule_detect_filenames", [])
-    local_submodules = detect_submodules(local_path, submodule_detect_filenames)
-
-    # Fetch all remote projects
-    all_remote_projects = provider.get_projects(
-        active_organization_id, include_archived=False
+    # Detect if we're in a submodule
+    current_dir = Path.cwd()
+    submodules = config.get("submodules", [])
+    current_submodule = next(
+        (
+            sm
+            for sm in submodules
+            if Path(local_path) / sm["relative_path"] == current_dir
+        ),
+        None,
     )
 
-    # Find remote submodule projects
-    remote_submodule_projects = [
-        project
-        for project in all_remote_projects
-        if project["name"].startswith(f"{active_project_name}-SubModule-")
-    ]
-
-    # Sync main project
-    sync_manager = SyncManager(provider, config)
-    remote_files = provider.list_files(active_organization_id, active_project_id)
-    local_files = get_local_files(local_path, category)
-    sync_manager.sync(local_files, remote_files)
-    click.echo(
-        f"Main project '{active_project_name}' synced successfully: https://claude.ai/project/{active_project_id}"
-    )
-
-    # Sync submodules
-    for local_submodule, detected_file in local_submodules:
-        submodule_name = os.path.basename(local_submodule)
-        remote_project = next(
-            (
-                proj
-                for proj in remote_submodule_projects
-                if proj["name"].endswith(f"-{submodule_name}")
-            ),
-            None,
-        )
-
-        if remote_project:
-            click.echo(f"Syncing submodule '{submodule_name}'...")
-            submodule_path = os.path.join(local_path, local_submodule)
-            submodule_files = get_local_files(submodule_path, category)
-            remote_submodule_files = provider.list_files(
-                active_organization_id, remote_project["id"]
-            )
-
-            # Create a new SyncManager for the submodule
-            submodule_config = config.config.copy()
-            submodule_config["active_project_id"] = remote_project["id"]
-            submodule_config["active_project_name"] = remote_project["name"]
-            submodule_config["local_path"] = submodule_path
-            submodule_sync_manager = SyncManager(provider, submodule_config)
-
-            submodule_sync_manager.sync(submodule_files, remote_submodule_files)
-            click.echo(
-                f"Submodule '{submodule_name}' synced successfully: "
-                f"https://claude.ai/project/{remote_project['id']}"
-            )
-        else:
-            click.echo(
-                f"No remote project found for submodule '{submodule_name}'. Skipping sync."
-            )
-
-    if len(local_submodules) > 0:
+    if current_submodule and not sync_all:
+        # We're in a submodule, so only sync this submodule
+        click.echo(f"Syncing submodule: {current_submodule['active_project_name']}")
+        sync_submodule(provider, config, current_submodule, category)
+    else:
+        # Sync main project
+        sync_manager = SyncManager(provider, config, config.get_local_path())
+        remote_files = provider.list_files(active_organization_id, active_project_id)
+        local_files = get_local_files(local_path, category)
+        sync_manager.sync(local_files, remote_files)
         click.echo(
-            "Project sync completed successfully, including available submodules."
+            f"Main project '{active_project_name}' synced successfully: https://claude.ai/project/{active_project_id}"
         )
+
+        if sync_all:
+            # Sync all submodules
+            for submodule in submodules:
+                sync_submodule(provider, config, submodule, category)
+
+def sync_submodule(provider, config, submodule, category):
+    submodule_path = Path(config.get_local_path()) / submodule["relative_path"]
+    submodule_files = get_local_files(str(submodule_path), category)
+    remote_submodule_files = provider.list_files(
+        submodule["active_organization_id"], submodule["active_project_id"]
+    )
+
+    # Create a new ConfigManager instance for the submodule
+    submodule_config = config.copy()
+    submodule_config.set("active_project_id", submodule["active_project_id"], local=True)
+    submodule_config.set("active_project_name", submodule["active_project_name"], local=True)
+
+    # Create a new SyncManager for the submodule
+    submodule_sync_manager = SyncManager(provider, submodule_config, str(submodule_path))
+
+    submodule_sync_manager.sync(submodule_files, remote_submodule_files)
+    click.echo(
+        f"Submodule '{submodule['active_project_name']}' synced successfully: "
+        f"https://claude.ai/project/{submodule['active_project_id']}"
+    )
 
 
 cli.add_command(auth)

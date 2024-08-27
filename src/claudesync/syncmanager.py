@@ -45,7 +45,7 @@ class SyncManager:
     Manages the synchronization process between local and remote files.
     """
 
-    def __init__(self, provider, config):
+    def __init__(self, provider, config, local_path):
         """
         Initialize the SyncManager with the given provider and configuration.
 
@@ -57,11 +57,12 @@ class SyncManager:
         self.config = config
         self.active_organization_id = config.get("active_organization_id")
         self.active_project_id = config.get("active_project_id")
-        self.local_path = config.get_local_path()
+        self.local_path = local_path
         self.upload_delay = config.get("upload_delay", 0.5)
         self.two_way_sync = config.get("two_way_sync", False)
         self.max_retries = 3  # Maximum number of retries for 403 errors
         self.retry_delay = 1  # Delay between retries in seconds
+
 
     def sync(self, local_files, remote_files):
         """
@@ -73,6 +74,8 @@ class SyncManager:
         """
         remote_files_to_delete = set(rf["file_name"] for rf in remote_files)
         synced_files = set()
+
+        click.echo("Syncing inside " + self.local_path)
 
         with tqdm(total=len(local_files), desc="Local → Remote") as pbar:
             for local_file, local_checksum in local_files.items():
@@ -105,12 +108,12 @@ class SyncManager:
 
     @retry_on_403()
     def update_existing_file(
-        self,
-        local_file,
-        local_checksum,
-        remote_file,
-        remote_files_to_delete,
-        synced_files,
+            self,
+            local_file,
+            local_checksum,
+            remote_file,
+            remote_files_to_delete,
+            synced_files,
     ):
         """
         Update an existing file on the remote if it has changed locally.
@@ -133,7 +136,7 @@ class SyncManager:
                 )
                 pbar.update(1)
                 with open(
-                    os.path.join(self.local_path, local_file), "r", encoding="utf-8"
+                        os.path.join(self.local_path, local_file), "r", encoding="utf-8"
                 ) as file:
                     content = file.read()
                 self.provider.upload_file(
@@ -158,7 +161,7 @@ class SyncManager:
         """
         logger.debug(f"Uploading new file {local_file} to remote...")
         with open(
-            os.path.join(self.local_path, local_file), "r", encoding="utf-8"
+                os.path.join(self.local_path, local_file), "r", encoding="utf-8"
         ) as file:
             content = file.read()
         with tqdm(total=1, desc=f"Uploading {local_file}", leave=False) as pbar:
@@ -209,7 +212,7 @@ class SyncManager:
             )
 
     def update_existing_local_file(
-        self, local_file_path, remote_file, remote_files_to_delete, synced_files
+            self, local_file_path, remote_file, remote_files_to_delete, synced_files
     ):
         """
         Update an existing local file if the remote version is newer.
@@ -237,7 +240,7 @@ class SyncManager:
                 remote_files_to_delete.remove(remote_file["file_name"])
 
     def create_new_local_file(
-        self, local_file_path, remote_file, remote_files_to_delete, synced_files
+            self, local_file_path, remote_file, remote_files_to_delete, synced_files
     ):
         """
         Create a new local file from a remote file.
@@ -252,7 +255,7 @@ class SyncManager:
             f"Creating new local file {remote_file['file_name']} from remote..."
         )
         with tqdm(
-            total=1, desc=f"Creating {remote_file['file_name']}", leave=False
+                total=1, desc=f"Creating {remote_file['file_name']}", leave=False
         ) as pbar:
             with open(local_file_path, "w", encoding="utf-8") as file:
                 file.write(remote_file["content"])

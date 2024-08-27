@@ -10,6 +10,7 @@ from ..syncmanager import retry_on_403
 from claudesync.cli.organization import set as set_organization
 from claudesync.cli.submodule import create as create_submodule
 
+
 @click.group()
 def project():
     """Manage AI projects within the active organization."""

@@ -1,7 +1,10 @@
+import copy
 import json
 import os
 from pathlib import Path
 from datetime import datetime
+
+import click
 
 
 class ConfigManager:
@@ -42,7 +45,7 @@ class ConfigManager:
             "max_file_size": 32 * 1024,
             "two_way_sync": False,
             "curl_use_file_input": False,
-            "prune_remote_files": False,
+            "prune_remote_files": True,
             "submodule_detect_filenames": [
                 "pom.xml",
                 "build.gradle",
@@ -389,3 +392,22 @@ class ConfigManager:
             if session_key and expiry > datetime.now():
                 providers.append(provider)
         return providers
+
+    def copy(self):
+        """
+        Create a deep copy of the current ConfigManager instance.
+
+        This method creates a new ConfigManager instance with copies of all
+        configuration data, ensuring that modifications to the copy do not
+        affect the original instance.
+
+        Returns:
+            ConfigManager: A new ConfigManager instance with copied configuration data.
+        """
+        new_instance = ConfigManager()
+        new_instance.global_config = copy.deepcopy(self.global_config)
+        new_instance.local_config = copy.deepcopy(self.local_config)
+        new_instance.global_config_dir = self.global_config_dir
+        new_instance.global_config_file = self.global_config_file
+        new_instance.local_config_dir = self.local_config_dir
+        return new_instance
