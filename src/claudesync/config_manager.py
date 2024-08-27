@@ -26,6 +26,8 @@ class ConfigManager:
         self.config_dir = Path.home() / ".claudesync"
         self.config_file = self.config_dir / "config.json"
         self.config = self._load_config()
+        self._load_claudesync_override()
+
 
     def _get_default_config(self):
         """
@@ -130,6 +132,32 @@ class ConfigManager:
                         if category not in config[key]:
                             config[key][category] = category_data
             return config
+
+    def _load_claudesync_override(self):
+        current_dir = Path.cwd()
+        override_file = self._find_claudesync_override(current_dir)
+        if override_file:
+            self._apply_override(override_file)
+
+    def _find_claudesync_override(self, directory):
+        claudesync_file = directory / ".claudesync.json"
+        if claudesync_file.is_file():
+            return claudesync_file
+        parent_dir = directory.parent
+        if parent_dir == directory:  # We've reached the root directory
+            return None
+        return self._find_claudesync_override(parent_dir)
+
+    def _apply_override(self, override_file):
+        with open(override_file, "r") as f:
+            override_config = json.load(f)
+
+        for key, value in override_config.items():
+            if key == "local_path" and not value.startswith("/"):
+                # Handle relative paths
+                self.config[key] = str(override_file.parent / value)
+            else:
+                self.config[key] = value
 
     def _save_config(self):
         """
