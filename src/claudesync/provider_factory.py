@@ -2,7 +2,6 @@
 
 from .providers.base_provider import BaseProvider
 from .providers.claude_ai import ClaudeAIProvider
-from .providers.claude_ai_curl import ClaudeAICurlProvider
 
 
 def get_provider(
@@ -33,7 +32,6 @@ def get_provider(
     """
     providers = {
         "claude.ai": ClaudeAIProvider,
-        "claude.ai-curl": ClaudeAICurlProvider,
         # Add other providers here as they are implemented
     }
 

@@ -147,7 +147,9 @@ def push(config, category, uberproject):
 
     if current_submodule:
         # We're in a submodule, so only sync this submodule
-        click.echo(f"Syncing submodule {current_submodule['active_project_name']} [{current_dir}]")
+        click.echo(
+            f"Syncing submodule {current_submodule['active_project_name']} [{current_dir}]"
+        )
         sync_submodule(provider, config, current_submodule, category)
     else:
         # Sync main project

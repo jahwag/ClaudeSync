@@ -6,7 +6,7 @@ import sseclient
 
 import click
 from .base_provider import BaseProvider
-from ..configmanager import FileConfigManager
+from ..configmanager import FileConfigManager, InMemoryConfigManager
 from ..exceptions import ProviderError
 
 
@@ -39,12 +39,17 @@ def _get_session_key_expiry():
 class BaseClaudeAIProvider(BaseProvider):
     BASE_URL = "https://api.claude.ai/api"
 
-    def __init__(self, session_key=None, session_key_expiry=None):
-        self.config = FileConfigManager()
+    def __init__(self, session_key=None, session_key_expiry=None, base_url=None):
+        self.config = InMemoryConfigManager()
+        self.config.load_from_file_config(
+            FileConfigManager()
+        )  # a provider may not edit the config
         self.session_key = session_key
         self.session_key_expiry = session_key_expiry
         self.logger = logging.getLogger(__name__)
         self._configure_logging()
+        if base_url:
+            self.BASE_URL = base_url
 
     def _configure_logging(self):
         log_level = self.config.get("log_level", "INFO")
