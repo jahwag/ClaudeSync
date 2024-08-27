@@ -311,7 +311,7 @@ def validate_and_get_provider(config, require_org=True, require_project=False):
             "No active project set. Please select or create a project."
         )
 
-    return get_provider(active_provider, session_key, session_key_expiry)
+    return get_provider(config, active_provider)
 
 
 def validate_and_store_local_path(config):

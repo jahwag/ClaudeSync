@@ -1,83 +1,77 @@
+import threading
+import time
 import unittest
-from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
-from datetime import datetime, timedelta
-
+from unittest.mock import patch
 from claudesync.cli.main import cli
 from claudesync.configmanager import InMemoryConfigManager
-from claudesync.providers.claude_ai import ClaudeAIProvider
+from logging_test_case import LoggingTestCase
+from mock_http_server import run_mock_server
 
 
 class TestClaudeSyncHappyPath(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.mock_server_thread = threading.Thread(target=run_mock_server)
+        cls.mock_server_thread.daemon = True
+        cls.mock_server_thread.start()
+        time.sleep(1)  # Wait for the mock server to start
+
     def setUp(self):
-        self.config = InMemoryConfigManager()
-        self.file_config_patcher = patch("claudesync.cli.main.FileConfigManager")
-        self.mock_file_config = self.file_config_patcher.start()
-        self.mock_file_config.return_value = self.config
-
-        self.provider_patcher = patch("claudesync.providers.claude_ai.ClaudeAIProvider")
-        self.mock_provider_class = self.provider_patcher.start()
-        self.mock_provider = self.mock_provider_class.return_value
-
         self.runner = CliRunner()
+        self.config = InMemoryConfigManager()
+        self.config.set(
+            "claude_api_url", "http://127.0.0.1:8000/api"
+        )  # Set BASE_URL for the mock server
 
-    def tearDown(self):
-        self.file_config_patcher.stop()
-        self.provider_patcher.stop()
+    @patch("claudesync.utils.get_local_files")
+    def test_happy_path(self, mock_get_local_files):
 
-    @patch("click.prompt")
-    @patch("claudesync.providers.base_claude_ai._get_session_key_expiry")
-    def test_happy_path(self, mock_get_expiry, mock_prompt):
-        # Mock session key expiry
-        expiry_date = datetime.now() + timedelta(days=30)
-        mock_get_expiry.return_value = expiry_date
-
-        mock_prompt.side_effect = [
-            "sk-ant-test123",  # Session key
-            "1",  # Select organization
-            "Test Project",  # Project name
-            "Test description",  # Project description
-            "/path/to/project",  # Local path
-        ]
-
-        # Mock the login method
-        self.mock_provider.login.return_value = ("sk-ant-test123", expiry_date)
-        self.mock_provider.get_organizations.return_value = [
-            {"id": "org1", "name": "Test Org 1"}
-        ]
+        # Mock the API calls
+        mock_get_local_files.return_value = {"test.txt": "content_hash"}
 
         # Login
         result = self.runner.invoke(
-            cli, ["auth", "login", "claude.ai"], obj=self.config
+            cli,
+            ["auth", "login", "--provider", "claude.ai"],
+            input="sk-ant-1234\nThu, 26 Sep 2099 17:07:53 UTC\n",
+            obj=self.config,
         )
+        self.assertEqual(0, result.exit_code)
         self.assertIn("Successfully authenticated with claude.ai", result.output)
-        self.assertEqual(result.exit_code, 0)
-
-        # Set organization
-        result = self.runner.invoke(cli, ["organization", "set"], obj=self.config)
-        self.assertIn("Selected organization: Test Org 1", result.output)
-        self.assertEqual(result.exit_code, 0)
 
         # Create project
-        self.mock_provider.create_project.return_value = {
-            "uuid": "new_proj",
-            "name": "New Project",
-        }
-        result = self.runner.invoke(cli, ["project", "create"], obj=self.config)
-        self.assertIn(
-            "Project 'New Project' (uuid: new_proj) has been created successfully",
-            result.output,
+        result = self.runner.invoke(
+            cli,
+            [
+                "project",
+                "create",
+                "--name",
+                "New Project",
+                "--description",
+                "Test description",
+                "--local-path",
+                "./",
+                "--provider",
+                "claude.ai",
+            ],
+            obj=self.config,
         )
         self.assertEqual(result.exit_code, 0)
+        self.assertIn(
+            "Project 'New Project' (uuid: new_proj) has been created successfully.\n\nProject setup complete. You can now start syncing files with this project. URL: https://claude.ai/project/new_proj\n",
+            result.output,
+        )
 
         # Push project
-        with patch(
-            "claudesync.utils.get_local_files",
-            return_value={"test.txt": "content_hash"},
-        ):
-            result = self.runner.invoke(cli, ["push"], obj=self.config)
-        self.assertIn("Main project 'New Project' synced successfully", result.output)
+        result = self.runner.invoke(cli, ["push"], obj=self.config)
+        print("Login output:", result.output)
+        print("Login exit code:", result.exit_code)
+        if result.exception:
+            print("Login exception:", result.exception)
         self.assertEqual(result.exit_code, 0)
+        self.assertIn("Main project 'New Project' synced successfully", result.output)
 
 
 if __name__ == "__main__":

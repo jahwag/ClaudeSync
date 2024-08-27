@@ -4,25 +4,25 @@ import urllib.parse
 import json
 import gzip
 from datetime import datetime, timezone
-
 from .base_claude_ai import BaseClaudeAIProvider
 from ..exceptions import ProviderError
 
 
 class ClaudeAIProvider(BaseClaudeAIProvider):
-    def __init__(self, session_key=None, session_key_expiry=None, base_url=None):
-        super().__init__(session_key, session_key_expiry, base_url)
+    def __init__(self, config=None):
+        super().__init__(config)
 
     def _make_request(self, method, endpoint, data=None):
-        url = f"{self.BASE_URL}{endpoint}"
+        url = f"{self.base_url}{endpoint}"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
             "Content-Type": "application/json",
             "Accept-Encoding": "gzip",
         }
 
+        session_key, expiry = self.config.get_session_key("claude.ai")
         cookies = {
-            "sessionKey": self.session_key,
+            "sessionKey": session_key,
         }
 
         try:
@@ -96,14 +96,7 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
         self.logger.debug(f"Response content: {content_str}")
 
         if e.code == 403:
-            error_msg = (
-                "Received a 403 Forbidden error. Your session key might be invalid. "
-                "Please try logging out and logging in again. If the issue persists, "
-                "you can try using the claude.ai-curl provider as a workaround:\n"
-                "claudesync api logout\n"
-                "claudesync api login claude.ai-curl"
-            )
-            self.logger.error(error_msg)
+            error_msg = "Received a 403 Forbidden error."
             raise ProviderError(error_msg)
         elif e.code == 429:
             try:
@@ -124,12 +117,13 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             raise ProviderError(error_msg)
 
     def _make_request_stream(self, method, endpoint, data=None):
-        url = f"{self.BASE_URL}{endpoint}"
+        url = f"{self.base_url}{endpoint}"
+        session_key, _ = self.config.get_session_key("claude.ai")
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
             "Content-Type": "application/json",
             "Accept": "text/event-stream",
-            "Cookie": f"sessionKey={self.session_key}",
+            "Cookie": f"sessionKey={session_key}",
         }
 
         req = urllib.request.Request(url, method=method, headers=headers)

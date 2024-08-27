@@ -37,19 +37,19 @@ def _get_session_key_expiry():
 
 
 class BaseClaudeAIProvider(BaseProvider):
-    BASE_URL = "https://api.claude.ai/api"
-
-    def __init__(self, session_key=None, session_key_expiry=None, base_url=None):
-        self.config = InMemoryConfigManager()
-        self.config.load_from_file_config(
-            FileConfigManager()
-        )  # a provider may not edit the config
-        self.session_key = session_key
-        self.session_key_expiry = session_key_expiry
+    def __init__(self, config=None):
+        self.config = config
+        if self.config is None:
+            self.config = InMemoryConfigManager()
+            self.config.load_from_file_config(
+                FileConfigManager()
+            )  # a provider may not edit the config
         self.logger = logging.getLogger(__name__)
         self._configure_logging()
-        if base_url:
-            self.BASE_URL = base_url
+
+    @property
+    def base_url(self):
+        return self.config.get("claude_api_url", "https://api.claude.ai/api")
 
     def _configure_logging(self):
         log_level = self.config.get("log_level", "INFO")
@@ -57,6 +57,9 @@ class BaseClaudeAIProvider(BaseProvider):
         self.logger.setLevel(getattr(logging, log_level))
 
     def login(self):
+        click.echo(
+            "A session key is required to call: " + self.config.get("claude_api_url")
+        )
         click.echo("To obtain your session key, please follow these steps:")
         click.echo("1. Open your web browser and go to https://claude.ai")
         click.echo("2. Log in to your Claude account if you haven't already")
@@ -93,19 +96,19 @@ class BaseClaudeAIProvider(BaseProvider):
                 continue
 
             expires = _get_session_key_expiry()
-            self.session_key = session_key
-            self.session_key_expiry = expires
             try:
+                self.config.set_session_key("claude.ai", session_key, expires)
                 organizations = self.get_organizations()
                 if organizations:
-                    break  # Exit the loop if get_organizations is successful
+                    return session_key, expires  # Return the session key and expiry
             except ProviderError as e:
                 click.echo(e)
                 click.echo(
                     "Failed to retrieve organizations. Please enter a valid sessionKey."
                 )
 
-        return self.session_key, self.session_key_expiry
+        # This line should never be reached, but we'll add it for completeness
+        raise ProviderError("Failed to authenticate after multiple attempts")
 
     def get_organizations(self):
         response = self._make_request("GET", "/organizations")

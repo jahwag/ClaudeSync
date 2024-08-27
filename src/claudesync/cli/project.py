@@ -1,6 +1,7 @@
 import click
 import os
 
+from ..provider_factory import get_provider
 from ..utils import handle_errors, validate_and_get_provider
 from ..exceptions import ProviderError, ConfigurationError
 from tqdm import tqdm
@@ -18,63 +19,70 @@ def project():
 
 
 @project.command()
-@click.pass_obj
+@click.option(
+    "--name",
+    default=lambda: os.path.basename(os.getcwd()),
+    prompt="Enter a title for your new project",
+    help="The name of the project (defaults to current directory name)",
+    show_default="current directory name",
+)
+@click.option(
+    "--description",
+    default="Project created with ClaudeSync",
+    prompt="Enter the project description",
+    help="The project description",
+    show_default=True,
+)
+@click.option(
+    "--local-path",
+    default=lambda: os.getcwd(),
+    prompt="Enter the absolute path to your local project directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
+    help="The local path for the project (defaults to current working directory)",
+    show_default="current working directory",
+)
+@click.option(
+    "--provider",
+    prompt="Pick the provider to use for this project",
+    type=click.Choice(["claude.ai"], case_sensitive=False),
+    default="claude.ai",
+    help="The provider to use for this project",
+)
+@click.option(
+    "--organization",
+    default=None,
+    help="The organization ID to use for this project",
+)
+@click.pass_context
 @handle_errors
-def create(config):
+def create(ctx, name, description, local_path, provider, organization):
     """Creates a new project for the selected provider."""
-    available_providers = config.get_providers_with_session_keys()
+    config = ctx.obj
+    provider_instance = get_provider(config, provider)
 
-    if not available_providers:
-        click.echo(
-            "No authenticated providers found. Please authenticate first using 'claudesync auth login <provider>'."
-        )
-        return
-
-    click.echo("Available authenticated providers:")
-    for idx, provider in enumerate(available_providers, 1):
-        click.echo(f"{idx}. {provider}")
-
-    provider_idx = click.prompt("Select a provider", type=int, default=1)
-    provider_name = available_providers[provider_idx - 1]
-    config.set_active_provider(provider_name)
-    click.echo("Provider successfully set.")
-
-    ctx = click.get_current_context()
-    ctx.invoke(set_organization)
-    active_organization_id = config.get("active_organization_id")
+    if organization is None:
+        organizations = provider_instance.get_organizations()
+        organization_instance = organizations[0] if organizations else None
+        organization = organization_instance["id"]
 
     try:
-        provider = validate_and_get_provider(config)
-        default_name = os.path.basename(os.getcwd())
-        title = click.prompt("Enter a title for your new project", default=default_name)
-        description = click.prompt(
-            "Enter the project description (optional)", default=""
-        )
-
-        new_project = provider.create_project(
-            active_organization_id, title, description
-        )
+        new_project = provider_instance.create_project(organization, name, description)
         click.echo(
             f"Project '{new_project['name']}' (uuid: {new_project['uuid']}) has been created successfully."
         )
 
+        config.set("active_provider", provider, local=True)
+        config.set("active_organization_id", organization, local=True)
         config.set("active_project_id", new_project["uuid"], local=True)
         config.set("active_project_name", new_project["name"], local=True)
-        click.echo(
-            f"Active project set to: {new_project['name']} (uuid: {new_project['uuid']})"
-        )
+        config.set("local_path", local_path, local=True)
 
-        claudesync_dir = os.path.join(os.getcwd(), ".claudesync")
+        claudesync_dir = os.path.join(local_path, ".claudesync")
         os.makedirs(claudesync_dir, exist_ok=True)
-        click.echo(f"Created .claudesync directory in {os.getcwd()}")
-
         config._save_local_config()
-        click.echo(f"Created config.local.json in {claudesync_dir}")
-
-        ctx.invoke(create_submodule)
 
         click.echo(
-            "\nProject setup complete. You can now start syncing files with this project."
+            f"\nProject setup complete. You can now start syncing files with this project. URL: https://claude.ai/project/{new_project['uuid']}"
         )
 
     except (ProviderError, ConfigurationError) as e:

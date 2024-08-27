@@ -21,7 +21,7 @@ def config():
 def set(config, key, value):
     """Set a configuration value."""
     # Check if the key exists in the configuration
-    if key not in config.config:
+    if key not in config.global_config and key not in config.local_config:
         raise ConfigurationError(f"Configuration property '{key}' does not exist.")
 
     # Convert string 'true' and 'false' to boolean

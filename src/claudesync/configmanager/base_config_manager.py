@@ -39,6 +39,7 @@ class BaseConfigManager(ABC):
             "two_way_sync": False,
             "curl_use_file_input": False,
             "prune_remote_files": True,
+            "claude_api_url": "https://api.claude.ai/api",
             "submodule_detect_filenames": [
                 "pom.xml",
                 "build.gradle",

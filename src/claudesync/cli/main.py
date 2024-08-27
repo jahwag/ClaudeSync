@@ -34,7 +34,8 @@ click_completion.init()
 @click.pass_context
 def cli(ctx):
     """ClaudeSync: Synchronize local files with AI projects."""
-    ctx.obj = FileConfigManager()
+    if ctx.obj is None:
+        ctx.obj = FileConfigManager()  # InMemoryConfigManager() for testing with mock
 
 
 @cli.command()

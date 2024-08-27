@@ -175,17 +175,17 @@ class FileConfigManager(BaseConfigManager):
                 f,
             )
 
-    def get_session_key(self, provider):
+    def get_session_key(self, providerName):
         """
         Retrieves the session key for the specified provider if it's still valid.
 
         Args:
-            provider (str): The name of the provider.
+            providerName (str): The name of the provider.
 
         Returns:
             tuple: A tuple containing the session key and expiry if valid, (None, None) otherwise.
         """
-        provider_key_file = self.global_config_dir / f"{provider}.key"
+        provider_key_file = self.global_config_dir / f"{providerName}.key"
         if not provider_key_file.exists():
             return None, None
 
@@ -273,16 +273,6 @@ class FileConfigManager(BaseConfigManager):
             str: The name of the active provider, or None if not set.
         """
         return self.local_config.get("active_provider")
-
-    def set_active_provider(self, provider):
-        """
-        Sets the active provider in the local configuration.
-
-        Args:
-            provider (str): The name of the provider to set as active.
-        """
-        self.local_config["active_provider"] = provider
-        self._save_local_config()
 
     def get_providers_with_session_keys(self):
         """

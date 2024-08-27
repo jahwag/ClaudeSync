@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import click
 
 from claudesync.provider_factory import get_provider
@@ -12,22 +14,19 @@ def auth():
 
 
 @auth.command()
-@click.argument("provider", required=False)
+@click.option(
+    "--provider",
+    prompt="Choose provider",
+    type=click.Choice(["claude.ai"], case_sensitive=False),
+    default="claude.ai",
+    help="The provider to use for this project",
+)
 @click.pass_context
 @handle_errors
 def login(ctx, provider):
     """Authenticate with an AI provider."""
     config = ctx.obj
-    providers = get_provider()
-    if not provider:
-        click.echo("Available providers:\n" + "\n".join(f"  - {p}" for p in providers))
-        return
-    if provider not in providers:
-        click.echo(
-            f"Error: Unknown provider '{provider}'. Available: {', '.join(providers)}"
-        )
-        return
-    provider_instance = get_provider(provider)
+    provider_instance = get_provider(config, provider)
 
     try:
         session_key, expiry = provider_instance.login()
@@ -49,7 +48,7 @@ def logout(config):
 
 @auth.command()
 @click.pass_obj
-def list(config):
+def ls(config):
     """List all authenticated providers."""
     authenticated_providers = config.get_providers_with_session_keys()
     if authenticated_providers:

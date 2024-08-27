@@ -1,4 +1,4 @@
-import copy
+from datetime import datetime
 
 from claudesync.configmanager import BaseConfigManager
 
@@ -17,8 +17,7 @@ class InMemoryConfigManager(BaseConfigManager):
         Initializes the in-memory configuration manager with default settings.
         """
         super().__init__()
-        self.global_config = self._get_default_config()
-        self.local_config = {}
+        self.session_keys = {}
 
     def _load_global_config(self):
         """
@@ -97,14 +96,39 @@ class InMemoryConfigManager(BaseConfigManager):
         """
         return None
 
-    def load_from_file_config(self, file_config_manager):
-        """
-        Loads configuration settings from a FileConfigManager instance into the in-memory store.
+    def set_session_key(self, provider, session_key, expiry):
+        self.session_keys[provider] = {"session_key": session_key, "expiry": expiry}
 
-        Args:
-            file_config_manager (FileConfigManager): An instance of FileConfigManager
-                                                     from which to load settings.
+    def get_session_key(self, provider):
+        if provider in self.session_keys:
+            data = self.session_keys[provider]
+            if datetime.now() < data["expiry"]:
+                return data["session_key"], data["expiry"]
+        return None, None
+
+    def load_from_file_config(self, file_config_manager):
+        self.global_config = file_config_manager.global_config.copy()
+        self.local_config = file_config_manager.local_config.copy()
+
+        # Copy session keys
+        if hasattr(file_config_manager, "session_keys"):
+            self.session_keys = file_config_manager.session_keys.copy()
+        else:
+            # If FileConfigManager doesn't have session_keys attribute,
+            # we need to manually copy the session keys
+            for provider in file_config_manager.get_providers_with_session_keys():
+                session_key, expiry = file_config_manager.get_session_key(provider)
+                if session_key and expiry:
+                    self.set_session_key(provider, session_key, expiry)
+
+    def get_active_provider(self):
         """
-        # Load the global and local configurations from the file-based manager
-        self.global_config = copy.deepcopy(file_config_manager.global_config)
-        self.local_config = copy.deepcopy(file_config_manager.local_config)
+        Retrieves the active provider from the local configuration.
+
+        Returns:
+            str: The name of the active provider, or None if not set.
+        """
+        return self.local_config.get("active_provider")
+
+    def get_local_path(self):
+        return "."
