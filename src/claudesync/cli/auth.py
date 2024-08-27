@@ -33,8 +33,7 @@ def login(ctx, provider):
     provider_instance = get_provider(provider)
 
     # Check for existing valid session key
-    existing_session_key = config.get_session_key()
-    existing_session_key_expiry = config.get("session_key_expiry")
+    existing_session_key, existing_session_key_expiry = config.get_session_key()
 
     if existing_session_key and existing_session_key_expiry:
         use_existing = click.confirm(
@@ -44,45 +43,28 @@ def login(ctx, provider):
             config.set("active_provider", provider, local=True)
             click.echo("Logged in successfully using existing session key.")
         else:
-            session = provider_instance.login()
-            config.set_session_key(session[0], session[1])
+            session_key, expiry = provider_instance.login()
+            config.set_session_key(provider, session_key, expiry)
             config.set("active_provider", provider, local=True)
             click.echo("Logged in successfully with new session key.")
     else:
-        session = provider_instance.login()
-        config.set_session_key(session[0], session[1])
+        session_key, expiry = provider_instance.login()
+        config.set_session_key(provider, session_key, expiry)
         config.set("active_provider", provider, local=True)
         click.echo("Logged in successfully.")
-
-    # Automatically run organization select
-    ctx.invoke(org_select)
-
-    use_existing_project = click.confirm(
-        "Would you like to select an existing project, or create a new one? "
-        "(Selecting 'No' will prompt you to create a new project)",
-        default=True,
-    )
-    if use_existing_project:
-        ctx.invoke(proj_select)
-    else:
-        ctx.invoke(project_create)
-        ctx.invoke(submodule_add)
-
-    delete_remote_files = click.confirm(
-        "Do you want ClaudeSync to automatically delete remote files that are not present in your local workspace? "
-        "(You can change this setting later with claudesync config set prune_remote_files=True|False)",
-        default=True,
-    )
-    config.set("prune_remote_files", delete_remote_files)
 
 
 @auth.command()
 @click.pass_obj
 def logout(config):
     """Log out from the current AI provider."""
+    active_provider = config.get("active_provider")
+    if active_provider:
+        provider_key_file = config.global_config_dir / f"{active_provider}.key"
+        if provider_key_file.exists():
+            provider_key_file.unlink()
+
     keys_to_clear = [
-        "session_key",
-        "session_key_expiry",
         "active_provider",
         "active_organization_id",
         "active_project_id",

@@ -9,7 +9,8 @@ class ConfigManager:
 
     This class provides methods to load, save, and access configuration settings from both
     a global configuration file (~/.claudesync/config.json) and a local configuration file
-    (.claudesync/config.local.json) in the project directory.
+    (.claudesync/config.local.json) in the project directory. Session keys are stored separately
+    in provider-specific files.
     """
 
     def __init__(self):
@@ -231,36 +232,51 @@ class ConfigManager:
             with open(local_config_file, "w") as f:
                 json.dump(self.local_config, f, indent=2)
 
-    def set_session_key(self, session_key, expiry):
+    def set_session_key(self, provider, session_key, expiry):
         """
-        Sets the session key and its expiry in the global configuration.
+        Sets the session key and its expiry for a specific provider.
 
         Args:
+            provider (str): The name of the provider.
             session_key (str): The session key to set.
             expiry (datetime): The expiry datetime for the session key.
         """
-        self.global_config["session_key"] = session_key
-        self.global_config["session_key_expiry"] = expiry.isoformat()
-        self._save_global_config()
+        provider_key_file = self.global_config_dir / f"{provider}.key"
+        with open(provider_key_file, "w") as f:
+            json.dump(
+                {"session_key": session_key, "session_key_expiry": expiry.isoformat()},
+                f,
+            )
 
     def get_session_key(self):
         """
-        Retrieves the session key if it's still valid.
+        Retrieves the session key for the active provider if it's still valid.
 
         Returns:
-            str: The session key if it's valid, None otherwise.
+            tuple: A tuple containing the session key and expiry if valid, (None, None) otherwise.
         """
-        session_key = self.global_config.get("session_key")
-        expiry_str = self.global_config.get("session_key_expiry")
+        active_provider = self.get("active_provider")
+        if not active_provider:
+            return None, None
+
+        provider_key_file = self.global_config_dir / f"{active_provider}.key"
+        if not provider_key_file.exists():
+            return None, None
+
+        with open(provider_key_file, "r") as f:
+            data = json.load(f)
+
+        session_key = data.get("session_key")
+        expiry_str = data.get("session_key_expiry")
 
         if not session_key or not expiry_str:
-            return None
+            return None, None
 
         expiry = datetime.fromisoformat(expiry_str)
         if datetime.now() > expiry:
-            return None
+            return None, None
 
-        return session_key
+        return session_key, expiry
 
     def add_file_category(self, category_name, description, patterns):
         """
