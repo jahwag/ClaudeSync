@@ -165,22 +165,14 @@ def process_file(file_path):
     return None
 
 
-def get_local_files(local_path, category=None):
+def get_local_files(local_path, category=None, include_submodules=False):
     """
     Retrieves a dictionary of local files within a specified path, applying various filters.
 
-    This function walks through the directory specified by `local_path`, applying several filters to each file:
-    - Excludes files in directories like .git, .svn, etc.
-    - Skips files larger than a specified maximum size (default 200KB, configurable).
-    - Ignores temporary editor files (ending with '~').
-    - Applies .gitignore rules if a .gitignore file is present in the `local_path`.
-    - Applies .gitignore rules if a .claudeignore file is present in the `local_path`.
-    - Checks if the file is a text file before processing.
-    Each file that passes these filters is read, and its content is hashed using MD5. The function returns a dictionary
-    where each key is the relative path of a file from `local_path`, and its value is the MD5 hash of the file's content.
-
     Args:
         local_path (str): The base directory path to search for files.
+        category (str, optional): The file category to filter by.
+        include_submodules (bool, optional): Whether to include files from submodules.
 
     Returns:
         dict: A dictionary where keys are relative file paths, and values are MD5 hashes of the file contents.
@@ -210,9 +202,18 @@ def get_local_files(local_path, category=None):
 
     spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
 
+    submodules = config.get("submodules", [])
+    submodule_paths = [sm["relative_path"] for sm in submodules]
+
     for root, dirs, filenames in os.walk(local_path, topdown=True):
         rel_root = os.path.relpath(root, local_path)
         rel_root = "" if rel_root == "." else rel_root
+
+        # Skip submodule directories if not including submodules
+        if not include_submodules:
+            dirs[:] = [
+                d for d in dirs if os.path.join(rel_root, d) not in submodule_paths
+            ]
 
         dirs[:] = [
             d

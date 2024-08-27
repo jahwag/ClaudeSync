@@ -101,6 +101,8 @@ class ConfigManager:
                         "setup.py",
                         "Cargo.toml",
                         "go.mod",
+                        "pyproject.toml",
+                        "requirements.txt",
                     ],
                 },
             },
