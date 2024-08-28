@@ -12,23 +12,27 @@ class MockClaudeAIHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
-            response = json.dumps([
-                {"uuid": "chat1", "name": "Test Chat 1"},
-                {"uuid": "chat2", "name": "Test Chat 2"}
-            ])
+            response = json.dumps(
+                [
+                    {"uuid": "chat1", "name": "Test Chat 1"},
+                    {"uuid": "chat2", "name": "Test Chat 2"},
+                ]
+            )
             self.wfile.write(response.encode())
         elif "/chat_conversations/" in parsed_path.path:
             self.send_response(200)
             self.send_header("Content-type", "application/json")
             self.end_headers()
-            response = json.dumps({
-                "uuid": "chat1",
-                "name": "Test Chat 1",
-                "messages": [
-                    {"uuid": "msg1", "content": "Hello"},
-                    {"uuid": "msg2", "content": "World"}
-                ]
-            })
+            response = json.dumps(
+                {
+                    "uuid": "chat1",
+                    "name": "Test Chat 1",
+                    "messages": [
+                        {"uuid": "msg1", "content": "Hello"},
+                        {"uuid": "msg2", "content": "World"},
+                    ],
+                }
+            )
             self.wfile.write(response.encode())
         else:
             print(f"Received GET request: {self.path}")
@@ -45,7 +49,11 @@ class MockClaudeAIHandler(BaseHTTPRequestHandler):
                             "name": "Test Org 1",
                             "capabilities": ["chat", "claude_pro"],
                         },
-                        {"uuid": "org2", "name": "Test Org 2", "capabilities": ["chat"]},
+                        {
+                            "uuid": "org2",
+                            "name": "Test Org 2",
+                            "capabilities": ["chat"],
+                        },
                     ]
                 )
                 self.wfile.write(response.encode())
@@ -57,7 +65,11 @@ class MockClaudeAIHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 response = json.dumps(
                     [
-                        {"uuid": "proj1", "name": "Test Project 1", "archived_at": None},
+                        {
+                            "uuid": "proj1",
+                            "name": "Test Project 1",
+                            "archived_at": None,
+                        },
                         {
                             "uuid": "proj2",
                             "name": "Test Project 2",
@@ -88,8 +100,8 @@ class MockClaudeAIHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-type", "text/event-stream")
             self.end_headers()
-            self.wfile.write(b"data: {\"completion\": \"Hello\"}\n\n")
-            self.wfile.write(b"data: {\"completion\": \" there\"}\n\n")
+            self.wfile.write(b'data: {"completion": "Hello"}\n\n')
+            self.wfile.write(b'data: {"completion": " there"}\n\n')
             self.wfile.write(b"event: done\n\n")
         else:
             # time.sleep(0.01)  # Add a small delay to simulate network latency

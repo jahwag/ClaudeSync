@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import click
 
 from claudesync.provider_factory import get_provider

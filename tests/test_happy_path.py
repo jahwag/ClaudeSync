@@ -5,7 +5,6 @@ from click.testing import CliRunner
 from unittest.mock import patch
 from claudesync.cli.main import cli
 from claudesync.configmanager import InMemoryConfigManager
-from logging_test_case import LoggingTestCase
 from mock_http_server import run_mock_server
 
 
@@ -60,7 +59,9 @@ class TestClaudeSyncHappyPath(unittest.TestCase):
         )
         self.assertEqual(result.exit_code, 0)
         self.assertIn(
-            "Project 'New Project' (uuid: new_proj) has been created successfully.\n\nProject setup complete. You can now start syncing files with this project. URL: https://claude.ai/project/new_proj\n",
+            "Project 'New Project' (uuid: new_proj) has been created successfully."
+            "\n\nProject setup complete. You can now start syncing files with this project. "
+            "URL: https://claude.ai/project/new_proj\n",
             result.output,
         )
 

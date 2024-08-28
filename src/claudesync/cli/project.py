@@ -8,8 +8,6 @@ from tqdm import tqdm
 from .file import file
 from .submodule import submodule
 from ..syncmanager import retry_on_403
-from claudesync.cli.organization import set as set_organization
-from claudesync.cli.submodule import create as create_submodule
 
 
 @click.group()
@@ -82,7 +80,8 @@ def create(ctx, name, description, local_path, provider, organization):
         config._save_local_config()
 
         click.echo(
-            f"\nProject setup complete. You can now start syncing files with this project. URL: https://claude.ai/project/{new_project['uuid']}"
+            f"\nProject setup complete. You can now start syncing files with this project. "
+            f"URL: https://claude.ai/project/{new_project['uuid']}"
         )
 
     except (ProviderError, ConfigurationError) as e:
