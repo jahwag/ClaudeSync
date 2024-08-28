@@ -1,15 +1,16 @@
 import os
 import hashlib
 from functools import wraps
+from pathlib import Path
+
 import click
 import pathspec
 import logging
+
 from claudesync.exceptions import ConfigurationError, ProviderError
 from claudesync.provider_factory import get_provider
-from claudesync.config_manager import ConfigManager
 
 logger = logging.getLogger(__name__)
-config_manager = ConfigManager()
 
 
 def normalize_and_calculate_md5(content):
@@ -94,7 +95,9 @@ def compute_md5_hash(content):
     return hashlib.md5(content.encode("utf-8")).hexdigest()
 
 
-def should_process_file(file_path, filename, gitignore, base_path, claudeignore):
+def should_process_file(
+    config_manager, file_path, filename, gitignore, base_path, claudeignore
+):
     """
     Determines whether a file should be processed based on various criteria.
 
@@ -163,31 +166,32 @@ def process_file(file_path):
     return None
 
 
-def get_local_files(local_path, category=None):
+def get_local_files(config, local_path, category=None, include_submodules=False):
     """
     Retrieves a dictionary of local files within a specified path, applying various filters.
 
-    This function walks through the directory specified by `local_path`, applying several filters to each file:
-    - Excludes files in directories like .git, .svn, etc.
-    - Skips files larger than a specified maximum size (default 200KB, configurable).
-    - Ignores temporary editor files (ending with '~').
-    - Applies .gitignore rules if a .gitignore file is present in the `local_path`.
-    - Applies .gitignore rules if a .claudeignore file is present in the `local_path`.
-    - Checks if the file is a text file before processing.
-    Each file that passes these filters is read, and its content is hashed using MD5. The function returns a dictionary
-    where each key is the relative path of a file from `local_path`, and its value is the MD5 hash of the file's content.
-
     Args:
+        config: config manager to use
         local_path (str): The base directory path to search for files.
+        category (str, optional): The file category to filter by.
+        include_submodules (bool, optional): Whether to include files from submodules.
 
     Returns:
         dict: A dictionary where keys are relative file paths, and values are MD5 hashes of the file contents.
     """
-    config = ConfigManager()
     gitignore = load_gitignore(local_path)
     claudeignore = load_claudeignore(local_path)
     files = {}
-    exclude_dirs = {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS", "claude_chats"}
+    exclude_dirs = {
+        ".git",
+        ".svn",
+        ".hg",
+        ".bzr",
+        "_darcs",
+        "CVS",
+        "claude_chats",
+        ".claudesync",
+    }
 
     categories = config.get("file_categories", {})
     if category and category not in categories:
@@ -199,9 +203,18 @@ def get_local_files(local_path, category=None):
 
     spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
 
+    submodules = config.get("submodules", [])
+    submodule_paths = [sm["relative_path"] for sm in submodules]
+
     for root, dirs, filenames in os.walk(local_path, topdown=True):
         rel_root = os.path.relpath(root, local_path)
         rel_root = "" if rel_root == "." else rel_root
+
+        # Skip submodule directories if not including submodules
+        if not include_submodules:
+            dirs[:] = [
+                d for d in dirs if os.path.join(rel_root, d) not in submodule_paths
+            ]
 
         dirs[:] = [
             d
@@ -218,7 +231,7 @@ def get_local_files(local_path, category=None):
             full_path = os.path.join(root, filename)
 
             if spec.match_file(rel_path) and should_process_file(
-                full_path, filename, gitignore, local_path, claudeignore
+                config, full_path, filename, gitignore, local_path, claudeignore
             ):
                 file_hash = process_file(full_path)
                 if file_hash:
@@ -276,26 +289,29 @@ def validate_and_get_provider(config, require_org=True, require_project=False):
                             or if require_project is True and no active project ID is set.
         ProviderError: If the session key has expired.
     """
-    active_provider = config.get("active_provider")
-    session_key = config.get_session_key()
-    if not active_provider or not session_key:
+    active_provider = config.get_active_provider()
+    if not active_provider:
         raise ConfigurationError(
-            "No active provider or session key. Please login first."
+            "No active provider set. Please select a provider for this project."
         )
+
+    session_key, session_key_expiry = config.get_session_key(active_provider)
     if not session_key:
-        raise ProviderError(
-            f"Session key has expired. Please run `claudesync api login {active_provider}` again."
+        raise ConfigurationError(
+            f"No valid session key found for {active_provider}. Please log in again."
         )
+
     if require_org and not config.get("active_organization_id"):
         raise ConfigurationError(
             "No active organization set. Please select an organization."
         )
+
     if require_project and not config.get("active_project_id"):
         raise ConfigurationError(
             "No active project set. Please select or create a project."
         )
-    session_key_expiry = config.get("session_key_expiry")
-    return get_provider(active_provider, session_key, session_key_expiry)
+
+    return get_provider(config, active_provider)
 
 
 def validate_and_store_local_path(config):
@@ -356,12 +372,7 @@ def load_claudeignore(base_path):
 
 def detect_submodules(base_path, submodule_detect_filenames):
     """
-    Detects submodules within a project based on specific filenames.
-
-    This function walks through the directory tree starting from base_path,
-    looking for files that indicate a submodule (e.g., pom.xml, build.gradle).
-    It returns a list of tuples containing the relative path to the submodule
-    and the filename that caused it to be identified as a submodule.
+    Detects submodules within a project based on specific filenames, respecting .gitignore and .claudeignore.
 
     Args:
         base_path (str): The base directory path to start the search from.
@@ -369,15 +380,36 @@ def detect_submodules(base_path, submodule_detect_filenames):
 
     Returns:
         list: A list of tuples (relative_path, detected_filename) for detected submodules,
-              excluding the root directory.
+              excluding the root directory and respecting ignore files.
     """
     submodules = []
+    base_path = Path(base_path)
+    gitignore = load_gitignore(base_path)
+    claudeignore = load_claudeignore(base_path)
+
     for root, dirs, files in os.walk(base_path):
+        rel_root = Path(root).relative_to(base_path)
+
+        # Check if the current directory should be ignored
+        if gitignore and gitignore.match_file(str(rel_root)):
+            dirs[:] = []  # Don't descend into this directory
+            continue
+        if claudeignore and claudeignore.match_file(str(rel_root)):
+            dirs[:] = []  # Don't descend into this directory
+            continue
+
         for filename in submodule_detect_filenames:
             if filename in files:
-                relative_path = os.path.relpath(root, base_path)
+                relative_path = str(rel_root)
                 # Exclude the root directory (represented by an empty string or '.')
                 if relative_path not in ("", "."):
+                    # Check if the file itself should be ignored
+                    file_path = rel_root / filename
+                    if (gitignore and gitignore.match_file(str(file_path))) or (
+                        claudeignore and claudeignore.match_file(str(file_path))
+                    ):
+                        continue
                     submodules.append((relative_path, filename))
                 break  # Stop searching this directory once a submodule is found
+
     return submodules

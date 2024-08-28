@@ -1,55 +1,90 @@
+import click
 import os
 
-import click
+from ..provider_factory import get_provider
+from ..utils import handle_errors, validate_and_get_provider
+from ..exceptions import ProviderError, ConfigurationError
 from tqdm import tqdm
-
-from claudesync.exceptions import ProviderError
+from .file import file
 from .submodule import submodule
-from ..syncmanager import SyncManager, retry_on_403
-from ..utils import (
-    handle_errors,
-    validate_and_get_provider,
-    get_local_files,
-    detect_submodules,
-    validate_and_store_local_path,
-)
+from ..syncmanager import retry_on_403
 
 
 @click.group()
 def project():
-    """Manage ai projects within the active organization."""
+    """Manage AI projects within the active organization."""
     pass
 
 
 @project.command()
-@click.pass_obj
+@click.option(
+    "--name",
+    default=lambda: os.path.basename(os.getcwd()),
+    prompt="Enter a title for your new project",
+    help="The name of the project (defaults to current directory name)",
+    show_default="current directory name",
+)
+@click.option(
+    "--description",
+    default="Project created with ClaudeSync",
+    prompt="Enter the project description",
+    help="The project description",
+    show_default=True,
+)
+@click.option(
+    "--local-path",
+    default=lambda: os.getcwd(),
+    prompt="Enter the absolute path to your local project directory",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
+    help="The local path for the project (defaults to current working directory)",
+    show_default="current working directory",
+)
+@click.option(
+    "--provider",
+    prompt="Pick the provider to use for this project",
+    type=click.Choice(["claude.ai"], case_sensitive=False),
+    default="claude.ai",
+    help="The provider to use for this project",
+)
+@click.option(
+    "--organization",
+    default=None,
+    help="The organization ID to use for this project",
+)
+@click.pass_context
 @handle_errors
-def create(config):
-    """Create a new project in the active organization."""
-    provider = validate_and_get_provider(config)
-    active_organization_id = config.get("active_organization_id")
+def create(ctx, name, description, local_path, provider, organization):
+    """Creates a new project for the selected provider."""
+    config = ctx.obj
+    provider_instance = get_provider(config, provider)
 
-    default_name = os.path.basename(os.getcwd())
-    title = click.prompt("Enter a title for your new project", default=default_name)
-    description = click.prompt("Enter the project description (optional)", default="")
+    if organization is None:
+        organizations = provider_instance.get_organizations()
+        organization_instance = organizations[0] if organizations else None
+        organization = organization_instance["id"]
 
     try:
-        new_project = provider.create_project(
-            active_organization_id, title, description
-        )
+        new_project = provider_instance.create_project(organization, name, description)
         click.echo(
             f"Project '{new_project['name']}' (uuid: {new_project['uuid']}) has been created successfully."
         )
 
-        config.set("active_project_id", new_project["uuid"])
-        config.set("active_project_name", new_project["name"])
+        config.set("active_provider", provider, local=True)
+        config.set("active_organization_id", organization, local=True)
+        config.set("active_project_id", new_project["uuid"], local=True)
+        config.set("active_project_name", new_project["name"], local=True)
+        config.set("local_path", local_path, local=True)
+
+        claudesync_dir = os.path.join(local_path, ".claudesync")
+        os.makedirs(claudesync_dir, exist_ok=True)
+        config._save_local_config()
+
         click.echo(
-            f"Active project set to: {new_project['name']} (uuid: {new_project['uuid']})"
+            f"\nProject setup complete. You can now start syncing files with this project. "
+            f"URL: https://claude.ai/project/{new_project['uuid']}"
         )
 
-        validate_and_store_local_path(config)
-
-    except ProviderError as e:
+    except (ProviderError, ConfigurationError) as e:
         click.echo(f"Failed to create project: {str(e)}")
 
 
@@ -71,7 +106,7 @@ def archive(config):
     if 1 <= selection <= len(projects):
         selected_project = projects[selection - 1]
         if click.confirm(
-            f"Are you sure you want to archive the project '{selected_project['name']}'?"
+            f"Are you sure you want to archive the project '{selected_project['name']}'? "
             f"Archived projects cannot be modified but can still be viewed."
         ):
             provider.archive_project(active_organization_id, selected_project["id"])
@@ -90,7 +125,7 @@ def archive(config):
 )
 @click.pass_context
 @handle_errors
-def select(ctx, show_all):
+def set(ctx, show_all):
     """Set the active project for syncing."""
     config = ctx.obj
     provider = validate_and_get_provider(config)
@@ -122,13 +157,15 @@ def select(ctx, show_all):
     )
     if 1 <= selection <= len(selectable_projects):
         selected_project = selectable_projects[selection - 1]
-        config.set("active_project_id", selected_project["id"])
-        config.set("active_project_name", selected_project["name"])
+        config.set("active_project_id", selected_project["id"], local=True)
+        config.set("active_project_name", selected_project["name"], local=True)
         click.echo(
             f"Selected project: {selected_project['name']} (ID: {selected_project['id']})"
         )
 
-        validate_and_store_local_path(config)
+        # Create .claudesync directory in the current working directory if it doesn't exist
+        os.makedirs(".claudesync", exist_ok=True)
+        click.echo(f"Ensured .claudesync directory exists in {os.getcwd()}")
     else:
         click.echo("Invalid selection. Please try again.")
 
@@ -155,86 +192,6 @@ def ls(config, show_all):
         for project in projects:
             status = " (Archived)" if project.get("archived_at") else ""
             click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
-
-
-@project.command()
-@click.option("--category", help="Specify the file category to sync")
-@click.pass_obj
-@handle_errors
-def sync(config, category):
-    """Synchronize the project files, including submodules if they exist remotely."""
-    provider = validate_and_get_provider(config, require_project=True)
-
-    active_organization_id = config.get("active_organization_id")
-    active_project_id = config.get("active_project_id")
-    active_project_name = config.get("active_project_name")
-    local_path = config.get("local_path")
-
-    if not local_path:
-        click.echo(
-            "No local path set for this project. Please select an existing project or create a new one using "
-            "'claudesync project select' or 'claudesync project create'."
-        )
-        return
-
-    # Detect local submodules
-    submodule_detect_filenames = config.get("submodule_detect_filenames", [])
-    local_submodules = detect_submodules(local_path, submodule_detect_filenames)
-
-    # Fetch all remote projects
-    all_remote_projects = provider.get_projects(
-        active_organization_id, include_archived=False
-    )
-
-    # Find remote submodule projects
-    remote_submodule_projects = [
-        project
-        for project in all_remote_projects
-        if project["name"].startswith(f"{active_project_name}-SubModule-")
-    ]
-
-    # Sync main project
-    sync_manager = SyncManager(provider, config)
-    remote_files = provider.list_files(active_organization_id, active_project_id)
-    local_files = get_local_files(local_path, category)
-    sync_manager.sync(local_files, remote_files)
-    click.echo(f"Main project '{active_project_name}' synced successfully.")
-
-    # Sync submodules
-    for local_submodule, detected_file in local_submodules:
-        submodule_name = os.path.basename(local_submodule)
-        remote_project = next(
-            (
-                proj
-                for proj in remote_submodule_projects
-                if proj["name"].endswith(f"-{submodule_name}")
-            ),
-            None,
-        )
-
-        if remote_project:
-            click.echo(f"Syncing submodule '{submodule_name}'...")
-            submodule_path = os.path.join(local_path, local_submodule)
-            submodule_files = get_local_files(submodule_path, category)
-            remote_submodule_files = provider.list_files(
-                active_organization_id, remote_project["id"]
-            )
-
-            # Create a new SyncManager for the submodule
-            submodule_config = config.config.copy()
-            submodule_config["active_project_id"] = remote_project["id"]
-            submodule_config["active_project_name"] = remote_project["name"]
-            submodule_config["local_path"] = submodule_path
-            submodule_sync_manager = SyncManager(provider, submodule_config)
-
-            submodule_sync_manager.sync(submodule_files, remote_submodule_files)
-            click.echo(f"Submodule '{submodule_name}' synced successfully.")
-        else:
-            click.echo(
-                f"No remote project found for submodule '{submodule_name}'. Skipping sync."
-            )
-
-    click.echo("Project sync completed successfully, including available submodules.")
 
 
 @project.command()
@@ -285,11 +242,14 @@ def delete_files_from_project(provider, organization_id, project_id, project_nam
         with tqdm(
             total=len(files), desc=f"Deleting files from {project_name}", leave=False
         ) as file_pbar:
-            for file in files:
-                provider.delete_file(organization_id, project_id, file["uuid"])
+            for current_file in files:
+                provider.delete_file(organization_id, project_id, current_file["uuid"])
                 file_pbar.update(1)
     except ProviderError as e:
         click.echo(f"Error deleting files from project {project_name}: {str(e)}")
 
 
 project.add_command(submodule)
+project.add_command(file)
+
+__all__ = ["project"]

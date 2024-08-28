@@ -28,7 +28,7 @@ def retry_on_403(max_retries=3, delay=1):
                                 f"Received 403 error. Retrying in {delay} seconds... (Attempt {attempt + 1}/{max_retries})"
                             )
                         else:
-                            print(
+                            self.logger.warning(
                                 f"Received 403 error. Retrying in {delay} seconds... (Attempt {attempt + 1}/{max_retries})"
                             )
                         time.sleep(delay)
@@ -45,7 +45,7 @@ class SyncManager:
     Manages the synchronization process between local and remote files.
     """
 
-    def __init__(self, provider, config):
+    def __init__(self, provider, config, local_path):
         """
         Initialize the SyncManager with the given provider and configuration.
 
@@ -57,7 +57,7 @@ class SyncManager:
         self.config = config
         self.active_organization_id = config.get("active_organization_id")
         self.active_project_id = config.get("active_project_id")
-        self.local_path = config.get("local_path")
+        self.local_path = local_path
         self.upload_delay = config.get("upload_delay", 0.5)
         self.two_way_sync = config.get("two_way_sync", False)
         self.max_retries = 3  # Maximum number of retries for 403 errors
