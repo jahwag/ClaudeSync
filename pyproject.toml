@@ -1,6 +1,6 @@
 [project]
 name = "claudesync"
-version = "0.5.4"
+version = "0.5.5"
 authors = [
     {name = "Jahziah Wagner", email = "jahziah.wagner+pypi@gmail.com"},
 ]
@@ -25,7 +25,8 @@ dependencies = [
     "pytest-cov>=5.0.0",
     "claudesync>=0.5.4",
     "crontab>=1.0.1",
-    "python-crontab>=3.2.0"
+    "python-crontab>=3.2.0",
+    "Brotli>=1.1.0"
 ]
 keywords = [
     "sync",

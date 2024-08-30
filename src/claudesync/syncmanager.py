@@ -3,12 +3,14 @@ import os
 import time
 import logging
 from datetime import datetime, timezone
+import io
 
 import click
 from tqdm import tqdm
 
 from claudesync.utils import compute_md5_hash
 from claudesync.exceptions import ProviderError
+from .compression import compress_content, decompress_content
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,7 @@ def retry_on_403(max_retries=3, delay=1):
                                 f"Received 403 error. Retrying in {delay} seconds... (Attempt {attempt + 1}/{max_retries})"
                             )
                         else:
-                            self.logger.warning(
+                            logger.warning(
                                 f"Received 403 error. Retrying in {delay} seconds... (Attempt {attempt + 1}/{max_retries})"
                             )
                         time.sleep(delay)
@@ -41,18 +43,7 @@ def retry_on_403(max_retries=3, delay=1):
 
 
 class SyncManager:
-    """
-    Manages the synchronization process between local and remote files.
-    """
-
     def __init__(self, provider, config, local_path):
-        """
-        Initialize the SyncManager with the given provider and configuration.
-
-        Args:
-            provider (Provider): The provider instance to interact with the remote storage.
-            config (dict): Configuration dictionary containing sync settings.
-        """
         self.provider = provider
         self.config = config
         self.active_organization_id = config.get("active_organization_id")
@@ -60,17 +51,17 @@ class SyncManager:
         self.local_path = local_path
         self.upload_delay = config.get("upload_delay", 0.5)
         self.two_way_sync = config.get("two_way_sync", False)
-        self.max_retries = 3  # Maximum number of retries for 403 errors
-        self.retry_delay = 1  # Delay between retries in seconds
+        self.max_retries = 3
+        self.retry_delay = 1
+        self.compression_algorithm = config.get("compression_algorithm", "none")
 
     def sync(self, local_files, remote_files):
-        """
-        Main synchronization method that orchestrates the sync process.
+        if self.compression_algorithm == "none":
+            self._sync_without_compression(local_files, remote_files)
+        else:
+            self._sync_with_compression(local_files, remote_files)
 
-        Args:
-            local_files (dict): Dictionary of local file names and their corresponding checksums.
-            remote_files (list): List of dictionaries representing remote files.
-        """
+    def _sync_without_compression(self, local_files, remote_files):
         remote_files_to_delete = set(rf["file_name"] for rf in remote_files)
         synced_files = set()
 
@@ -103,6 +94,101 @@ class SyncManager:
 
         self.prune_remote_files(remote_files, remote_files_to_delete)
 
+    def _sync_with_compression(self, local_files, remote_files):
+        packed_content = self._pack_files(local_files)
+        compressed_content = compress_content(
+            packed_content, self.compression_algorithm
+        )
+
+        remote_file_name = (
+            f"claudesync_packed_{datetime.now().strftime('%Y%m%d%H%M%S')}.dat"
+        )
+        self._upload_compressed_file(compressed_content, remote_file_name)
+
+        if self.two_way_sync:
+            remote_compressed_content = self._download_compressed_file()
+            if remote_compressed_content:
+                remote_packed_content = decompress_content(
+                    remote_compressed_content, self.compression_algorithm
+                )
+                self._unpack_files(remote_packed_content)
+
+        self._cleanup_old_remote_files(remote_files)
+
+    def _pack_files(self, local_files):
+        packed_content = io.StringIO()
+        for file_path, file_hash in local_files.items():
+            full_path = os.path.join(self.local_path, file_path)
+            with open(full_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            packed_content.write(f"--- BEGIN FILE: {file_path} ---\n")
+            packed_content.write(content)
+            packed_content.write(f"\n--- END FILE: {file_path} ---\n")
+        return packed_content.getvalue()
+
+    @retry_on_403()
+    def _upload_compressed_file(self, compressed_content, file_name):
+        logger.debug(f"Uploading compressed file {file_name} to remote...")
+        self.provider.upload_file(
+            self.active_organization_id,
+            self.active_project_id,
+            file_name,
+            compressed_content,
+        )
+        time.sleep(self.upload_delay)
+
+    @retry_on_403()
+    def _download_compressed_file(self):
+        logger.debug("Downloading latest compressed file from remote...")
+        remote_files = self.provider.list_files(
+            self.active_organization_id, self.active_project_id
+        )
+        compressed_files = [
+            rf
+            for rf in remote_files
+            if rf["file_name"].startswith("claudesync_packed_")
+        ]
+        if compressed_files:
+            latest_file = max(compressed_files, key=lambda x: x["file_name"])
+            return latest_file["content"]
+        return None
+
+    def _unpack_files(self, packed_content):
+        current_file = None
+        current_content = io.StringIO()
+
+        for line in packed_content.splitlines():
+            if line.startswith("--- BEGIN FILE:"):
+                if current_file:
+                    self._write_file(current_file, current_content.getvalue())
+                    current_content = io.StringIO()
+                current_file = line.split("--- BEGIN FILE:")[1].strip()
+            elif line.startswith("--- END FILE:"):
+                if current_file:
+                    self._write_file(current_file, current_content.getvalue())
+                    current_file = None
+                    current_content = io.StringIO()
+            else:
+                current_content.write(line + "\n")
+
+        if current_file:
+            self._write_file(current_file, current_content.getvalue())
+
+    def _write_file(self, file_path, content):
+        full_path = os.path.join(self.local_path, file_path)
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        with open(full_path, "w", encoding="utf-8") as f:
+            f.write(content)
+
+    def _cleanup_old_remote_files(self, remote_files):
+        for remote_file in remote_files:
+            if remote_file["file_name"].startswith("claudesync_packed_"):
+                self.provider.delete_file(
+                    self.active_organization_id,
+                    self.active_project_id,
+                    remote_file["uuid"],
+                )
+
     @retry_on_403()
     def update_existing_file(
         self,
@@ -112,17 +198,8 @@ class SyncManager:
         remote_files_to_delete,
         synced_files,
     ):
-        """
-        Update an existing file on the remote if it has changed locally.
-
-        Args:
-            local_file (str): Name of the local file.
-            local_checksum (str): MD5 checksum of the local file content.
-            remote_file (dict): Dictionary representing the remote file.
-            remote_files_to_delete (set): Set of remote file names to be considered for deletion.
-            synced_files (set): Set of file names that have been synchronized.
-        """
-        remote_checksum = compute_md5_hash(remote_file["content"])
+        remote_content = remote_file["content"]
+        remote_checksum = compute_md5_hash(remote_content)
         if local_checksum != remote_checksum:
             logger.debug(f"Updating {local_file} on remote...")
             with tqdm(total=2, desc=f"Updating {local_file}", leave=False) as pbar:
@@ -149,13 +226,6 @@ class SyncManager:
 
     @retry_on_403()
     def upload_new_file(self, local_file, synced_files):
-        """
-        Upload a new file to the remote project.
-
-        Args:
-            local_file (str): Name of the local file to be uploaded.
-            synced_files (set): Set of file names that have been synchronized.
-        """
         logger.debug(f"Uploading new file {local_file} to remote...")
         with open(
             os.path.join(self.local_path, local_file), "r", encoding="utf-8"
@@ -170,13 +240,6 @@ class SyncManager:
         synced_files.add(local_file)
 
     def update_local_timestamps(self, remote_files, synced_files):
-        """
-        Update local file timestamps to match the remote timestamps.
-
-        Args:
-            remote_files (list): List of dictionaries representing remote files.
-            synced_files (set): Set of file names that have been synchronized.
-        """
         for remote_file in remote_files:
             if remote_file["file_name"] in synced_files:
                 local_file_path = os.path.join(
@@ -190,14 +253,6 @@ class SyncManager:
                     logger.debug(f"Updated timestamp on local file {local_file_path}")
 
     def sync_remote_to_local(self, remote_file, remote_files_to_delete, synced_files):
-        """
-        Synchronize a remote file to the local project (two-way sync).
-
-        Args:
-            remote_file (dict): Dictionary representing the remote file.
-            remote_files_to_delete (set): Set of remote file names to be considered for deletion.
-            synced_files (set): Set of file names that have been synchronized.
-        """
         local_file_path = os.path.join(self.local_path, remote_file["file_name"])
         if os.path.exists(local_file_path):
             self.update_existing_local_file(
@@ -211,15 +266,6 @@ class SyncManager:
     def update_existing_local_file(
         self, local_file_path, remote_file, remote_files_to_delete, synced_files
     ):
-        """
-        Update an existing local file if the remote version is newer.
-
-        Args:
-            local_file_path (str): Path to the local file.
-            remote_file (dict): Dictionary representing the remote file.
-            remote_files_to_delete (set): Set of remote file names to be considered for deletion.
-            synced_files (set): Set of file names that have been synchronized.
-        """
         local_mtime = datetime.fromtimestamp(
             os.path.getmtime(local_file_path), tz=timezone.utc
         )
@@ -230,8 +276,9 @@ class SyncManager:
             logger.debug(
                 f"Updating local file {remote_file['file_name']} from remote..."
             )
+            content = remote_file["content"]
             with open(local_file_path, "w", encoding="utf-8") as file:
-                file.write(remote_file["content"])
+                file.write(content)
             synced_files.add(remote_file["file_name"])
             if remote_file["file_name"] in remote_files_to_delete:
                 remote_files_to_delete.remove(remote_file["file_name"])
@@ -239,36 +286,21 @@ class SyncManager:
     def create_new_local_file(
         self, local_file_path, remote_file, remote_files_to_delete, synced_files
     ):
-        """
-        Create a new local file from a remote file.
-
-        Args:
-            local_file_path (str): Path to the new local file.
-            remote_file (dict): Dictionary representing the remote file.
-            remote_files_to_delete (set): Set of remote file names to be considered for deletion.
-            synced_files (set): Set of file names that have been synchronized.
-        """
         logger.debug(
             f"Creating new local file {remote_file['file_name']} from remote..."
         )
+        content = remote_file["content"]
         with tqdm(
             total=1, desc=f"Creating {remote_file['file_name']}", leave=False
         ) as pbar:
             with open(local_file_path, "w", encoding="utf-8") as file:
-                file.write(remote_file["content"])
+                file.write(content)
             pbar.update(1)
         synced_files.add(remote_file["file_name"])
         if remote_file["file_name"] in remote_files_to_delete:
             remote_files_to_delete.remove(remote_file["file_name"])
 
     def prune_remote_files(self, remote_files, remote_files_to_delete):
-        """
-        Delete remote files that no longer exist locally.
-
-        Args:
-            remote_files (list): List of dictionaries representing remote files.
-            remote_files_to_delete (set): Set of remote file names to be deleted.
-        """
         if not self.config.get("prune_remote_files"):
             click.echo("Remote pruning is not enabled.")
             return
@@ -278,13 +310,6 @@ class SyncManager:
 
     @retry_on_403()
     def delete_remote_files(self, file_to_delete, remote_files):
-        """
-        Delete a file from the remote project that no longer exists locally.
-
-        Args:
-            file_to_delete (str): Name of the remote file to be deleted.
-            remote_files (list): List of dictionaries representing remote files.
-        """
         logger.debug(f"Deleting {file_to_delete} from remote...")
         remote_file = next(
             rf for rf in remote_files if rf["file_name"] == file_to_delete
