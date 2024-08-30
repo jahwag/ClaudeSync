@@ -232,7 +232,7 @@ def huffman_compress(text):
 
     compressed = bytearray()
     for i in range(0, len(encoded), 8):
-        byte = encoded[i: i + 8]
+        byte = encoded[i : i + 8]
         compressed.append(int(byte, 2))
 
     return json.dumps(
