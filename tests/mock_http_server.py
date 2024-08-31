@@ -95,13 +95,24 @@ class MockClaudeAIHandler(BaseHTTPRequestHandler):
                 self.send_error(404, "Not Found")
 
     def do_POST(self):
+        content_length = int(self.headers["Content-Length"])
         parsed_path = urlparse(self.path)
-        if parsed_path.path.endswith("/completion"):
+
+        if parsed_path.path.endswith("/chat_conversations"):
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            response = json.dumps({"uuid": "new_chat", "name": "New Chat"})
+            self.wfile.write(response.encode())
+        elif parsed_path.path.endswith("/completion"):
             self.send_response(200)
             self.send_header("Content-type", "text/event-stream")
             self.end_headers()
             self.wfile.write(b'data: {"completion": "Hello"}\n\n')
-            self.wfile.write(b'data: {"completion": " there"}\n\n')
+            self.wfile.write(b'data: {"completion": " there. "}\n\n')
+            self.wfile.write(
+                b'data: {"completion": "I apologize for the confusion. You\'re right."}\n\n'
+            )
             self.wfile.write(b"event: done\n\n")
         else:
             # time.sleep(0.01)  # Add a small delay to simulate network latency

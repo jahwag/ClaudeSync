@@ -29,7 +29,7 @@ def sync_chats(provider, config, sync_all=False):
     local_path = config.get("local_path")
     if not local_path:
         raise ConfigurationError(
-            "Local path not set. Use 'claudesync project select' or 'claudesync project create' to set it."
+            "Local path not set. Use 'claudesync project set' or 'claudesync project create' to set it."
         )
 
     # Create chats directory within local_path
@@ -40,14 +40,14 @@ def sync_chats(provider, config, sync_all=False):
     organization_id = config.get("active_organization_id")
     if not organization_id:
         raise ConfigurationError(
-            "No active organization set. Please select an organization."
+            "No active organization set. Please set an organization."
         )
 
     # Get the active project ID
     active_project_id = config.get("active_project_id")
     if not active_project_id and not sync_all:
         raise ConfigurationError(
-            "No active project set. Please select a project or use the -a flag to sync all chats."
+            "No active project set. Please set a project or use the -a flag to sync all chats."
         )
 
     # Fetch all chats for the organization

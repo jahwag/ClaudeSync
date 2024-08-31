@@ -130,7 +130,7 @@ def push(config, category, uberproject):
     if not local_path:
         click.echo(
             "No .claudesync directory found in this directory or any parent directories. "
-            "Please run 'claudesync project create' or 'claudesync project select' first."
+            "Please run 'claudesync project create' or 'claudesync project set' first."
         )
         return
 

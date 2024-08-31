@@ -123,15 +123,41 @@ def archive(config):
     is_flag=True,
     help="Include submodule projects in the selection",
 )
+@click.option(
+    "--provider",
+    type=click.Choice(["claude.ai"]),  # Add more providers as they become available
+    default="claude.ai",
+    help="Specify the provider for repositories without .claudesync",
+)
 @click.pass_context
 @handle_errors
-def set(ctx, show_all):
+def set(ctx, show_all, provider):
     """Set the active project for syncing."""
     config = ctx.obj
-    provider = validate_and_get_provider(config)
+
+    # If provider is not specified, try to get it from the config
+    if not provider:
+        provider = config.get("active_provider")
+
+    # If provider is still not available, prompt the user
+    if not provider:
+        provider = click.prompt(
+            "Please specify the provider",
+            type=click.Choice(
+                ["claude.ai"]
+            ),  # Add more providers as they become available
+        )
+
+    # Update the config with the provider
+    config.set("active_provider", provider, local=True)
+
+    # Now we can get the provider instance
+    provider_instance = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
     active_project_name = config.get("active_project_name")
-    projects = provider.get_projects(active_organization_id, include_archived=False)
+    projects = provider_instance.get_projects(
+        active_organization_id, include_archived=False
+    )
 
     if show_all:
         selectable_projects = projects

@@ -147,9 +147,9 @@ class TestClaudeAIProvider(unittest.TestCase):
 
     def test_send_message(self):
         messages = list(self.provider.send_message("org1", "chat1", "Hello"))
-        self.assertEqual(len(messages), 2)
+        self.assertEqual(len(messages), 3)
         self.assertEqual(messages[0]["completion"], "Hello")
-        self.assertEqual(messages[1]["completion"], " there")
+        self.assertEqual(messages[1]["completion"], " there. ")
 
     def test_handle_http_error_403(self):
         # This test still needs to use a mock as we can't easily trigger a 403 from our mock server
