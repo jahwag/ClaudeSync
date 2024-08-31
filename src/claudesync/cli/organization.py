@@ -27,13 +27,37 @@ def ls(config):
 
 @organization.command()
 @click.option("--org-id", help="ID of the organization to set as active")
+@click.option(
+    "--provider",
+    type=click.Choice(["claude.ai"]),  # Add more providers as they become available
+    default="claude.ai",
+    help="Specify the provider for repositories without .claudesync",
+)
 @click.pass_context
 @handle_errors
-def set(ctx, org_id):
+def set(ctx, org_id, provider):
     """Set the active organization."""
     config = ctx.obj
-    provider = validate_and_get_provider(config, require_org=False)
-    organizations = provider.get_organizations()
+
+    # If provider is not specified, try to get it from the config
+    if not provider:
+        provider = config.get("active_provider")
+
+    # If provider is still not available, prompt the user
+    if not provider:
+        provider = click.prompt(
+            "Please specify the provider",
+            type=click.Choice(
+                ["claude.ai"]
+            ),  # Add more providers as they become available
+        )
+
+    # Update the config with the provider
+    config.set("active_provider", provider, local=True)
+
+    # Now we can get the provider instance
+    provider_instance = validate_and_get_provider(config, require_org=False)
+    organizations = provider_instance.get_organizations()
 
     if not organizations:
         click.echo("No organizations with required capabilities found.")

@@ -188,32 +188,29 @@ def init(config, name, project):
 @handle_errors
 def message(config, message, chat, timezone):
     """Send a message to a specified chat or create a new chat and send the message."""
-    provider = validate_and_get_provider(config)
-    organization_id = config.get("active_organization_id")
+    provider = validate_and_get_provider(config, require_project=True)
+    active_organization_id = config.get("active_organization_id")
     active_project_id = config.get("active_project_id")
     active_project_name = config.get("active_project_name")
-    local_path = config.get("local_path")
-
-    if not organization_id:
-        click.echo("No active organization set.")
-        return
 
     message = " ".join(message)  # Join all message parts into a single string
 
     try:
         chat = create_chat(
+            config,
             active_project_id,
             active_project_name,
             chat,
-            local_path,
-            organization_id,
+            active_organization_id,
             provider,
         )
         if chat is None:
             return
 
         # Send message and process the streaming response
-        for event in provider.send_message(organization_id, chat, message, timezone):
+        for event in provider.send_message(
+            active_organization_id, chat, message, timezone
+        ):
             if "completion" in event:
                 click.echo(event["completion"], nl=False)
             elif "content" in event:
@@ -232,30 +229,38 @@ def message(config, message, chat, timezone):
 
 
 def create_chat(
-    active_project_id, active_project_name, chat, local_path, organization_id, provider
+    config,
+    active_project_id,
+    active_project_name,
+    chat,
+    active_organization_id,
+    provider,
 ):
     if not chat:
-        selected_project = select_project(
-            active_project_id,
-            active_project_name,
-            local_path,
-            organization_id,
-            provider,
-        )
-        if selected_project is None:
-            return
+        if not active_project_name:
+            active_project_id = select_project(
+                config,
+                active_project_id,
+                active_project_name,
+                active_organization_id,
+                provider,
+            )
+        if active_project_id is None:
+            return None
 
         # Create a new chat with the selected project
-        new_chat = provider.create_chat(organization_id, project_uuid=selected_project)
+        new_chat = provider.create_chat(
+            active_organization_id, project_uuid=active_project_id
+        )
         chat = new_chat["uuid"]
         click.echo(f"New chat created with ID: {chat}")
     return chat
 
 
 def select_project(
-    active_project_id, active_project_name, local_path, organization_id, provider
+    config, active_project_id, active_project_name, active_organization_id, provider
 ):
-    all_projects = provider.get_projects(organization_id)
+    all_projects = provider.get_projects(active_organization_id)
     if not all_projects:
         click.echo("No projects found in the active organization.")
         return None
@@ -279,11 +284,7 @@ def select_project(
     current_dir = os.path.abspath(os.getcwd())
 
     default_project = get_default_project(
-        active_project_id,
-        active_project_name,
-        current_dir,
-        filtered_projects,
-        local_path,
+        config, active_project_id, active_project_name, current_dir, filtered_projects
     )
 
     click.echo("Available projects:")
@@ -314,8 +315,12 @@ def select_project(
 
 
 def get_default_project(
-    active_project_id, active_project_name, current_dir, filtered_projects, local_path
+    config, active_project_id, active_project_name, current_dir, filtered_projects
 ):
+    local_path = config.get("local_path")
+    if not local_path:
+        return None
+
     # Find the project that matches the current directory
     default_project = None
     for idx, proj in enumerate(filtered_projects):
