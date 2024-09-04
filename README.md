@@ -48,12 +48,17 @@ pip install claudesync
 
 2. **Log in to your Claude.ai account:**
 ```shell
-claudesync api login claude.ai
+claudesync auth login
 ```
 
-3. **Start syncing:**
+3. **Create a project:**
 ```shell
-claudesync project sync
+claudesync project create
+```
+
+4. **Start syncing:**
+```shell
+claudesync push
 ```
 *Note: This performs a one-way sync. Any files not present locally will be deleted from the Claude.ai Project.
 
