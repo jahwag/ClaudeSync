@@ -57,17 +57,19 @@ class FileConfigManager(BaseConfigManager):
         Finds the nearest directory containing a .claudesync folder.
 
         Searches from the current working directory upwards until it finds a .claudesync folder
-        or reaches the root directory.
+        or reaches the root directory. Excludes the ~/.claudesync directory.
 
         Returns:
             Path: The path containing the .claudesync folder, or None if not found.
         """
         current_dir = Path.cwd()
         root_dir = Path(current_dir.root)
+        home_dir = Path.home()
         depth = 0  # Initialize depth counter
 
         while current_dir != root_dir:
-            if (current_dir / ".claudesync").is_dir():
+            claudesync_dir = current_dir / ".claudesync"
+            if claudesync_dir.is_dir() and claudesync_dir != home_dir / ".claudesync":
                 return current_dir
 
             current_dir = current_dir.parent
