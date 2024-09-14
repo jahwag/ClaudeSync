@@ -1,9 +1,11 @@
 import json
+import logging
 import os
 from datetime import datetime
 from pathlib import Path
 
 from claudesync.configmanager.base_config_manager import BaseConfigManager
+from claudesync.session_key_manager import SessionKeyManager
 
 
 class FileConfigManager(BaseConfigManager):
@@ -29,6 +31,7 @@ class FileConfigManager(BaseConfigManager):
         self.local_config = {}
         self.local_config_dir = None
         self._load_local_config()
+        self.session_key_manager = SessionKeyManager()
 
     def _load_global_config(self):
         """
@@ -169,42 +172,62 @@ class FileConfigManager(BaseConfigManager):
             session_key (str): The session key to set.
             expiry (datetime): The expiry datetime for the session key.
         """
-        self.global_config_dir.mkdir(parents=True, exist_ok=True)
-        provider_key_file = self.global_config_dir / f"{provider}.key"
-        with open(provider_key_file, "w") as f:
-            json.dump(
-                {"session_key": session_key, "session_key_expiry": expiry.isoformat()},
-                f,
+        try:
+            encrypted_session_key, encryption_method = (
+                self.session_key_manager.encrypt_session_key(provider, session_key)
             )
 
-    def get_session_key(self, providerName):
+            self.global_config_dir.mkdir(parents=True, exist_ok=True)
+            provider_key_file = self.global_config_dir / f"{provider}.key"
+            with open(provider_key_file, "w") as f:
+                json.dump(
+                    {
+                        "session_key": encrypted_session_key,
+                        "session_key_encryption_method": encryption_method,
+                        "session_key_expiry": expiry.isoformat(),
+                    },
+                    f,
+                )
+        except RuntimeError as e:
+            logging.error(f"Failed to encrypt session key: {str(e)}")
+            raise
+
+    def get_session_key(self, provider):
         """
         Retrieves the session key for the specified provider if it's still valid.
 
         Args:
-            providerName (str): The name of the provider.
+            provider (str): The name of the provider.
 
         Returns:
             tuple: A tuple containing the session key and expiry if valid, (None, None) otherwise.
         """
-        provider_key_file = self.global_config_dir / f"{providerName}.key"
+        provider_key_file = self.global_config_dir / f"{provider}.key"
         if not provider_key_file.exists():
             return None, None
 
         with open(provider_key_file, "r") as f:
             data = json.load(f)
 
-        session_key = data.get("session_key")
+        encrypted_key = data.get("session_key")
+        encryption_method = data.get("session_key_encryption_method")
         expiry_str = data.get("session_key_expiry")
 
-        if not session_key or not expiry_str:
+        if not encrypted_key or not expiry_str:
             return None, None
 
         expiry = datetime.fromisoformat(expiry_str)
         if datetime.now() > expiry:
             return None, None
 
-        return session_key, expiry
+        try:
+            session_key = self.session_key_manager.decrypt_session_key(
+                provider, encryption_method, encrypted_key
+            )
+            return session_key, expiry
+        except RuntimeError as e:
+            logging.error(f"Failed to decrypt session key: {str(e)}")
+            return None, None
 
     def add_file_category(self, category_name, description, patterns):
         """

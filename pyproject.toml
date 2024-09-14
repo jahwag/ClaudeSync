@@ -1,13 +1,13 @@
 [project]
 name = "claudesync"
-version = "0.5.8"
+version = "0.6.0"
 authors = [
-    {name = "Jahziah Wagner", email = "jahziah.wagner+pypi@gmail.com"},
+    {name = "Jahziah Wagner", email = "540380+jahwag@users.noreply.github.com"},
 ]
 description = "A tool to synchronize local files with Claude.ai projects"
 license = {file = "LICENSE"}
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -27,7 +27,8 @@ dependencies = [
     "crontab>=1.0.1",
     "python-crontab>=3.2.0",
     "Brotli>=1.1.0",
-    "anthropic>=0.34.2"
+    "anthropic>=0.34.2",
+    "cryptography>=3.4.7"
 ]
 keywords = [
     "sync",
