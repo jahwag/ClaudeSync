@@ -1,33 +1,29 @@
----
-name: Feature request
-about: Suggest an idea for ClaudeSync
-title: ''
-labels: enhancement
-assignees: ''
+### 🌟 Feature Request
+
+**1. Feature Title**
+> *A short, descriptive title for the feature.*
+
+**2. Description**
+> *Describe the feature you’d like to see implemented.*
+
+**3. Benefits**
+> *Explain how this feature will improve ClaudeSync or benefit users.*
+
+**4. Use Case**
+> *Provide a specific example of how you would use this feature.*
+
+**5. Environment (if applicable)**
+- **OS:** e.g., Windows 10, macOS 12.3, Ubuntu 22.04
+- **Python Version:** e.g., 3.9.7
+- **ClaudeSync Version:** e.g., 1.2.3
+
+**6. Willingness to Help**
+> *Are you interested in contributing to this feature? (Yes/No)*
+
+**7. Additional Context (optional)**
+> *Any other relevant information, screenshots, or examples.*
 
 ---
 
-# Feature Request Template
+### 🙏 Thank You for Your Contribution!
 
-## 1. Problem Description
-Provide a clear and concise description of the problem you're experiencing. For example: "I'm always frustrated when [...]"
-
-## 2. Desired Solution
-Outline the solution you would like to see implemented. Be clear and specific about what you want to happen.
-
-## 3. Considered Alternatives
-Describe any alternative solutions or features you have considered. Include why these alternatives may or may not work for your needs.
-
-## 4. Use Case
-Explain how you would use this feature and how it would benefit your workflow with ClaudeSync.
-
-## 5. Additional Context
-Include any other relevant context, screenshots, or examples that can help in understanding the feature request.
-
-## 6. Environment (if relevant)
-- **OS:** [e.g. Windows 10, macOS 11.4, Ubuntu 20.04]
-- **Python version:** [e.g. 3.8.10]
-- **ClaudeSync version:** [e.g. 0.3.7]
-
-## 7. Willingness to Contribute
-Let us know if you're interested in helping to implement this feature or if you're just suggesting an idea.
