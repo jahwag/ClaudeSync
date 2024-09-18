@@ -87,9 +87,9 @@ body:
       label: Willingness to Help
       description: Are you interested in contributing to this feature?
       options:
-        - Yes
-        - No
-      default: No
+        - "Yes"
+        - "No"
+      default: 2
     validations:
       required: true
 

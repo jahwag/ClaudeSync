@@ -48,7 +48,7 @@ body:
       options:
         - New
         - Upgraded
-      default: New
+      default: 0
     validations:
       required: true
 
