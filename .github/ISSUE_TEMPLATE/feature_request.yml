@@ -1,7 +1,6 @@
 name: Feature Request
 description: Suggest a new feature for ClaudeSync.
-title: "[Feature]: "
-labels: ["feature", "enhancement", "claudesync"]
+labels: ["enhancement"]
 projects: ["claudesync/features"]
 assignees:
   - claudesync-team

@@ -1,7 +1,6 @@
 name: ClaudeSync Bug Report
 description: Report a bug in ClaudeSync.
-title: "[Bug]: "
-labels: ["bug", "triage", "claudesync"]
+labels: ["bug"]
 projects: ["claudesync/bugs"]
 assignees:
   - claudesync-team
@@ -17,7 +16,7 @@ body:
     id: os
     attributes:
       label: Operating System
-      description: e.g., Windows 10, macOS 12.3, Ubuntu 22.04
+      description: Which operating system this occurred on
       placeholder: e.g., Windows 10
     validations:
       required: true
@@ -26,8 +25,8 @@ body:
     id: python_version
     attributes:
       label: Python Version
-      description: e.g., 3.9.7
-      placeholder: e.g., 3.9.7
+      description: E.g. as given by `python --version` and paste the output below.
+      placeholder: e.g., 3.13
     validations:
       required: true
 
@@ -35,8 +34,8 @@ body:
     id: claudesync_version
     attributes:
       label: ClaudeSync Version
-      description: e.g., 1.2.3
-      placeholder: e.g., 1.2.3
+      description: E.g. as given by `pip show claudesync | grep Version`
+      placeholder: e.g., 0.6.0
     validations:
       required: true
 
@@ -44,7 +43,7 @@ body:
     id: installation_type
     attributes:
       label: Installation Type
-      description: Is this a new installation or an upgrade?
+      description: Is this a new installation or an upgrade from an older version of ClaudeSync?
       options:
         - New
         - Upgraded
