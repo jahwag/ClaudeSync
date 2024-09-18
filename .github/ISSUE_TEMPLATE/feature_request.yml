@@ -1,0 +1,109 @@
+name: Feature Request
+description: Suggest a new feature for ClaudeSync.
+title: "[Feature]: "
+labels: ["feature", "enhancement", "claudesync"]
+projects: ["claudesync/features"]
+assignees:
+  - claudesync-team
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 🌟 Feature Request
+
+        Thank you for taking the time to suggest a new feature. Please provide the following details to help us understand your request better.
+
+  - type: input
+    id: feature_title
+    attributes:
+      label: Feature Title
+      description: A short, descriptive title for the feature.
+      placeholder: e.g., "Dark Mode Support"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe the feature you’d like to see implemented.
+      placeholder: Provide a detailed description of the feature.
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefits
+    attributes:
+      label: Benefits
+      description: Explain how this feature will improve ClaudeSync or benefit users.
+      placeholder: Describe the advantages and positive impact of the feature.
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use Case
+      description: Provide a specific example of how you would use this feature.
+      placeholder: Share a real-world scenario where this feature would be useful.
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        **5. Environment (if applicable)**
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: e.g., Windows 10, macOS 12.3, Ubuntu 22.04
+      placeholder: e.g., Windows 10
+    validations:
+      required: false
+
+  - type: input
+    id: python_version
+    attributes:
+      label: Python Version
+      description: e.g., 3.9.7
+      placeholder: e.g., 3.9.7
+    validations:
+      required: false
+
+  - type: input
+    id: claudesync_version
+    attributes:
+      label: ClaudeSync Version
+      description: e.g., 1.2.3
+      placeholder: e.g., 1.2.3
+    validations:
+      required: false
+
+  - type: dropdown
+    id: willingness_to_help
+    attributes:
+      label: Willingness to Help
+      description: Are you interested in contributing to this feature?
+      options:
+        - Yes
+        - No
+      default: No
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Any other relevant information, screenshots, or examples.
+      placeholder: Provide any supplementary details that might help.
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ### 🙏 Thank You for Your Contribution!

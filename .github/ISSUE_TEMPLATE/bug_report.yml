@@ -1,0 +1,107 @@
+name: ClaudeSync Bug Report
+description: Report a bug in ClaudeSync.
+title: "[Bug]: "
+labels: ["bug", "triage", "claudesync"]
+projects: ["claudesync/bugs"]
+assignees:
+  - claudesync-team
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ### 🐞 ClaudeSync Bug Report
+
+        Thank you for taking the time to report a bug. Please fill out the following information to help us resolve the issue.
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: e.g., Windows 10, macOS 12.3, Ubuntu 22.04
+      placeholder: e.g., Windows 10
+    validations:
+      required: true
+
+  - type: input
+    id: python_version
+    attributes:
+      label: Python Version
+      description: e.g., 3.9.7
+      placeholder: e.g., 3.9.7
+    validations:
+      required: true
+
+  - type: input
+    id: claudesync_version
+    attributes:
+      label: ClaudeSync Version
+      description: e.g., 1.2.3
+      placeholder: e.g., 1.2.3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: installation_type
+    attributes:
+      label: Installation Type
+      description: Is this a new installation or an upgrade?
+      options:
+        - New
+        - Upgraded
+      default: New
+    validations:
+      required: true
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Configuration
+      description: Output of `claudesync config ls`. *(Please remove any sensitive information)*
+      placeholder: |
+        ```bash
+        claudesync config ls
+        # Paste configuration here
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Provide the steps to reproduce the bug.
+      placeholder: |
+        1. Step one
+        2. Step two
+        3. Step three
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What went wrong?
+      placeholder: Describe the issue you encountered.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Optional. Paste relevant logs here.
+      placeholder: |
+        ```bash
+        claudesync config set log_level DEBUG
+        # Paste logs here
+        ```
+      render: shell
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        ### 🙏 Thank You for Your Contribution!
