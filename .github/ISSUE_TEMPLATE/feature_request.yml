@@ -89,7 +89,7 @@ body:
       options:
         - "Yes"
         - "No"
-      default: 2
+      default: 1
     validations:
       required: true
 
