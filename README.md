@@ -29,7 +29,7 @@ Please review [Anthropic's Terms of Service](https://www.anthropic.com/legal/con
 - **File sync**: Synchronize local files with [Claude.ai projects](https://www.anthropic.com/news/projects).
 - **Cross-Platform**: Compatible with [Windows, macOS, and Linux](https://github.com/jahwag/ClaudeSync/releases).
 - **Configurable**: Plenty of [configuration options](https://github.com/jahwag/ClaudeSync/wiki/Quick-reference).
-- **Integratable**: Designed to be easy to integrate into your pipelines.
+- **Integrate**: Designed to be easy to integrate into your pipelines.
 - **Secure**: Ensures data privacy and security.
 
 ## ⚙️ Prerequisites
