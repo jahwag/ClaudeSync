@@ -1,47 +1,31 @@
----
-name: Bug report
-about: Create a report to help us improve ClaudeSync
-title: ''
-labels: bug
-assignees: ''
+### 🐞 ClaudeSync Bug Report
 
----
+**1. Environment**
+- **OS:** *e.g., Windows 10, macOS 12.3, Ubuntu 22.04*
+- **Python Version:** *e.g., 3.9.7*
+- **ClaudeSync Version:** *e.g., 1.2.3*
+- **Installation Type:** *New / Upgraded*
 
-**Describe the bug**
-A clear and concise description of what the bug is.
-
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Run command '....'
-3. See error
-
-**Expected behavior**
-A clear and concise description of what you expected to happen.
-
-**Error messages**
-If applicable, provide the full error message or stack trace.
-
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
-
-**Environment (please complete the following information):**
- - OS: [e.g. Windows 10, macOS 11.4, Ubuntu 20.04]
- - Python version: [e.g. 3.8.10]
- - ClaudeSync version: [e.g. 0.4.9]
-
-**Configuration**
-Please provide the output of `claudesync config ls` (make sure to remove any sensitive information).
-
-**Additional context**
-Add any other context about the problem here. For example:
-- Are you using any custom configurations?
-- Did this issue start happening recently, or has it always been a problem?
-- Can you reliably reproduce this issue? If not, how often does it occur?
-
-**Logs**
-If possible, please provide relevant logs. You can increase the log verbosity by running:
+**2. Configuration**
+```bash
+claudesync config ls
 ```
+*(Please remove any sensitive information)*
+
+**3. Steps to Reproduce**
+1. *Step one*
+2. *Step two*
+3. *Step three*
+
+**4. Description**
+*What went wrong?*
+
+**5. Optional: Logs**
+```bash
 claudesync config set log_level DEBUG
+# Paste logs here
 ```
-Then reproduce the issue and provide the logs (make sure to remove any sensitive information).
+
+---
+
+### 🙏 Thank You for Your Contribution!
