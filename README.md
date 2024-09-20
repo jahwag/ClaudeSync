@@ -8,6 +8,8 @@
 [![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Dependencies](https://img.shields.io/librariesio/github/jahwag/claudesync)](https://github.com/jahwag/claudesync/network/dependencies)
 [![Last Commit](https://img.shields.io/github/last-commit/jahwag/claudesync.svg)](https://github.com/jahwag/claudesync/commits/main)
+[![Sponsor jahwag](https://img.shields.io/badge/Sponsor-♥-red)](https://github.com/sponsors/jahwag)
+
 
 ClaudeSync bridges your local development environment with Claude.ai projects, enabling seamless synchronization to enhance your AI-powered workflow.
 
@@ -84,9 +86,10 @@ Enjoying ClaudeSync? Support us by:
 - 🐛 [Reporting Issues](https://github.com/jahwag/claudesync/issues)
 - 🌍 [Contributing](CONTRIBUTING.md)
 - 💬 [Join Our Discord](https://discord.gg/pR4qeMH4u4)
+- 💖 [Sponsor Us](https://github.com/sponsors/jahwag)
 
 Your contributions help improve ClaudeSync!
 
 ---
 
-[Contributors](https://github.com/jahwag/claudesync/graphs/contributors) • [License](https://github.com/jahwag/claudesync/blob/master/LICENSE) • [Report Bug](https://github.com/jahwag/claudesync/issues) • [Request Feature](https://github.com/jahwag/claudesync/issues/new?labels=enhancement&template=feature_request.md)
+[Contributors](https://github.com/jahwag/claudesync/graphs/contributors) • [License](https://github.com/jahwag/claudesync/blob/master/LICENSE) • [Report Bug](https://github.com/jahwag/claudesync/issues) • [Request Feature](https://github.com/jahwag/claudesync/issues/new?labels=enhancement&template=feature_request.md)• [Sponsor](https://github.com/sponsors/jahwag)
