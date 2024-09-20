@@ -31,7 +31,6 @@ class FileConfigManager(BaseConfigManager):
         self.local_config = {}
         self.local_config_dir = None
         self._load_local_config()
-        self.session_key_manager = SessionKeyManager()
 
     def _load_global_config(self):
         """
@@ -173,8 +172,9 @@ class FileConfigManager(BaseConfigManager):
             expiry (datetime): The expiry datetime for the session key.
         """
         try:
+            session_key_manager = SessionKeyManager()
             encrypted_session_key, encryption_method = (
-                self.session_key_manager.encrypt_session_key(provider, session_key)
+                session_key_manager.encrypt_session_key(provider, session_key)
             )
 
             self.global_config_dir.mkdir(parents=True, exist_ok=True)
@@ -221,7 +221,8 @@ class FileConfigManager(BaseConfigManager):
             return None, None
 
         try:
-            session_key = self.session_key_manager.decrypt_session_key(
+            session_key_manager = SessionKeyManager()
+            session_key = session_key_manager.decrypt_session_key(
                 provider, encryption_method, encrypted_key
             )
             return session_key, expiry
