@@ -243,8 +243,8 @@ class BaseClaudeAIProvider(BaseProvider):
         # This method should be implemented by subclasses to return a response object
         # that can be used with sseclient
         raise NotImplementedError("This method should be implemented by subclasses")
-
-    def send_message(self, organization_id, chat_id, prompt, timezone="UTC"):
+        
+    def send_message(self, organization_id, chat_id, prompt, timezone="UTC", files=None):
         endpoint = (
             f"/organizations/{organization_id}/chat_conversations/{chat_id}/completion"
         )
@@ -252,7 +252,7 @@ class BaseClaudeAIProvider(BaseProvider):
             "prompt": prompt,
             "timezone": timezone,
             "attachments": [],
-            "files": [],
+            "files": files or [],
         }
         response = self._make_request_stream("POST", endpoint, data)
         client = sseclient.SSEClient(response)

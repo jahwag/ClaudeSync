@@ -3,7 +3,13 @@ import urllib.error
 import urllib.parse
 import json
 import gzip
+import os
+import mimetypes
+import random
+import string
 from datetime import datetime, timezone
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
 from .base_claude_ai import BaseClaudeAIProvider
 from ..exceptions import ProviderError
 
@@ -136,3 +142,70 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             self.handle_http_error(e)
         except urllib.error.URLError as e:
             raise ProviderError(f"API request failed: {str(e)}")
+            
+
+    def generate_boundary(self):
+        prefix = 'WebKitFormBoundary'
+        random_sequence = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+        return prefix + random_sequence
+
+    def upload_image(self, organization_id, file_path):
+
+        self.logger.debug(f"Uploading image: {file_path}")
+        url = f"{self.base_url}/{organization_id}/upload"
+        
+        with open(file_path, 'rb') as f:
+            file_data = f.read()
+        
+        file_name = os.path.basename(file_path)
+        content_type = mimetypes.guess_type(file_path)[0] or 'application/octet-stream'
+        
+        boundary = self.generate_boundary()
+        data = self._encode_multipart_formdata(file_data, file_name, content_type, boundary)
+        
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
+            'Accept': '*/*',
+            'Accept-Language': 'en-GB,en;q=0.9',
+            'anthropic-client-sha': 'unknown',
+            'anthropic-client-version': 'unknown',
+            'origin': 'https://claude.ai',
+            'referer': 'https://claude.ai/',
+            'Content-Type': f'multipart/form-data; boundary={boundary}',
+            'Cookie': f'sessionKey={self.config.get_session_key("claude.ai")[0]}'
+        }
+
+        try:
+            req = Request(url, data=data, headers=headers, method='POST')
+            response = urlopen(req)
+
+            content = response.read()
+            content_str = content.decode("utf-8")
+
+            if not content:
+                return None
+            return json.loads(content_str)
+        except urllib.error.HTTPError as e:
+            self.handle_http_error(e)
+        except urllib.error.URLError as e:
+            self.logger.error(f"URL Error: {str(e)}")
+            raise ProviderError(f"API request failed: {str(e)}")
+
+    def _encode_multipart_formdata(self, file_data, file_name, content_type, boundary):
+        lines = [
+            f'--{boundary}',
+            f'Content-Disposition: form-data; name="file"; filename="{file_name}"',
+            f'Content-Type: {content_type}',
+            '',
+            file_data,
+            f'--{boundary}--',
+            ''
+        ]
+        body = b'\r\n'.join(line.encode() if isinstance(line, str) else line for line in lines)
+        return body
+
+
+        
+
+
+

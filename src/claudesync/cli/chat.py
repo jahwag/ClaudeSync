@@ -184,9 +184,10 @@ def init(config, name, project):
 @click.argument("message", nargs=-1, required=True)
 @click.option("--chat", help="UUID of the chat to send the message to")
 @click.option("--timezone", default="UTC", help="Timezone for the message")
+@click.option("--image", multiple=True, type=click.Path(exists=True), help="Path to image file(s) to upload")
 @click.pass_obj
 @handle_errors
-def message(config, message, chat, timezone):
+def message(config, message, chat, timezone, image):
     """Send a message to a specified chat or create a new chat and send the message."""
     provider = validate_and_get_provider(config, require_project=True)
     active_organization_id = config.get("active_organization_id")
@@ -207,9 +208,20 @@ def message(config, message, chat, timezone):
         if chat is None:
             return
 
+        # Upload images if provided
+        files = []
+        for img_path in image:
+            try:
+                uploaded_img = provider.upload_image(active_organization_id, img_path)
+                file_uuid = uploaded_img["file_uuid"]
+                files.append(file_uuid)
+                click.echo(f"Uploaded image: {img_path} ({file_uuid})")
+            except Exception as e:
+                click.echo(f"Failed to upload image {img_path}: {str(e)}")
+
         # Send message and process the streaming response
         for event in provider.send_message(
-            active_organization_id, chat, message, timezone
+            active_organization_id, chat, message, timezone, files
         ):
             if "completion" in event:
                 click.echo(event["completion"], nl=False)
