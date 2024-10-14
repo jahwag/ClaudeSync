@@ -77,9 +77,11 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             self.logger.error(f"URL Error: {str(e)}")
             raise ProviderError(f"API request failed: {str(e)}")
         except json.JSONDecodeError as json_err:
-            self.logger.error(f"Failed to parse JSON response: {str(json_err)}")
+            self.logger.error(
+                f"Failed to parse JSON response: {str(json_err)}")
             self.logger.error(f"Response content: {content_str}")
-            raise ProviderError(f"Invalid JSON response from API: {str(json_err)}")
+            raise ProviderError(
+                f"Invalid JSON response from API: {str(json_err)}")
 
     def handle_http_error(self, e):
         self.logger.debug(f"Request failed: {str(e)}")
@@ -107,11 +109,13 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
         elif e.code == 429:
             try:
                 error_data = json.loads(content_str)
-                resets_at_unix = json.loads(error_data["error"]["message"])["resetsAt"]
+                resets_at_unix = json.loads(
+                    error_data["error"]["message"])["resetsAt"]
                 resets_at_local = datetime.fromtimestamp(
                     resets_at_unix, tz=timezone.utc
                 ).astimezone()
-                formatted_time = resets_at_local.strftime("%a %b %d %Y %H:%M:%S %Z%z")
+                formatted_time = resets_at_local.strftime(
+                    "%a %b %d %Y %H:%M:%S %Z%z")
                 error_msg = f"Message limit exceeded. Try again after {formatted_time}"
             except (KeyError, json.JSONDecodeError) as parse_error:
                 error_msg = f"HTTP 429: Too Many Requests. Failed to parse error response: {parse_error}"
@@ -142,27 +146,35 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             self.handle_http_error(e)
         except urllib.error.URLError as e:
             raise ProviderError(f"API request failed: {str(e)}")
-            
 
     def generate_boundary(self):
         prefix = 'WebKitFormBoundary'
-        random_sequence = ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+        random_sequence = ''.join(random.choices(
+            string.ascii_letters + string.digits, k=16))
+        return prefix + random_sequence
+
+    def generate_boundary(self):
+        prefix = 'WebKitFormBoundary'
+        random_sequence = ''.join(random.choices(
+            string.ascii_letters + string.digits, k=16))
         return prefix + random_sequence
 
     def upload_image(self, organization_id, file_path):
 
         self.logger.debug(f"Uploading image: {file_path}")
         url = f"{self.base_url}/{organization_id}/upload"
-        
+
         with open(file_path, 'rb') as f:
             file_data = f.read()
-        
+
         file_name = os.path.basename(file_path)
-        content_type = mimetypes.guess_type(file_path)[0] or 'application/octet-stream'
-        
-        boundary = self.generate_boundary()
-        data = self._encode_multipart_formdata(file_data, file_name, content_type, boundary)
-        
+        content_type = mimetypes.guess_type(
+            file_path)[0] or 'application/octet-stream'
+
+        boundary = self._generate_boundary()
+        data = self._encode_multipart_formdata(
+            file_data, file_name, content_type, boundary)
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
             'Accept': '*/*',
@@ -191,6 +203,12 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             self.logger.error(f"URL Error: {str(e)}")
             raise ProviderError(f"API request failed: {str(e)}")
 
+    def _generate_boundary(self):
+        prefix = 'WebKitFormBoundary'
+        random_sequence = ''.join(random.choices(
+            string.ascii_letters + string.digits, k=16))
+        return prefix + random_sequence
+
     def _encode_multipart_formdata(self, file_data, file_name, content_type, boundary):
         lines = [
             f'--{boundary}',
@@ -201,11 +219,6 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             f'--{boundary}--',
             ''
         ]
-        body = b'\r\n'.join(line.encode() if isinstance(line, str) else line for line in lines)
+        body = b'\r\n'.join(line.encode() if isinstance(
+            line, str) else line for line in lines)
         return body
-
-
-        
-
-
-
