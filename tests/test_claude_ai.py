@@ -1,7 +1,8 @@
 import unittest
 import threading
 import time
-from unittest.mock import patch
+from io import BytesIO
+from unittest.mock import patch, mock_open
 from datetime import datetime
 
 from claudesync.configmanager import InMemoryConfigManager
@@ -158,6 +159,27 @@ class TestClaudeAIProvider(unittest.TestCase):
         with self.assertRaises(ProviderError) as context:
             self.provider.handle_http_error(mock_error)
         self.assertIn("403 Forbidden error", str(context.exception))
+
+
+    def test_upload_image(self):
+        mock_file_content = b'fake image data'
+        with patch('builtins.open', mock_open(read_data=mock_file_content)):
+            with patch('mimetypes.guess_type', return_value=('image/jpeg', None)):
+                result = self.provider.upload_image('org1', 'test.jpg')
+        self.assertEqual(result['file_id'], 'uploaded_image_1')
+
+    def test_send_message_with_image(self):
+        mock_response = BytesIO(
+            b'data: {"completion": "Analyzing image..."}\n\n'
+            b'data: {"completion": "The image shows a cat."}\n\n'
+            b'event: done\n\n'
+        )
+        with patch.object(self.provider, '_make_request_stream', return_value=mock_response):
+            messages = list(self.provider.send_message('org1', 'chat1', 'Describe this image', files=[{'file_id': 'image1'}]))
+        
+        self.assertEqual(len(messages), 2)
+        self.assertEqual(messages[0]['completion'], 'Analyzing image...')
+        self.assertEqual(messages[1]['completion'], 'The image shows a cat.')
 
 
 if __name__ == "__main__":
