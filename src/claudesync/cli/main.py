@@ -207,6 +207,42 @@ def sync_submodule(provider, config, submodule, category):
     )
 
 
+@cli.command()
+@click.pass_obj
+@handle_errors
+def pull(config):
+    """Pull changes from the remote project and sync to local filesystem."""
+    provider = validate_and_get_provider(config, require_project=True)
+
+    compression_algorithm = config.get("compression_algorithm")
+    if compression_algorithm != "pack":
+        click.echo(
+            "Error: The 'pull' command requires compression_algorithm to be set to 'pack'."
+        )
+        click.echo("Please run: claudesync config set compression_algorithm pack")
+        return
+
+    active_organization_id = config.get("active_organization_id")
+    active_project_id = config.get("active_project_id")
+    active_project_name = config.get("active_project_name")
+    local_path = config.get_local_path()
+
+    if not local_path:
+        click.echo(
+            "No .claudesync directory found in this directory or any parent directories. "
+            "Please run 'claudesync project create' or 'claudesync project set' first."
+        )
+        return
+
+    sync_manager = SyncManager(provider, config, local_path)
+    remote_files = provider.list_files(active_organization_id, active_project_id)
+
+    sync_manager.pull(remote_files)
+    click.echo(
+        f"Project '{active_project_name}' pulled successfully: https://claude.ai/project/{active_project_id}"
+    )
+
+
 cli.add_command(auth)
 cli.add_command(organization)
 cli.add_command(project)
