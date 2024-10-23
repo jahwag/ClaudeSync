@@ -96,23 +96,65 @@ def create(ctx, name, description, local_path, provider, organization):
 
 
 @project.command()
+@click.option(
+    "-a",
+    "--all",
+    "archive_all",
+    is_flag=True,
+    help="Archive all active projects",
+)
+@click.option(
+    "-y",
+    "--yes",
+    is_flag=True,
+    help="Skip confirmation prompt",
+)
 @click.pass_obj
 @handle_errors
-def archive(config):
-    """Archive an existing project."""
+def archive(config, archive_all, yes):
+    """Archive existing projects."""
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
     projects = provider.get_projects(active_organization_id, include_archived=False)
+
     if not projects:
         click.echo("No active projects found.")
         return
+
+    if archive_all:
+        if not yes:
+            click.echo("The following projects will be archived:")
+            for project in projects:
+                click.echo(f"  - {project['name']} (ID: {project['id']})")
+            if not click.confirm("Are you sure you want to archive all projects?"):
+                click.echo("Operation cancelled.")
+                return
+
+        with click.progressbar(
+            projects,
+            label="Archiving projects",
+            item_show_func=lambda p: p["name"] if p else "",
+        ) as bar:
+            for project in bar:
+                try:
+                    provider.archive_project(active_organization_id, project["id"])
+                except Exception as e:
+                    click.echo(
+                        f"\nFailed to archive project '{project['name']}': {str(e)}"
+                    )
+
+        click.echo("\nArchive operation completed.")
+        return
+
+    # Single project selection logic
     click.echo("Available projects to archive:")
     for idx, project in enumerate(projects, 1):
         click.echo(f"  {idx}. {project['name']} (ID: {project['id']})")
+
     selection = click.prompt("Enter the number of the project to archive", type=int)
     if 1 <= selection <= len(projects):
         selected_project = projects[selection - 1]
-        if click.confirm(
+        if yes or click.confirm(
             f"Are you sure you want to archive the project '{selected_project['name']}'? "
             f"Archived projects cannot be modified but can still be viewed."
         ):
