@@ -26,7 +26,6 @@ class TestClaudeSyncHappyPath(unittest.TestCase):
 
     @patch("claudesync.utils.get_local_files")
     def test_happy_path(self, mock_get_local_files):
-
         # Mock the API calls
         mock_get_local_files.return_value = {"test.txt": "content_hash"}
 
@@ -58,19 +57,18 @@ class TestClaudeSyncHappyPath(unittest.TestCase):
             obj=self.config,
         )
         self.assertEqual(result.exit_code, 0)
+
         self.assertIn(
-            "Project 'New Project' (uuid: new_proj) has been created successfully."
-            "\n\nProject setup complete. You can now start syncing files with this project. "
-            "URL: https://claude.ai/project/new_proj\n",
+            "Project 'New Project' (uuid: new_proj) has been created successfully",
             result.output,
         )
+        self.assertIn("Project created:", result.output)
+        self.assertIn("Project location:", result.output)
+        self.assertIn("Project config location:", result.output)
+        self.assertIn("Remote URL: https://claude.ai/project/new_proj", result.output)
 
         # Push project
         result = self.runner.invoke(cli, ["push"], obj=self.config)
-        print("Login output:", result.output)
-        print("Login exit code:", result.exit_code)
-        if result.exception:
-            print("Login exception:", result.exception)
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Main project 'New Project' synced successfully", result.output)
 
