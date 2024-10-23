@@ -1,7 +1,6 @@
 import click
 import os
 import logging
-from pathlib import Path
 
 from tqdm import tqdm
 from ..provider_factory import get_provider
@@ -146,7 +145,10 @@ def archive(config, archive_all, yes):
         click.echo("\nArchive operation completed.")
         return
 
-    # Single project selection logic
+    single_project_archival(projects, yes, provider, active_organization_id)
+
+
+def single_project_archival(projects, yes, provider, active_organization_id):
     click.echo("Available projects to archive:")
     for idx, project in enumerate(projects, 1):
         click.echo(f"  {idx}. {project['name']} (ID: {project['id']})")
