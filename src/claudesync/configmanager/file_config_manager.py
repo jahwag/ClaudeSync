@@ -67,7 +67,7 @@ class FileConfigManager(BaseConfigManager):
         current_dir = Path.cwd()
         root_dir = Path(current_dir.root)
         home_dir = Path.home()
-        depth = 0  # Initialize depth counter
+        depth = 0
 
         while current_dir != root_dir:
             claudesync_dir = current_dir / ".claudesync"
@@ -75,9 +75,8 @@ class FileConfigManager(BaseConfigManager):
                 return current_dir
 
             current_dir = current_dir.parent
-            depth += 1  # Increment depth counter
+            depth += 1
 
-            # Sanity check: stop if max_depth is reached
             if depth > max_depth:
                 return None
 
@@ -132,9 +131,12 @@ class FileConfigManager(BaseConfigManager):
             local (bool): If True, sets the value in the local configuration. Otherwise, sets it in the global configuration.
         """
         if local:
-            if not self.local_config_dir:
-                self.local_config_dir = Path.cwd()
+            # Update local_config_dir when setting local_path
+            if key == "local_path":
+                self.local_config_dir = Path(value)
+                # Create .claudesync directory in the specified path
                 (self.local_config_dir / ".claudesync").mkdir(exist_ok=True)
+
             self.local_config[key] = value
             self._save_local_config()
         else:
@@ -156,9 +158,8 @@ class FileConfigManager(BaseConfigManager):
         Saves the current local configuration to the .claudesync/config.local.json file.
         """
         if self.local_config_dir:
-            local_config_file = (
-                self.local_config_dir / ".claudesync" / "config.local.json"
-            )
+            local_config_file = self.local_config_dir / ".claudesync" / "config.local.json"
+            local_config_file.parent.mkdir(exist_ok=True)
             with open(local_config_file, "w") as f:
                 json.dump(self.local_config, f, indent=2)
 
