@@ -13,10 +13,12 @@ from ..syncmanager import retry_on_403
 
 logger = logging.getLogger(__name__)
 
+
 @click.group()
 def project():
     """Manage AI projects within the active organization."""
     pass
+
 
 @project.command()
 @click.option(
@@ -93,6 +95,7 @@ def create(ctx, name, description, local_path, provider, organization):
     except (ProviderError, ConfigurationError) as e:
         click.echo(f"Failed to create project: {str(e)}")
 
+
 @project.command()
 @click.pass_obj
 @handle_errors
@@ -118,6 +121,7 @@ def archive(config):
             click.echo(f"Project '{selected_project['name']}' has been archived.")
     else:
         click.echo("Invalid selection. Please try again.")
+
 
 @project.command()
 @click.option(
@@ -147,7 +151,9 @@ def set(ctx, show_all, provider):
     if not provider:
         provider = click.prompt(
             "Please specify the provider",
-            type=click.Choice(["claude.ai"]),  # Add more providers as they become available
+            type=click.Choice(
+                ["claude.ai"]
+            ),  # Add more providers as they become available
         )
 
     # Update the config with the provider
@@ -157,7 +163,9 @@ def set(ctx, show_all, provider):
     provider_instance = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
     active_project_name = config.get("active_project_name")
-    projects = provider_instance.get_projects(active_organization_id, include_archived=False)
+    projects = provider_instance.get_projects(
+        active_organization_id, include_archived=False
+    )
 
     if show_all:
         selectable_projects = projects
@@ -171,15 +179,23 @@ def set(ctx, show_all, provider):
 
     click.echo("Available projects:")
     for idx, project in enumerate(selectable_projects, 1):
-        project_type = "Main Project" if not project["name"].startswith(f"{active_project_name}-SubModule-") else "Submodule"
+        project_type = (
+            "Main Project"
+            if not project["name"].startswith(f"{active_project_name}-SubModule-")
+            else "Submodule"
+        )
         click.echo(f"  {idx}. {project['name']} (ID: {project['id']}) - {project_type}")
 
-    selection = click.prompt("Enter the number of the project to select", type=int, default=1)
+    selection = click.prompt(
+        "Enter the number of the project to select", type=int, default=1
+    )
     if 1 <= selection <= len(selectable_projects):
         selected_project = selectable_projects[selection - 1]
         config.set("active_project_id", selected_project["id"], local=True)
         config.set("active_project_name", selected_project["name"], local=True)
-        click.echo(f"Selected project: {selected_project['name']} (ID: {selected_project['id']})")
+        click.echo(
+            f"Selected project: {selected_project['name']} (ID: {selected_project['id']})"
+        )
 
         # Create .claudesync directory in the current working directory if it doesn't exist
         os.makedirs(".claudesync", exist_ok=True)
@@ -194,8 +210,15 @@ def set(ctx, show_all, provider):
     else:
         click.echo("Invalid selection. Please try again.")
 
+
 @project.command()
-@click.option("-a", "--all", "show_all", is_flag=True, help="Include archived projects in the list")
+@click.option(
+    "-a",
+    "--all",
+    "show_all",
+    is_flag=True,
+    help="Include archived projects in the list",
+)
 @click.pass_obj
 @handle_errors
 def ls(config, show_all):
@@ -211,8 +234,11 @@ def ls(config, show_all):
             status = " (Archived)" if project.get("archived_at") else ""
             click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
 
+
 @project.command()
-@click.option("-a", "--include-archived", is_flag=True, help="Include archived projects")
+@click.option(
+    "-a", "--include-archived", is_flag=True, help="Include archived projects"
+)
 @click.option("-y", "--yes", is_flag=True, help="Skip confirmation prompt")
 @click.pass_obj
 @handle_errors
@@ -221,7 +247,9 @@ def truncate(config, include_archived, yes):
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
 
-    projects = provider.get_projects(active_organization_id, include_archived=include_archived)
+    projects = provider.get_projects(
+        active_organization_id, include_archived=include_archived
+    )
 
     if not projects:
         click.echo("No projects found.")
@@ -232,27 +260,35 @@ def truncate(config, include_archived, yes):
         for project in projects:
             status = " (Archived)" if project.get("archived_at") else ""
             click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
-        if not click.confirm("Are you sure you want to continue? This may take some time."):
+        if not click.confirm(
+            "Are you sure you want to continue? This may take some time."
+        ):
             click.echo("Operation cancelled.")
             return
 
     with tqdm(total=len(projects), desc="Deleting files from projects") as pbar:
         for project in projects:
-            delete_files_from_project(provider, active_organization_id, project["id"], project["name"])
+            delete_files_from_project(
+                provider, active_organization_id, project["id"], project["name"]
+            )
             pbar.update(1)
 
     click.echo("All files have been deleted from all projects.")
+
 
 @retry_on_403()
 def delete_files_from_project(provider, organization_id, project_id, project_name):
     try:
         files = provider.list_files(organization_id, project_id)
-        with tqdm(total=len(files), desc=f"Deleting files from {project_name}", leave=False) as file_pbar:
+        with tqdm(
+            total=len(files), desc=f"Deleting files from {project_name}", leave=False
+        ) as file_pbar:
             for current_file in files:
                 provider.delete_file(organization_id, project_id, current_file["uuid"])
                 file_pbar.update(1)
     except ProviderError as e:
         click.echo(f"Error deleting files from project {project_name}: {str(e)}")
+
 
 project.add_command(submodule)
 project.add_command(file)

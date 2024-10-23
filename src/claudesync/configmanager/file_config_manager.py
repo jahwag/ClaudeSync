@@ -158,7 +158,9 @@ class FileConfigManager(BaseConfigManager):
         Saves the current local configuration to the .claudesync/config.local.json file.
         """
         if self.local_config_dir:
-            local_config_file = self.local_config_dir / ".claudesync" / "config.local.json"
+            local_config_file = (
+                self.local_config_dir / ".claudesync" / "config.local.json"
+            )
             local_config_file.parent.mkdir(exist_ok=True)
             with open(local_config_file, "w") as f:
                 json.dump(self.local_config, f, indent=2)
