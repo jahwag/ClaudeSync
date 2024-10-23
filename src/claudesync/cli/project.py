@@ -86,7 +86,6 @@ def create(ctx, name, description, local_path, provider, organization):
         config_file_path = os.path.join(claudesync_dir, "config.local.json")
         config._save_local_config()
 
-        # Log detailed information about created files and directories
         click.echo("\nProject created:")
         click.echo(f"  - Project location: {local_path}")
         click.echo(f"  - Project config location: {config_file_path}")
@@ -203,10 +202,9 @@ def set(ctx, show_all, provider):
         config_file_path = os.path.join(claudesync_dir, "config.local.json")
         config._save_local_config()
 
-        click.echo("\nProject configuration details:")
-        click.echo(f"  Config directory: {claudesync_dir}")
-        click.echo(f"  Local config file: {config_file_path}")
-        click.echo(f"  Project local path: {os.getcwd()}")
+        click.echo("\nProject created:")
+        click.echo(f"  - Project location: {os.getcwd()}")
+        click.echo(f"  - Project config location: {config_file_path}")
     else:
         click.echo("Invalid selection. Please try again.")
 
