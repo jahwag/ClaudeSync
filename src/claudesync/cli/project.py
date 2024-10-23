@@ -1,13 +1,16 @@
 import click
 import os
+import logging
 
+from tqdm import tqdm
 from ..provider_factory import get_provider
 from ..utils import handle_errors, validate_and_get_provider
 from ..exceptions import ProviderError, ConfigurationError
-from tqdm import tqdm
 from .file import file
 from .submodule import submodule
 from ..syncmanager import retry_on_403
+
+logger = logging.getLogger(__name__)
 
 
 @click.group()
@@ -69,43 +72,91 @@ def create(ctx, name, description, local_path, provider, organization):
             f"Project '{new_project['name']}' (uuid: {new_project['uuid']}) has been created successfully."
         )
 
+        # Update configuration
         config.set("active_provider", provider, local=True)
         config.set("active_organization_id", organization, local=True)
         config.set("active_project_id", new_project["uuid"], local=True)
         config.set("active_project_name", new_project["name"], local=True)
         config.set("local_path", local_path, local=True)
 
+        # Create .claudesync directory and save config
         claudesync_dir = os.path.join(local_path, ".claudesync")
         os.makedirs(claudesync_dir, exist_ok=True)
+        config_file_path = os.path.join(claudesync_dir, "config.local.json")
         config._save_local_config()
 
-        click.echo(
-            f"\nProject setup complete. You can now start syncing files with this project. "
-            f"URL: https://claude.ai/project/{new_project['uuid']}"
-        )
+        click.echo("\nProject created:")
+        click.echo(f"  - Project location: {local_path}")
+        click.echo(f"  - Project config location: {config_file_path}")
+        click.echo(f"  - Remote URL: https://claude.ai/project/{new_project['uuid']}")
 
     except (ProviderError, ConfigurationError) as e:
         click.echo(f"Failed to create project: {str(e)}")
 
 
 @project.command()
+@click.option(
+    "-a",
+    "--all",
+    "archive_all",
+    is_flag=True,
+    help="Archive all active projects",
+)
+@click.option(
+    "-y",
+    "--yes",
+    is_flag=True,
+    help="Skip confirmation prompt",
+)
 @click.pass_obj
 @handle_errors
-def archive(config):
-    """Archive an existing project."""
+def archive(config, archive_all, yes):
+    """Archive existing projects."""
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
     projects = provider.get_projects(active_organization_id, include_archived=False)
+
     if not projects:
         click.echo("No active projects found.")
         return
+
+    if archive_all:
+        if not yes:
+            click.echo("The following projects will be archived:")
+            for project in projects:
+                click.echo(f"  - {project['name']} (ID: {project['id']})")
+            if not click.confirm("Are you sure you want to archive all projects?"):
+                click.echo("Operation cancelled.")
+                return
+
+        with click.progressbar(
+            projects,
+            label="Archiving projects",
+            item_show_func=lambda p: p["name"] if p else "",
+        ) as bar:
+            for project in bar:
+                try:
+                    provider.archive_project(active_organization_id, project["id"])
+                except Exception as e:
+                    click.echo(
+                        f"\nFailed to archive project '{project['name']}': {str(e)}"
+                    )
+
+        click.echo("\nArchive operation completed.")
+        return
+
+    single_project_archival(projects, yes, provider, active_organization_id)
+
+
+def single_project_archival(projects, yes, provider, active_organization_id):
     click.echo("Available projects to archive:")
     for idx, project in enumerate(projects, 1):
         click.echo(f"  {idx}. {project['name']} (ID: {project['id']})")
+
     selection = click.prompt("Enter the number of the project to archive", type=int)
     if 1 <= selection <= len(projects):
         selected_project = projects[selection - 1]
-        if click.confirm(
+        if yes or click.confirm(
             f"Are you sure you want to archive the project '{selected_project['name']}'? "
             f"Archived projects cannot be modified but can still be viewed."
         ):
@@ -191,7 +242,13 @@ def set(ctx, show_all, provider):
 
         # Create .claudesync directory in the current working directory if it doesn't exist
         os.makedirs(".claudesync", exist_ok=True)
-        click.echo(f"Ensured .claudesync directory exists in {os.getcwd()}")
+        claudesync_dir = os.path.abspath(".claudesync")
+        config_file_path = os.path.join(claudesync_dir, "config.local.json")
+        config._save_local_config()
+
+        click.echo("\nProject created:")
+        click.echo(f"  - Project location: {os.getcwd()}")
+        click.echo(f"  - Project config location: {config_file_path}")
     else:
         click.echo("Invalid selection. Please try again.")
 
