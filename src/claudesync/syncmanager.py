@@ -167,30 +167,42 @@ class SyncManager:
 
     def _unpack_files(self, packed_content):
         current_file = None
-        current_content = io.StringIO()
+        current_content = []
+        in_file_content = False
 
-        for line in packed_content.splitlines():
+        for line in packed_content.splitlines(keepends=True):
             if line.startswith("--- BEGIN FILE:"):
                 if current_file:
-                    self._write_file(current_file, current_content.getvalue())
-                    current_content = io.StringIO()
+                    self._write_file(current_file, "".join(current_content))
                 current_file = line.split("--- BEGIN FILE:")[1].strip()
+                current_content = []
+                in_file_content = True
             elif line.startswith("--- END FILE:"):
                 if current_file:
-                    self._write_file(current_file, current_content.getvalue())
-                    current_file = None
-                    current_content = io.StringIO()
-            else:
-                current_content.write(line + "\n")
+                    self._write_file(current_file, "".join(current_content))
+                current_file = None
+                current_content = []
+                in_file_content = False
+            elif in_file_content:
+                current_content.append(line)
 
         if current_file:
-            self._write_file(current_file, current_content.getvalue())
+            self._write_file(current_file, "".join(current_content))
 
     def _write_file(self, file_path, content):
+        # Remove the trailing " ---" from the file_path
+        file_path = file_path.rsplit(" ---", 1)[0]
         full_path = os.path.join(self.local_path, file_path)
         os.makedirs(os.path.dirname(full_path), exist_ok=True)
-        with open(full_path, "w", encoding="utf-8") as f:
+
+        # Remove any trailing newlines and add back a single one if needed
+        content = content.rstrip("\n")
+        if content and content[-1] != "\n":
+            content += "\n"
+
+        with open(full_path, "w", encoding="utf-8", newline="") as f:
             f.write(content)
+        self.synced_files[file_path] = self.anthropic_client.count_tokens(content)
 
     def _cleanup_old_remote_files(self, remote_files):
         for remote_file in remote_files:
@@ -349,3 +361,18 @@ class SyncManager:
     def log_token_count(self):
         total_tokens = self.get_total_token_count()
         logger.info(f"Total tokens in synced files: {total_tokens:,}")
+
+    def pull(self, remote_files):
+        if self.compression_algorithm != "pack":
+            raise ValueError(
+                "Pull operation requires compression_algorithm to be set to 'pack'"
+            )
+
+        remote_compressed_content = self._download_compressed_file()
+        if remote_compressed_content:
+            remote_packed_content = decompress_content(
+                remote_compressed_content, self.compression_algorithm
+            )
+            self._unpack_files(remote_packed_content)
+
+        self.log_token_count()
