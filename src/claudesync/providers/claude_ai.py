@@ -175,16 +175,12 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
         data = self._encode_multipart_formdata(
             file_data, file_name, content_type, boundary)
 
+        session_key = self.config.get_session_key("claude.ai")[0]
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
-            'Accept': '*/*',
-            'Accept-Language': 'en-GB,en;q=0.9',
-            'anthropic-client-sha': 'unknown',
-            'anthropic-client-version': 'unknown',
-            'origin': 'https://claude.ai',
-            'referer': 'https://claude.ai/',
             'Content-Type': f'multipart/form-data; boundary={boundary}',
-            'Cookie': f'sessionKey={self.config.get_session_key("claude.ai")[0]}'
+            'Cookie': f'sessionKey={session_key}'
         }
 
         try:
