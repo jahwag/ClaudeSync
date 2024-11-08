@@ -1,6 +1,6 @@
 [project]
 name = "claudesync"
-version = "0.6.4"
+version = "0.6.5"
 authors = [
     {name = "Jahziah Wagner", email = "540380+jahwag@users.noreply.github.com"},
 ]
