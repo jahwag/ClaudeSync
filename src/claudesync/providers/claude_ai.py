@@ -9,7 +9,6 @@ import random
 import string
 from datetime import datetime, timezone
 from urllib.request import Request, urlopen
-from urllib.error import HTTPError
 from .base_claude_ai import BaseClaudeAIProvider
 from ..exceptions import ProviderError
 
@@ -146,12 +145,6 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             self.handle_http_error(e)
         except urllib.error.URLError as e:
             raise ProviderError(f"API request failed: {str(e)}")
-
-    def generate_boundary(self):
-        prefix = 'WebKitFormBoundary'
-        random_sequence = ''.join(random.choices(
-            string.ascii_letters + string.digits, k=16))
-        return prefix + random_sequence
 
     def generate_boundary(self):
         prefix = 'WebKitFormBoundary'

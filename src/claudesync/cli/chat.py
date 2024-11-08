@@ -80,7 +80,8 @@ def delete_all_chats(provider, organization_id):
             if not chats:
                 break
             uuids_to_delete = [chat["uuid"] for chat in chats[:50]]
-            deleted, _ = delete_chats(provider, organization_id, uuids_to_delete)
+            deleted, _ = delete_chats(
+                provider, organization_id, uuids_to_delete)
             total_deleted += deleted
             bar.update(len(uuids_to_delete))
     click.echo(f"Chat deletion complete. Total chats deleted: {total_deleted}")
@@ -135,7 +136,8 @@ def confirm_and_delete_chat(provider, organization_id, chat):
     ):
         deleted, _ = delete_chats(provider, organization_id, [chat["uuid"]])
         if deleted:
-            click.echo(f"Successfully deleted chat: {chat.get('name', 'Unnamed')}")
+            click.echo(
+                f"Successfully deleted chat: {chat.get('name', 'Unnamed')}")
         else:
             click.echo(f"Failed to delete chat: {chat.get('name', 'Unnamed')}")
 
@@ -191,16 +193,14 @@ def message(config, message, chat, timezone, image):
     """Send a message to a specified chat or create a new chat and send the message."""
     provider = validate_and_get_provider(config, require_project=True)
     active_organization_id = config.get("active_organization_id")
-    active_project_id = config.get("active_project_id")
-    active_project_name = config.get("active_project_name")
 
     message = " ".join(message)  # Join all message parts into a single string
 
     try:
         chat = create_chat(
             config,
-            active_project_id,
-            active_project_name,
+            config.get("active_project_id"),
+            config.get("active_project_name"),
             chat,
             active_organization_id,
             provider,
@@ -208,36 +208,44 @@ def message(config, message, chat, timezone, image):
         if chat is None:
             return
 
-        # Upload images if provided
-        files = []
-        for img_path in image:
-            try:
-                uploaded_img = provider.upload_image(active_organization_id, img_path)
-                file_uuid = uploaded_img["file_uuid"]
-                files.append(file_uuid)
-                click.echo(f"Uploaded image: {img_path} ({file_uuid})")
-            except Exception as e:
-                click.echo(f"Failed to upload image {img_path}: {str(e)}")
-
-        # Send message and process the streaming response
-        for event in provider.send_message(
-            active_organization_id, chat, message, timezone, files
-        ):
-            if "completion" in event:
-                click.echo(event["completion"], nl=False)
-            elif "content" in event:
-                click.echo(event["content"], nl=False)
-            elif "error" in event:
-                click.echo(f"\nError: {event['error']}")
-            elif "message_limit" in event:
-                click.echo(
-                    f"\nRemaining messages: {event['message_limit']['remaining']}"
-                )
-
+        files = upload_images(provider, active_organization_id, image)
+        process_message_response(
+            provider.send_message(active_organization_id,
+                                  chat, message, timezone, files)
+        )
         click.echo()  # Print a newline at the end of the response
 
     except Exception as e:
         click.echo(f"Failed to send message: {str(e)}")
+
+
+def upload_images(provider, organization_id, image_paths):
+    """Upload images and return list of file UUIDs."""
+    files = []
+    for img_path in image_paths:
+        try:
+            uploaded_img = provider.upload_image(organization_id, img_path)
+            file_uuid = uploaded_img["file_uuid"]
+            files.append(file_uuid)
+            click.echo(f"Uploaded image: {img_path} ({file_uuid})")
+        except Exception as e:
+            click.echo(f"Failed to upload image {img_path}: {str(e)}")
+    return files
+
+
+def process_message_response(response_stream):
+    """Process the streaming response from the message API."""
+    for event in response_stream:
+        if "completion" in event:
+            click.echo(event["completion"], nl=False)
+        elif "content" in event:
+            click.echo(event["content"], nl=False)
+        elif "error" in event:
+            click.echo(f"\nError: {event['error']}")
+        elif "message_limit" in event:
+            click.echo(
+                f"\nRemaining messages: {event['message_limit']['remaining']}"
+            )
 
 
 def create_chat(

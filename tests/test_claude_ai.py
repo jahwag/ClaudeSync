@@ -79,7 +79,8 @@ class TestClaudeAIProvider(unittest.TestCase):
         with patch.object(
             self.provider, "_make_request", return_value={"uuid": "file1"}
         ):
-            result = self.provider.upload_file("org1", "proj1", "test.txt", "Hello")
+            result = self.provider.upload_file(
+                "org1", "proj1", "test.txt", "Hello")
         self.assertEqual(result["uuid"], "file1")
 
     def test_delete_file(self):
@@ -160,7 +161,6 @@ class TestClaudeAIProvider(unittest.TestCase):
             self.provider.handle_http_error(mock_error)
         self.assertIn("403 Forbidden error", str(context.exception))
 
-
     def test_upload_image(self):
         mock_file_content = b'fake image data'
         with patch('builtins.open', mock_open(read_data=mock_file_content)):
@@ -175,8 +175,8 @@ class TestClaudeAIProvider(unittest.TestCase):
             b'event: done\n\n'
         )
         with patch.object(self.provider, '_make_request_stream', return_value=mock_response):
-            messages = list(self.provider.send_message('org1', 'chat1', 'Describe this image', files=[{'file_id': 'image1'}]))
-        
+            messages = list(self.provider.send_message(
+                'org1', 'chat1', 'Describe this image', files=[{'file_id': 'image1'}]))
         self.assertEqual(len(messages), 2)
         self.assertEqual(messages[0]['completion'], 'Analyzing image...')
         self.assertEqual(messages[1]['completion'], 'The image shows a cat.')

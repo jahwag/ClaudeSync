@@ -58,14 +58,17 @@ class BaseClaudeAIProvider(BaseProvider):
 
     def login(self):
         click.echo(
-            "A session key is required to call: " + self.config.get("claude_api_url")
+            "A session key is required to call: " +
+            self.config.get("claude_api_url")
         )
         click.echo("To obtain your session key, please follow these steps:")
         click.echo("1. Open your web browser and go to https://claude.ai")
         click.echo("2. Log in to your Claude account if you haven't already")
         click.echo("3. Once logged in, open your browser's developer tools:")
-        click.echo("   - Chrome/Edge: Press F12 or Ctrl+Shift+I (Cmd+Option+I on Mac)")
-        click.echo("   - Firefox: Press F12 or Ctrl+Shift+I (Cmd+Option+I on Mac)")
+        click.echo(
+            "   - Chrome/Edge: Press F12 or Ctrl+Shift+I (Cmd+Option+I on Mac)")
+        click.echo(
+            "   - Firefox: Press F12 or Ctrl+Shift+I (Cmd+Option+I on Mac)")
         click.echo(
             "   - Safari: Enable developer tools in Preferences > Advanced, then press Cmd+Option+I"
         )
@@ -118,7 +121,8 @@ class BaseClaudeAIProvider(BaseProvider):
             {"id": org["uuid"], "name": org["name"]}
             for org in response
             if (
-                {"chat", "claude_pro"}.issubset(set(org.get("capabilities", [])))
+                {"chat", "claude_pro"}.issubset(
+                    set(org.get("capabilities", [])))
                 or {"chat", "raven"}.issubset(set(org.get("capabilities", [])))
             )
         ]
@@ -207,7 +211,8 @@ class BaseClaudeAIProvider(BaseProvider):
         return self._make_request("POST", endpoint, data)
 
     def _make_request(self, method, endpoint, data=None):
-        raise NotImplementedError("This method should be implemented by subclasses")
+        raise NotImplementedError(
+            "This method should be implemented by subclasses")
 
     def create_chat(self, organization_id, chat_name="", project_uuid=None):
         """
@@ -242,8 +247,9 @@ class BaseClaudeAIProvider(BaseProvider):
     def _make_request_stream(self, method, endpoint, data=None):
         # This method should be implemented by subclasses to return a response object
         # that can be used with sseclient
-        raise NotImplementedError("This method should be implemented by subclasses")
-        
+        raise NotImplementedError(
+            "This method should be implemented by subclasses")
+
     def send_message(self, organization_id, chat_id, prompt, timezone="UTC", files=None):
         endpoint = (
             f"/organizations/{organization_id}/chat_conversations/{chat_id}/completion"

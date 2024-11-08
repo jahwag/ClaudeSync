@@ -96,6 +96,7 @@ class MockClaudeAIHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         content_length = int(self.headers["Content-Length"])
+        post_data = self.rfile.read(content_length)
         parsed_path = urlparse(self.path)
 
         if parsed_path.path.endswith("/chat_conversations"):
@@ -111,6 +112,7 @@ class MockClaudeAIHandler(BaseHTTPRequestHandler):
             response = json.dumps({'file_id': 'uploaded_image_1'})
             self.wfile.write(response.encode())
         elif parsed_path.path.endswith("/completion"):
+            data = json.loads(post_data.decode("utf-8"))
             self.send_response(200)
             self.send_header("Content-type", "text/event-stream")
             self.end_headers()
@@ -121,8 +123,10 @@ class MockClaudeAIHandler(BaseHTTPRequestHandler):
             )
             self.wfile.write(b"event: done\n\n")
             if 'files' in data and data['files']:
-                self.wfile.write(b'data: {"completion": "Analyzing image..."}\n\n')
-                self.wfile.write(b'data: {"completion": "The image shows a cat."}\n\n')
+                self.wfile.write(
+                    b'data: {"completion": "Analyzing image..."}\n\n')
+                self.wfile.write(
+                    b'data: {"completion": "The image shows a cat."}\n\n')
         else:
             # time.sleep(0.01)  # Add a small delay to simulate network latency
             content_length = int(self.headers["Content-Length"])
@@ -135,7 +139,8 @@ class MockClaudeAIHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-type", "application/json")
                 self.end_headers()
-                response = json.dumps({"uuid": "new_proj", "name": "New Project"})
+                response = json.dumps(
+                    {"uuid": "new_proj", "name": "New Project"})
                 self.wfile.write(response.encode())
             elif parsed_path.path.startswith(
                 "/api/organizations/"
