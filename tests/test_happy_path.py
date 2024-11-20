@@ -1,28 +1,16 @@
-import threading
-import time
+from typing import override
 import unittest
 from click.testing import CliRunner
 from unittest.mock import patch
 from claudesync.cli.main import cli
-from claudesync.configmanager import InMemoryConfigManager
-from mock_http_server import run_mock_server
+from tests.test_base import BaseTestCase
 
 
-class TestClaudeSyncHappyPath(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        cls.mock_server_thread = threading.Thread(target=run_mock_server)
-        cls.mock_server_thread.daemon = True
-        cls.mock_server_thread.start()
-        time.sleep(1)  # Wait for the mock server to start
-
+class TestClaudeSyncHappyPath(BaseTestCase):
+    @override
     def setUp(self):
+        super().setUp()
         self.runner = CliRunner()
-        self.config = InMemoryConfigManager()
-        self.config.set(
-            "claude_api_url", "http://127.0.0.1:8000/api"
-        )  # Set BASE_URL for the mock server
 
     @patch("claudesync.utils.get_local_files")
     def test_happy_path(self, mock_get_local_files):

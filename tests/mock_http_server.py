@@ -1,5 +1,9 @@
+from __future__ import annotations
+
 import json
 from http.server import HTTPServer, BaseHTTPRequestHandler
+import threading
+import time
 from urllib.parse import urlparse
 
 
@@ -176,12 +180,26 @@ class MockClaudeAIHandler(BaseHTTPRequestHandler):
             self.send_error(404, "Not Found")
 
 
-def run_mock_server(port=8000):
-    server_address = ("", port)
-    httpd = HTTPServer(server_address, MockClaudeAIHandler)
-    print(f"Mock server running on port {port}")
-    httpd.serve_forever()
+class SharedMockServer:
+    _instance: SharedMockServer | None = None
+    _server: HTTPServer | None = None
+    _thread: threading.Thread | None = None
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def start(self):
+        if self._server is None:
+            self._server = HTTPServer(("", 8000), MockClaudeAIHandler)
+            self._thread = threading.Thread(target=self._server.serve_forever)
+            self._thread.daemon = True
+            self._thread.start()
+            time.sleep(1)  # Give the server a moment to start
 
 
 if __name__ == "__main__":
-    run_mock_server()
+    server = SharedMockServer.get_instance()
+    server.start()

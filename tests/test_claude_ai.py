@@ -1,26 +1,17 @@
+from typing import override
 import unittest
-import threading
-import time
 from unittest.mock import patch
 from datetime import datetime
 
-from claudesync.configmanager import InMemoryConfigManager
 from claudesync.providers.claude_ai import ClaudeAIProvider
 from claudesync.exceptions import ProviderError
-from mock_http_server import run_mock_server
+from tests.test_base import BaseTestCase
 
 
-class TestClaudeAIProvider(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.mock_server_thread = threading.Thread(target=run_mock_server)
-        cls.mock_server_thread.daemon = True
-        cls.mock_server_thread.start()
-        time.sleep(1)
-
+class TestClaudeAIProvider(BaseTestCase):
+    @override
     def setUp(self):
-        self.config = InMemoryConfigManager()
-        self.config.set("claude_api_url", "http://127.0.0.1:8000/api")
+        super().setUp()
         self.provider = ClaudeAIProvider(self.config)
 
     def test_get_organizations(self):
