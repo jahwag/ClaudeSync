@@ -1,5 +1,6 @@
 node_modules/
-.venv/
+.venv-ide/
+.venv-sync/
 .angular/
 .git/
 .idea/

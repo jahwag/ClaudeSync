@@ -1,0 +1,1 @@
+recursive-include src/claudesync/web/dist/claudesync-simulate *

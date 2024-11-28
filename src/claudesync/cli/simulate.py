@@ -13,7 +13,7 @@ from ..utils import handle_errors, validate_and_get_provider
 
 logger = logging.getLogger(__name__)
 
-ANGULAR_APP_PATH = os.path.join(os.path.dirname(__file__), '..', 'web', 'dist', 'claudesync-simulate')
+ANGULAR_APP_PATH = os.path.join(os.path.dirname(__file__), '..', 'web', 'dist', 'claudesync-simulate', 'browser')
 
 @click.command()
 @click.option('--port', default=4200, help='Port to run the server on')

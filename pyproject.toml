@@ -1,6 +1,7 @@
 [project]
 name = "claudesync"
 version = "0.6.2"
+# include_package_data = true
 authors = [
     {name = "Jahziah Wagner", email = "540380+jahwag@users.noreply.github.com"},
 ]
@@ -23,7 +24,6 @@ dependencies = [
     "sseclient_py>=1.8.0",
     "tqdm>=4.66.5",
     "pytest-cov>=5.0.0",
-    "claudesync>=0.5.4",
     "crontab>=1.0.1",
     "python-crontab>=3.2.0",
     "Brotli>=1.1.0",
@@ -74,8 +74,3 @@ include = ["claudesync*"]
 testpaths = ["tests"]
 python_files = "test_*.py"
 addopts = "-v --cov=claudesync --cov-report=term-missing"
-
-[tool.setuptools.package_data]
-claudesync = [
-    "web/dist/claudesync-simulate/**/*"
-]
