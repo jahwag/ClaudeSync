@@ -11,6 +11,28 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+def get_project_root():
+    """Get the project root directory."""
+    # Start from the directory containing this script
+    current_dir = Path(__file__).resolve().parent
+    # Go up two levels: from cli/ to project root
+    return current_dir.parent.parent
+
+def load_claudeignore():
+    """Load .claudeignore content from project root directory."""
+    project_root = get_project_root()
+    claudeignore_path = project_root / '.claudeignore'
+
+    try:
+        with open(claudeignore_path, 'r') as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        logger.warning(f".claudeignore file not found at {claudeignore_path}")
+        return ""
+    except Exception as e:
+        logger.error(f"Error reading .claudeignore at {claudeignore_path}: {e}")
+        return ""
+
 class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         parsed_path = urlparse(self.path)
@@ -40,16 +62,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                         ]
                     }
                 },
-                "claudeignore": """node_modules/
-.venv/
-.angular/
-.git/
-.idea/
-.vscode/
-*.zip
-pkg/
-dist/
-coverage/"""
+                "claudeignore": load_claudeignore()
             }
 
             self.wfile.write(json.dumps(config).encode())

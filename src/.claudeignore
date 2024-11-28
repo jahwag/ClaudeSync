@@ -1,0 +1,19 @@
+node_modules/
+.venv-ide/
+.venv-sync/
+.angular/
+.git/
+.idea/
+.vscode/
+*.zip
+pkg/
+tables*.mmd
+
+# Only frontend - ignore all python files
+util.py
+processPkg.py
+.claudeignore
+.gitignore
+.editorconfig
+*.iml
+
