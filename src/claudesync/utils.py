@@ -11,7 +11,7 @@ from claudesync.exceptions import ConfigurationError, ProviderError
 from claudesync.provider_factory import get_provider
 
 logger = logging.getLogger(__name__)
-
+logger.setLevel(logging.DEBUG)  # Ensure debug level is set
 
 def normalize_and_calculate_md5(content):
     """
@@ -179,8 +179,14 @@ def get_local_files(config, local_path, category=None, include_submodules=False)
     Returns:
         dict: A dictionary where keys are relative file paths, and values are MD5 hashes of the file contents.
     """
+    logger.debug(f"Starting get_local_files with path: {local_path}, category: {category}, include_submodules: {include_submodules}")
+
     gitignore = load_gitignore(local_path)
+    logger.debug(f"Loaded gitignore: {'Yes' if gitignore else 'No'}")
+
     claudeignore = load_claudeignore(local_path)
+    logger.debug(f"Loaded claudeignore: {'Yes' if claudeignore else 'No'}")
+
     files = {}
     exclude_dirs = {
         ".git",
@@ -192,53 +198,73 @@ def get_local_files(config, local_path, category=None, include_submodules=False)
         "claude_chats",
         ".claudesync",
     }
+    logger.debug(f"Exclude directories: {exclude_dirs}")
 
     categories = config.get("file_categories", {})
+    logger.debug(f"Available categories: {list(categories.keys())}")
+
     if category and category not in categories:
+        logger.error(f"Invalid category: {category}")
         raise ValueError(f"Invalid category: {category}")
 
     patterns = ["*"]  # Default to all files
     if category:
         patterns = categories[category]["patterns"]
-
-    spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
+    logger.debug(f"Using patterns: {patterns}")
 
     submodules = config.get("submodules", [])
     submodule_paths = [sm["relative_path"] for sm in submodules]
+    logger.debug(f"Submodule paths: {submodule_paths}")
+
+    spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
+    logger.debug("Created PathSpec for patterns")
 
     for root, dirs, filenames in os.walk(local_path, topdown=True):
         rel_root = os.path.relpath(root, local_path)
         rel_root = "" if rel_root == "." else rel_root
+        logger.debug(f"Processing directory: {rel_root}")
 
         # Skip submodule directories if not including submodules
         if not include_submodules:
-            dirs[:] = [
-                d for d in dirs if os.path.join(rel_root, d) not in submodule_paths
-            ]
+            original_dirs = dirs.copy()
+            dirs[:] = [d for d in dirs if os.path.join(rel_root, d) not in submodule_paths]
+            if len(dirs) != len(original_dirs):
+                logger.debug(f"Filtered out submodule directories in {rel_root}")
 
+        # Filter out excluded directories
+        original_dirs = dirs.copy()
         dirs[:] = [
             d
             for d in dirs
             if d not in exclude_dirs
-            and not (gitignore and gitignore.match_file(os.path.join(rel_root, d)))
-            and not (
-                claudeignore and claudeignore.match_file(os.path.join(rel_root, d))
-            )
+               and not (gitignore and gitignore.match_file(os.path.join(rel_root, d)))
+               and not (claudeignore and claudeignore.match_file(os.path.join(rel_root, d)))
         ]
+        if len(dirs) != len(original_dirs):
+            logger.debug(f"Filtered out {len(original_dirs) - len(dirs)} excluded directories in {rel_root}")
 
         for filename in filenames:
             rel_path = os.path.join(rel_root, filename)
             full_path = os.path.join(root, filename)
+            logger.debug(f"Checking file: {rel_path}")
 
-            if spec.match_file(rel_path) and should_process_file(
-                config, full_path, filename, gitignore, local_path, claudeignore
-            ):
-                file_hash = process_file(full_path)
-                if file_hash:
-                    files[rel_path] = file_hash
+            if spec.match_file(rel_path):
+                logger.debug(f"File {rel_path} matches pattern spec")
+                if should_process_file(config, full_path, filename, gitignore, local_path, claudeignore):
+                    # logger.debug(f"Processing file: {rel_path}")
+                    file_hash = process_file(full_path)
+                    if file_hash:
+                        files[rel_path] = file_hash
+                        logger.debug(f"Added file {rel_path} with hash {file_hash}")
+                    else:
+                        logger.debug(f"Failed to process file {rel_path}")
+                else:
+                    logger.debug(f"File {rel_path} should not be processed")
+            else:
+                logger.debug(f"File {rel_path} does not match pattern spec")
 
+    logger.debug(f"Found {len(files)} files to sync")
     return files
-
 
 def handle_errors(func):
     """

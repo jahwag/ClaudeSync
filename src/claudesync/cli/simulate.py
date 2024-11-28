@@ -119,8 +119,13 @@ def format_size(size):
 
 class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, config=None, **kwargs):
-        self.config = config
         super().__init__(*args, **kwargs)
+
+    def get_current_config(self):
+        """Get a fresh config instance for each request"""
+        logger.debug("Loading fresh config instance")
+        config = FileConfigManager()
+        return config
 
     def do_GET(self):
         parsed_path = urlparse(self.path)
@@ -149,7 +154,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.end_headers()
 
-            stats = calculate_sync_stats(self.config)
+            stats = calculate_sync_stats(self.get_current_config())
             logger.debug(f"Sending stats response: {stats}")
             self.wfile.write(json.dumps(stats).encode())
             return
