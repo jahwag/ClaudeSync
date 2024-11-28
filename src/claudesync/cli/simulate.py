@@ -1,51 +1,95 @@
 import click
 import logging
 import os
-import subprocess
-import sys
-import webbrowser
-from pathlib import Path
+import json
 import http.server
 import socketserver
+import webbrowser
 import threading
-
-from ..utils import handle_errors, validate_and_get_provider
+from urllib.parse import urlparse, parse_qs
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-ANGULAR_APP_PATH = os.path.join(os.path.dirname(__file__), '..', 'web', 'dist', 'claudesync-simulate', 'browser')
+class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        parsed_path = urlparse(self.path)
+
+        if parsed_path.path == '/api/config':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+
+            config = {
+                "fileCategories": {
+                    "main": {
+                        "description": "Active Category",
+                        "patterns": [
+                            "app.py",
+                            "src/index.html",
+                            "src/main.ts",
+                            "src/styles.css"
+                        ]
+                    },
+                    "docs": {
+                        "description": "Documentation",
+                        "patterns": [
+                            "docs/*.md",
+                            "README.md"
+                        ]
+                    }
+                },
+                "claudeignore": """node_modules/
+.venv/
+.angular/
+.git/
+.idea/
+.vscode/
+*.zip
+pkg/
+dist/
+coverage/"""
+            }
+
+            self.wfile.write(json.dumps(config).encode())
+            return
+
+        elif parsed_path.path == '/api/stats':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+
+            stats = {
+                "totalFiles": 127,
+                "filesToSync": 43,
+                "totalSize": "2.4 MB"
+            }
+
+            self.wfile.write(json.dumps(stats).encode())
+            return
+
+        return super().do_GET()
 
 @click.command()
 @click.option('--port', default=4200, help='Port to run the server on')
 @click.option('--no-browser', is_flag=True, help='Do not open browser automatically')
 @click.pass_obj
-@handle_errors
 def simulate(config, port, no_browser):
     """Launch a visualization of files to be synchronized."""
-    # Validate configuration and provider
-    provider = validate_and_get_provider(config, require_project=True)
-
-    # Check if the Angular app is built
-    if not os.path.exists(ANGULAR_APP_PATH):
-        click.echo("Angular application not found. Please ensure the application is built.")
-        sys.exit(1)
-
-    # Set up the HTTP server
-    handler = http.server.SimpleHTTPRequestHandler
-    web_dir = os.path.join(os.path.dirname(__file__), ANGULAR_APP_PATH)
+    web_dir = os.path.join(os.path.dirname(__file__), '../web/dist/claudesync-simulate/browser')
     os.chdir(web_dir)
 
-    # Create and start the server
+    handler = SyncDataHandler
     with socketserver.TCPServer(("", port), handler) as httpd:
         url = f"http://localhost:{port}"
         click.echo(f"Server started at {url}")
 
-        # Start the server in a separate thread
         server_thread = threading.Thread(target=httpd.serve_forever)
         server_thread.daemon = True
         server_thread.start()
 
-        # Open the browser unless --no-browser is specified
         if not no_browser:
             webbrowser.open(url)
 

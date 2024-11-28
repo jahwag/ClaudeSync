@@ -1,47 +1,48 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
+import { HttpClientModule } from '@angular/common/http';
+import { FileDataService, SyncStats, FileConfig } from './file-data.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, CommonModule],
+  standalone: true,
+  imports: [RouterOutlet, CommonModule, HttpClientModule],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  styleUrl: './app.component.css',
+  providers: [FileDataService]
 })
-
 export class AppComponent implements OnInit {
   configVisible = false;
-  fileCategories = JSON.stringify({
-    "file_categories": {
-      "main": {
-        "description": "Active Category",
-        "patterns": [
-          "app.py",
-          "src/index.html",
-          "src/main.ts",
-          "src/styles.css"
-        ]
-      }
-    }
-  }, null, 2);
-
-  claudeignore = `node_modules/
-.venv/
-.angular/
-.git/
-.idea/
-.vscode/
-*.zip
-pkg/`;
-
-  stats = {
-    totalFiles: 127,
-    filesToSync: 43,
-    totalSize: '2.4 MB'
+  fileCategories = '';
+  claudeignore = '';
+  stats: SyncStats = {
+    totalFiles: 0,
+    filesToSync: 0,
+    totalSize: '0 B'
   };
 
+  constructor(private fileDataService: FileDataService) {}
+
   ngOnInit() {
-    // Initialize component
+    this.loadData();
+  }
+
+  loadData() {
+    this.fileDataService.getFileConfig().subscribe({
+      next: (config: FileConfig) => {
+        this.fileCategories = JSON.stringify(config.fileCategories, null, 2);
+        this.claudeignore = config.claudeignore;
+      },
+      error: (error) => console.error('Error loading config:', error)
+    });
+
+    this.fileDataService.getStats().subscribe({
+      next: (stats: SyncStats) => {
+        this.stats = stats;
+      },
+      error: (error) => console.error('Error loading stats:', error)
+    });
   }
 
   toggleConfig() {
@@ -49,7 +50,6 @@ pkg/`;
   }
 
   reload() {
-    // Implement reload logic
-    console.log('Reloading visualization...');
+    this.loadData();
   }
 }
