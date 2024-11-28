@@ -1,88 +1,61 @@
-<div class="min-h-screen bg-gray-100 p-4">
-  <div class="max-w-7xl mx-auto">
-    <!-- Header -->
-    <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
-      <div class="flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-800">ClaudeSync Simulate</h1>
-        <div class="flex gap-2">
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            (click)="toggleConfig()"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-            Configuration
-          </button>
-          <button
-            class="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-            (click)="reload()"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
-              <path d="M21 3v5h-5"/>
-            </svg>
-            Reload
-          </button>
-        </div>
-      </div>
+<div class="app-container">
+  <!-- Header -->
+  <header class="header">
+    <h1>ClaudeSync Simulate</h1>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="toggleConfig()">
+        <svg class="icon" viewBox="0 0 24 24">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+        Configuration
+      </button>
+      <button class="btn btn-success" (click)="reload()">
+        <svg class="icon" viewBox="0 0 24 24">
+          <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+          <path d="M21 3v5h-5"/>
+        </svg>
+        Reload
+      </button>
     </div>
+  </header>
 
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-      <!-- Configuration Panel -->
-      @if (configVisible) {
-        <div class="lg:col-span-1">
-          <div class="bg-white rounded-lg shadow-sm p-4">
-            <h2 class="text-lg font-semibold mb-4">Configuration</h2>
+  <!-- Main Content -->
+  <main class="main-content">
+    <aside class="config-panel" [class.hidden]="!configVisible">
+      <h2>Configuration</h2>
 
-            <!-- File Categories -->
-            <div class="mb-6">
-              <h3 class="text-sm font-medium text-gray-700 mb-2">File Categories</h3>
-              <div class="bg-gray-50 p-3 rounded border">
-                <pre class="text-xs text-gray-600 whitespace-pre-wrap">{{ fileCategories }}</pre>
-              </div>
-            </div>
+      <section class="config-section">
+        <h3>File Categories</h3>
+        <pre class="code-block">{{fileCategories}}</pre>
+      </section>
 
-            <!-- .claudeignore -->
-            <div>
-              <h3 class="text-sm font-medium text-gray-700 mb-2">.claudeignore</h3>
-              <div class="bg-gray-50 p-3 rounded border">
-                <pre class="text-xs text-gray-600 whitespace-pre-wrap">{{ claudeignore }}</pre>
-              </div>
-            </div>
-          </div>
-        </div>
-      }
+      <section class="config-section">
+        <h3>.claudeignore</h3>
+        <pre class="code-block">{{claudeignore}}</pre>
+      </section>
+    </aside>
 
-      <!-- Treemap Visualization -->
-      <div [class]="configVisible ? 'lg:col-span-3' : 'lg:col-span-4'">
-        <div class="bg-white rounded-lg shadow-sm p-4" style="height: 600px;">
-          <div class="bg-gray-100 rounded w-full h-full flex items-center justify-center">
-            <div class="text-gray-500">
-              Treemap Visualization Placeholder
-            </div>
-          </div>
-        </div>
+    <section class="visualization-panel" [class.expanded]="!configVisible">
+      <div class="visualization-content">
+        Treemap Visualization Placeholder
       </div>
-    </div>
+    </section>
+  </main>
 
-    <!-- Stats Footer -->
-    <div class="bg-white rounded-lg shadow-sm p-4 mt-4">
-      <div class="grid grid-cols-3 gap-4 text-center">
-        <div>
-          <div class="text-sm text-gray-600">Total Files</div>
-          <div class="text-xl font-bold text-gray-800">{{ stats.totalFiles }}</div>
-        </div>
-        <div>
-          <div class="text-sm text-gray-600">Files to Sync</div>
-          <div class="text-xl font-bold text-gray-800">{{ stats.filesToSync }}</div>
-        </div>
-        <div>
-          <div class="text-sm text-gray-600">Total Size</div>
-          <div class="text-xl font-bold text-gray-800">{{ stats.totalSize }}</div>
-        </div>
-      </div>
+  <!-- Footer -->
+  <footer class="stats-footer">
+    <div class="stat-item">
+      <span class="stat-label">Total Files</span>
+      <span class="stat-value">{{stats.totalFiles}}</span>
     </div>
-  </div>
+    <div class="stat-item">
+      <span class="stat-label">Files to Sync</span>
+      <span class="stat-value">{{stats.filesToSync}}</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Total Size</span>
+      <span class="stat-value">{{stats.totalSize}}</span>
+    </div>
+  </footer>
 </div>
