@@ -74,3 +74,8 @@ include = ["claudesync*"]
 testpaths = ["tests"]
 python_files = "test_*.py"
 addopts = "-v --cov=claudesync --cov-report=term-missing"
+
+[tool.setuptools.package_data]
+claudesync = [
+    "web/dist/claudesync-simulate/**/*"
+]

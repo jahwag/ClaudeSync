@@ -19,6 +19,7 @@ from claudesync.utils import (
 from .auth import auth
 from .organization import organization
 from .project import project
+from .simulate import simulate
 from .sync import schedule
 from .config import config
 import logging
@@ -213,6 +214,7 @@ cli.add_command(project)
 cli.add_command(schedule)
 cli.add_command(config)
 cli.add_command(chat)
+cli.add_command(simulate)
 
 if __name__ == "__main__":
     cli()
