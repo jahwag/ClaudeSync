@@ -33,6 +33,25 @@ def load_claudeignore():
         logger.error(f"Error reading .claudeignore at {claudeignore_path}: {e}")
         return ""
 
+def load_config():
+    """Load configuration from .claudesync/config.local.json."""
+    project_root = get_project_root()
+    config_path = project_root / '.claudesync' / 'config.local.json'
+
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+            return config.get('file_categories', {})
+    except FileNotFoundError:
+        logger.warning(f"Config file not found at {config_path}")
+        return {}
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in config file at {config_path}: {e}")
+        return {}
+    except Exception as e:
+        logger.error(f"Error reading config file at {config_path}: {e}")
+        return {}
+
 class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         parsed_path = urlparse(self.path)
@@ -44,24 +63,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
             config = {
-                "fileCategories": {
-                    "main": {
-                        "description": "Active Category",
-                        "patterns": [
-                            "app.py",
-                            "src/index.html",
-                            "src/main.ts",
-                            "src/styles.css"
-                        ]
-                    },
-                    "docs": {
-                        "description": "Documentation",
-                        "patterns": [
-                            "docs/*.md",
-                            "README.md"
-                        ]
-                    }
-                },
+                "fileCategories": load_config(),
                 "claudeignore": load_claudeignore()
             }
 
