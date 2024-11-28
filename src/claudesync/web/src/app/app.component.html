@@ -1,5 +1,4 @@
 <div class="app-container">
-  <!-- Header -->
   <header class="header">
     <h1>ClaudeSync Simulate</h1>
     <div class="header-actions">
@@ -20,30 +19,26 @@
     </div>
   </header>
 
-  <!-- Main Content -->
   <main class="main-content">
-    <aside class="config-panel" [class.hidden]="!configVisible">
+    <aside class="config-panel" [ngClass]="{'hidden': !configVisible}">
       <h2>Configuration</h2>
-
       <section class="config-section">
         <h3>File Categories</h3>
         <pre class="code-block">{{fileCategories}}</pre>
       </section>
-
       <section class="config-section">
         <h3>.claudeignore</h3>
         <pre class="code-block">{{claudeignore}}</pre>
       </section>
     </aside>
 
-    <section class="visualization-panel" [class.expanded]="!configVisible">
+    <section class="visualization-panel" [ngClass]="{'expanded': !configVisible}">
       <div class="visualization-content">
-        Treemap Visualization Placeholder
+        <p>Treemap Visualization Placeholder</p>
       </div>
     </section>
   </main>
 
-  <!-- Footer -->
   <footer class="stats-footer">
     <div class="stat-item">
       <span class="stat-label">Total Files</span>
