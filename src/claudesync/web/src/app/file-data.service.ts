@@ -18,11 +18,18 @@ export interface FileConfig {
   claudeignore: string;
 }
 
+export interface TreemapData {
+  labels: string[];
+  parents: string[];
+  values: number[];
+  ids: string[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
 export class FileDataService {
-  private baseUrl = 'http://localhost:4201/api'; // Update port if needed
+  private baseUrl = 'http://localhost:4201/api';
 
   constructor(private http: HttpClient) {}
 
@@ -32,5 +39,9 @@ export class FileDataService {
 
   getStats(): Observable<SyncStats> {
     return this.http.get<SyncStats>(`${this.baseUrl}/stats`);
+  }
+
+  getTreemapData(): Observable<TreemapData> {
+    return this.http.get<TreemapData>(`${this.baseUrl}/treemap`);
   }
 }

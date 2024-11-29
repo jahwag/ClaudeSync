@@ -1,26 +1,23 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FileDataService } from './file-data.service';
+import { HttpClient } from '@angular/common/http';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 declare const Plotly: any;
 
-interface TreeNode {
-  name: string;
-  size?: number;
-  children?: TreeNode[];
+interface TreemapData {
+  labels: string[];
+  parents: string[];
+  values: number[];
+  ids: string[];
 }
 
 interface SelectedNode {
   path: string;
   size: number;
   totalSize: number;
-}
-
-interface PlotData {
-  labels: string[];
-  parents: string[];
-  values: number[];
-  ids: string[];
 }
 
 @Component({
@@ -30,123 +27,48 @@ interface PlotData {
   templateUrl: './treemap.component.html',
   styleUrls: ['./treemap.component.css']
 })
-export class TreemapComponent implements OnInit {
+export class TreemapComponent implements OnInit, OnDestroy {
   selectedNode: SelectedNode | null = null;
-  private treeData: TreeNode | null = null;
+  private destroy$ = new Subject<void>();
+  private baseUrl = 'http://localhost:4201/api';
 
-  // Example data structure remains the same
-  private exampleData: TreeNode = {
-    name: 'root',
-    children: [
-      {
-        name: 'src',
-        children: [
-          {
-            name: 'components',
-            children: [
-              { name: 'Header.tsx', size: 2450 },
-              { name: 'Footer.tsx', size: 1280 },
-              { name: 'Sidebar.tsx', size: 3400 }
-            ]
-          },
-          {
-            name: 'utils',
-            children: [
-              { name: 'formatters.ts', size: 890 },
-              { name: 'helpers.ts', size: 1200 }
-            ]
-          },
-          { name: 'index.ts', size: 340 }
-        ]
-      },
-      {
-        name: 'public',
-        children: [
-          { name: 'favicon.ico', size: 4500 },
-          { name: 'logo.svg', size: 2800 }
-        ]
-      },
-      {
-        name: 'docs',
-        children: [
-          { name: 'README.md', size: 1500 },
-          { name: 'CONTRIBUTING.md', size: 2100 },
-          { name: 'API.md', size: 3400 }
-        ]
-      },
-      { name: 'package.json', size: 720 },
-      { name: 'tsconfig.json', size: 480 }
-    ]
-  };
-
-  constructor(private fileDataService: FileDataService) {}
+  constructor(private http: HttpClient) {}
 
   ngOnInit() {
-    this.loadData();
+    this.loadTreemapData();
   }
 
-  private loadData() {
-    this.treeData = this.exampleData;
-    this.renderTreemap();
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  private calculateFolderSize(node: TreeNode): number {
-    if (node.size !== undefined) {
-      return node.size;
-    }
-
-    let totalSize = 0;
-    if (node.children) {
-      node.children.forEach(child => {
-        totalSize += this.calculateFolderSize(child);
+  private loadTreemapData() {
+    this.http.get<TreemapData>(`${this.baseUrl}/treemap`)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (data) => {
+          this.renderTreemap(data);
+        },
+        error: (error) => {
+          console.error('Error loading treemap data:', error);
+        }
       });
-    }
-    return totalSize;
   }
 
-  private flattenHierarchy(node: TreeNode, parent: string, plotData: PlotData) {
-    const nodeId = parent ? `${parent}/${node.name}` : node.name;
-
-    plotData.ids.push(nodeId);
-    plotData.labels.push(node.name);
-    plotData.parents.push(parent);
-
-    if (node.size !== undefined) {
-      plotData.values.push(node.size);
-    } else {
-      const totalSize = this.calculateFolderSize(node);
-      plotData.values.push(totalSize);
-    }
-
-    if (node.children) {
-      node.children.forEach(child => {
-        this.flattenHierarchy(child, nodeId, plotData);
-      });
-    }
-  }
-
-  private renderTreemap() {
+  private renderTreemap(data: TreemapData) {
     const chartContainer = document.getElementById('file-treemap');
-    if (!chartContainer || !this.treeData) {
-      console.warn('Chart container or tree data not available');
+    if (!chartContainer) {
+      console.warn('Chart container not found');
       return;
     }
 
-    const plotData: PlotData = {
-      labels: [],
-      parents: [],
-      values: [],
-      ids: []
-    };
-
-    this.flattenHierarchy(this.treeData, '', plotData);
-
-    const data = [{
+    const plotlyData = [{
       type: 'treemap',
-      ids: plotData.ids,
-      labels: plotData.labels,
-      parents: plotData.parents,
-      values: plotData.values,
+      labels: data.labels,
+      parents: data.parents,
+      values: data.values,
+      ids: data.ids,
       textinfo: 'label+value',
       hovertemplate: `
         <b>%{label}</b><br>
@@ -154,29 +76,29 @@ export class TreemapComponent implements OnInit {
         <extra></extra>
       `,
       marker: {
-        colorscale: 'Blues'
+        colorscale: 'Blues',
+        showscale: true
       },
-      textposition: 'middle center',
-      branchvalues: 'total',
       pathbar: {
-        visible: true,  // Enable the navigation path bar
-        side: 'top',   // Position it at the top
-        thickness: 20   // Make it thick enough to be clickable
+        visible: true,
+        side: 'top',
+        thickness: 20
       }
     }];
 
     const layout = {
       width: chartContainer.offsetWidth,
       height: 400,
-      margin: { l: 0, r: 0, t: 30, b: 0 }
+      margin: { l: 0, r: 0, t: 30, b: 0 },
+      treemapcolorway: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
     };
 
     const config = {
-      displayModeBar: false,  // Hide the modebar
+      displayModeBar: false,
       responsive: true
     };
 
-    Plotly.newPlot('file-treemap', data, layout), config;
+    Plotly.newPlot('file-treemap', plotlyData, layout, config);
 
     // Handle click events
     // @ts-ignore
@@ -184,9 +106,9 @@ export class TreemapComponent implements OnInit {
       if (data.points && data.points.length > 0) {
         const point = data.points[0];
         this.selectedNode = {
-          path: plotData.ids[point.pointIndex],
-          size: plotData.values[point.pointIndex],
-          totalSize: plotData.values[point.pointIndex]
+          path: point.id,
+          size: point.value,
+          totalSize: point.value
         };
       }
     });

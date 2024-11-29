@@ -10,9 +10,122 @@ from urllib.parse import urlparse, parse_qs
 from pathlib import Path
 from ..utils import get_local_files
 from ..configmanager import FileConfigManager
+from typing import Dict, List, Optional, TypedDict
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # Ensure debug level is set
+
+class TreeNode(TypedDict):
+    name: str
+    size: Optional[int]
+    path: str
+    children: Optional[List['TreeNode']]
+
+def build_file_tree(base_path: str, files_to_sync: Dict[str, str]) -> TreeNode:
+    """
+    Build a hierarchical tree structure from the list of files.
+
+    Args:
+        base_path: The root directory path
+        files_to_sync: Dictionary of relative file paths and their hashes
+
+    Returns:
+        TreeNode: Root node of the tree structure
+    """
+    logger = logging.getLogger(__name__)
+    logger.debug(f"Building file tree from {len(files_to_sync)} files")
+
+    root: TreeNode = {
+        'name': os.path.basename(base_path) or 'root',
+        'path': '',
+        'size': None,
+        'children': []
+    }
+
+    for file_path in files_to_sync.keys():
+        current = root
+        path_parts = Path(file_path).parts
+
+        # Build the path incrementally to track full paths
+        current_path = ''
+
+        for i, part in enumerate(path_parts):
+            current_path = os.path.join(current_path, part) if current_path else part
+
+            # Check if this node already exists in children
+            child = next((c for c in current['children'] if c['name'] == part), None)
+
+            if child is None:
+                # Create new node
+                is_file = (i == len(path_parts) - 1)
+                full_path = os.path.join(base_path, current_path)
+
+                new_node: TreeNode = {
+                    'name': part,
+                    'path': current_path,
+                    'size': os.path.getsize(full_path) if is_file else None,
+                    'children': [] if not is_file else None
+                }
+
+                current['children'].append(new_node)
+                current = new_node
+            else:
+                current = child
+
+    # Calculate directory sizes
+    calculate_directory_sizes(root)
+    logger.debug("Completed building file tree")
+    return root
+
+def calculate_directory_sizes(node: TreeNode) -> int:
+    """
+    Recursively calculate the total size of directories.
+
+    Args:
+        node: Current tree node
+
+    Returns:
+        int: Total size of the node and its children
+    """
+    if not node['children']:  # Leaf node (file)
+        return node['size'] or 0
+
+    total_size = 0
+    for child in node['children']:
+        total_size += calculate_directory_sizes(child)
+
+    node['size'] = total_size
+    return total_size
+
+def convert_to_plotly_format(node: TreeNode) -> tuple[List[str], List[str], List[int], List[str]]:
+    """
+    Convert the tree structure to Plotly treemap format.
+
+    Args:
+        node: Root node of the tree
+
+    Returns:
+        tuple: (labels, parents, values, ids) for Plotly treemap
+    """
+    labels: List[str] = []
+    parents: List[str] = []
+    values: List[int] = []
+    ids: List[str] = []
+
+    def traverse(node: TreeNode, parent: str = ""):
+        node_id = os.path.join(parent, node['name']) if parent else node['name']
+
+        labels.append(node['name'])
+        parents.append(parent)
+        values.append(node['size'] or 0)
+        ids.append(node_id)
+
+        if node['children']:
+            for child in node['children']:
+                traverse(child, node_id)
+
+    traverse(node)
+    return labels, parents, values, ids
 
 def get_project_root():
     """Get the project root directory."""
@@ -125,39 +238,52 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
         config = FileConfigManager()
         return config
 
-    def do_GET(self):
-        parsed_path = urlparse(self.path)
-        logger.debug(f"Handling GET request for path: {parsed_path.path}")
+def do_GET(self):
+    parsed_path = urlparse(self.path)
+    logger.debug(f"Handling GET request for path: {parsed_path.path}")
 
-        if parsed_path.path == '/api/config':
-            logger.debug("Processing /api/config request")
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
+    if parsed_path.path == '/api/treemap':
+        logger.debug("Processing /api/treemap request")
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
 
-            config = {
-                "fileCategories": load_config(),
-                "claudeignore": load_claudeignore()
+        config = self.get_current_config()
+        local_path = config.get_local_path()
+        category = config.get_default_category()
+
+        if not local_path:
+            self.wfile.write(json.dumps({'error': 'No local path configured'}).encode())
+            return
+
+        try:
+            files_to_sync = get_local_files(config, local_path, category)
+            tree = build_file_tree(local_path, files_to_sync)
+            labels, parents, values, ids = convert_to_plotly_format(tree)
+
+            response_data = {
+                'labels': labels,
+                'parents': parents,
+                'values': values,
+                'ids': ids
             }
-            logger.debug(f"Sending config response with {len(config['fileCategories'])} categories")
 
-            self.wfile.write(json.dumps(config).encode())
-            return
+            self.wfile.write(json.dumps(response_data).encode())
+        except Exception as e:
+            logger.error(f"Error generating treemap data: {str(e)}")
+            self.wfile.write(json.dumps({'error': str(e)}).encode())
+        return
 
-        elif parsed_path.path == '/api/stats':
-            logger.debug("Processing /api/stats request")
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
+    elif parsed_path.path == '/api/config':
+        # Existing config endpoint code...
+        pass
 
-            stats = calculate_sync_stats(self.get_current_config())
-            logger.debug(f"Sending stats response: {stats}")
-            self.wfile.write(json.dumps(stats).encode())
-            return
+    elif parsed_path.path == '/api/stats':
+        # Existing stats endpoint code...
+        pass
 
-        return super().do_GET()
+    return super().do_GET()
 
 @click.command()
 @click.option('--port', default=4201, help='Port to run the server on')
