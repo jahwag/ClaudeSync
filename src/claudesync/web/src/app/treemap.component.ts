@@ -155,7 +155,9 @@ export class TreemapComponent implements OnInit {
       `,
       marker: {
         colorscale: 'Blues'
-      }
+      },
+      textposition: 'middle center',
+      branchvalues: 'total'
     }];
 
     const layout = {
