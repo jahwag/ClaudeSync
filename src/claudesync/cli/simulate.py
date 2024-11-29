@@ -347,8 +347,16 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
             config = self.get_current_config()
+
+            # Get the default category name and then the active category
+            default_category = config.get("default_sync_category")
+            categories = config.get("file_categories", {})
+            active_category = {
+                default_category: categories.get(default_category)
+            } if default_category and default_category in categories else {}
+
             response_data = {
-                'fileCategories': config.get('file_categories', {}),
+                'fileCategories': active_category,
                 'claudeignore': load_claudeignore_as_string()
             }
             self.wfile.write(json.dumps(response_data).encode())
