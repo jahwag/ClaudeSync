@@ -1,0 +1,46 @@
+<div class="treemap-container">
+  <div class="header-container">
+    <h2>File Distribution</h2>
+    <div class="filter-controls">
+      <div class="filter-section">
+        <h3>Filter by Type:</h3>
+        <div class="checkbox-group">
+          <label *ngFor="let type of availableTypes" class="checkbox-label">
+            <input type="checkbox"
+                   [checked]="activeTypes.has(type)"
+                   (change)="toggleType(type)">
+            {{ type }}
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="file-treemap" class="treemap-visualization"></div>
+
+  <div class="selected-info" *ngIf="selectedNode">
+    <h3>Selected File</h3>
+    <table>
+      <thead>
+      <tr>
+        <th>Path</th>
+        <th>Type</th>
+        <th>Size</th>
+        <th>Total Size</th>
+        <th>Action</th>
+      </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td>{{ selectedNode.path }}</td>
+        <td>{{ selectedNode.type }}</td>
+        <td>{{ formatSize(selectedNode.size) }}</td>
+        <td>{{ formatSize(selectedNode.totalSize) }}</td>
+        <td>
+          <button class="clear-btn" (click)="clearSelection()">Clear</button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

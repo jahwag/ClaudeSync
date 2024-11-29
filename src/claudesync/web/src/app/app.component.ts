@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
 import { FileDataService, SyncStats, FileConfig } from './file-data.service';
+import {TreemapComponent} from './treemap.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, HttpClientModule],
+  imports: [RouterOutlet, CommonModule, HttpClientModule, TreemapComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   providers: [FileDataService]
