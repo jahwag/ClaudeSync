@@ -230,60 +230,92 @@ def format_size(size):
 
 class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, config=None, **kwargs):
+        self.config = config
         super().__init__(*args, **kwargs)
 
     def get_current_config(self):
         """Get a fresh config instance for each request"""
         logger.debug("Loading fresh config instance")
-        config = FileConfigManager()
-        return config
+        if self.config:
+            return self.config
+        return FileConfigManager()
 
-def do_GET(self):
-    parsed_path = urlparse(self.path)
-    logger.debug(f"Handling GET request for path: {parsed_path.path}")
+    def do_GET(self):
+        parsed_path = urlparse(self.path)
+        logger.debug(f"Handling GET request for path: {parsed_path.path}")
 
-    if parsed_path.path == '/api/treemap':
-        logger.debug("Processing /api/treemap request")
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.end_headers()
+        # Add CORS headers for all responses
+        def send_cors_headers(self):
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 
-        config = self.get_current_config()
-        local_path = config.get_local_path()
-        category = config.get_default_category()
+        if parsed_path.path == '/api/treemap':
+            logger.debug("Processing /api/treemap request")
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            send_cors_headers(self)
+            self.end_headers()
 
-        if not local_path:
-            self.wfile.write(json.dumps({'error': 'No local path configured'}).encode())
+            config = self.get_current_config()
+            local_path = config.get_local_path()
+            category = config.get("default_category")
+
+            if not local_path:
+                self.wfile.write(json.dumps({'error': 'No local path configured'}).encode())
+                return
+
+            try:
+                files_to_sync = get_local_files(config, local_path, category)
+                tree = build_file_tree(local_path, files_to_sync)
+                labels, parents, values, ids = convert_to_plotly_format(tree)
+
+                response_data = {
+                    'labels': labels,
+                    'parents': parents,
+                    'values': values,
+                    'ids': ids
+                }
+                self.wfile.write(json.dumps(response_data).encode())
+            except Exception as e:
+                logger.error(f"Error generating treemap data: {str(e)}")
+                self.wfile.write(json.dumps({'error': str(e)}).encode())
             return
 
-        try:
-            files_to_sync = get_local_files(config, local_path, category)
-            tree = build_file_tree(local_path, files_to_sync)
-            labels, parents, values, ids = convert_to_plotly_format(tree)
+        elif parsed_path.path == '/api/config':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            send_cors_headers(self)
+            self.end_headers()
 
+            config = self.get_current_config()
             response_data = {
-                'labels': labels,
-                'parents': parents,
-                'values': values,
-                'ids': ids
+                'fileCategories': config.get('file_categories', {}),
+                'claudeignore': load_claudeignore()
             }
-
             self.wfile.write(json.dumps(response_data).encode())
-        except Exception as e:
-            logger.error(f"Error generating treemap data: {str(e)}")
-            self.wfile.write(json.dumps({'error': str(e)}).encode())
-        return
+            return
 
-    elif parsed_path.path == '/api/config':
-        # Existing config endpoint code...
-        pass
+        elif parsed_path.path == '/api/stats':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            send_cors_headers(self)
+            self.end_headers()
 
-    elif parsed_path.path == '/api/stats':
-        # Existing stats endpoint code...
-        pass
+            config = self.get_current_config()
+            stats = calculate_sync_stats(config)
+            self.wfile.write(json.dumps(stats).encode())
+            return
 
-    return super().do_GET()
+        # For all other paths, serve static files
+        return super().do_GET()
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.end_headers()
 
 @click.command()
 @click.option('--port', default=4201, help='Port to run the server on')
