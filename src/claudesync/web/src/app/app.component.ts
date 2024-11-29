@@ -17,6 +17,7 @@ export class AppComponent implements OnInit {
   configVisible = false;
   fileCategories = '';
   claudeignore = '';
+  isLoading = false;
   stats: SyncStats = {
     totalFiles: 0,
     filesToSync: 0,
@@ -32,20 +33,28 @@ export class AppComponent implements OnInit {
   }
 
   loadData() {
-    this.fileDataService.getFileConfig().subscribe({
-      next: (config: FileConfig) => {
-        this.fileCategories = JSON.stringify(config.fileCategories, null, 2);
-        this.claudeignore = config.claudeignore;
-      },
-      error: (error) => console.error('Error loading config:', error)
-    });
+    this.isLoading = true;
 
-    this.fileDataService.getStats().subscribe({
-      next: (stats: SyncStats) => {
+    // Create an array of observables for parallel execution
+    const requests = [
+      this.fileDataService.getFileConfig(),
+      this.fileDataService.getStats()
+    ];
+
+    // Execute requests in parallel
+    Promise.all(requests.map(obs => obs.toPromise()))
+      .then(([config, stats]) => {
+        // @ts-ignore
+        this.fileCategories = JSON.stringify(config.fileCategories, null, 2);
+        // @ts-ignore
+        this.claudeignore = config.claudeignore;
+        // @ts-ignore
         this.stats = stats;
-      },
-      error: (error) => console.error('Error loading stats:', error)
-    });
+      })
+      .catch(error => console.error('Error loading data:', error))
+      .finally(() => {
+        this.isLoading = false;
+      });
   }
 
   toggleConfig() {
