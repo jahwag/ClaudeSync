@@ -203,13 +203,18 @@ def get_local_files(config, local_path, category=None, include_submodules=False)
     categories = config.get("file_categories", {})
     logger.debug(f"Available categories: {list(categories.keys())}")
 
+    # Verify that the requested category exists
     if category and category not in categories:
         logger.error(f"Invalid category: {category}")
         raise ValueError(f"Invalid category: {category}")
 
+    # Use the patterns from the specified category, or default to all files
     patterns = ["*"]  # Default to all files
     if category:
         patterns = categories[category]["patterns"]
+        logger.debug(f"Using patterns from category '{category}': {patterns}")
+    else:
+        logger.debug("No category specified, using default pattern '*'")
     logger.debug(f"Using patterns: {patterns}")
 
     submodules = config.get("submodules", [])

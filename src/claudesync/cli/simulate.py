@@ -237,11 +237,12 @@ def calculate_sync_stats(config):
             "totalSize": "0 B"
         }
 
-    category = config.get_default_category()
-    logger.debug(f"Using category: {category}")
+    # Get the default category name
+    default_category = config.get("default_sync_category")
+    logger.debug(f"Using default sync category: {default_category}")
 
     # Get list of files that would be synced
-    files_to_sync = get_local_files(config, local_path, category)
+    files_to_sync = get_local_files(config, local_path, default_category)
     logger.debug(f"Found {len(files_to_sync)} files to sync")
 
     # Calculate total size of files to sync
@@ -309,14 +310,19 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
             config = self.get_current_config()
             local_path = config.get_local_path()
-            category = config.get("default_category")
+
+            # Get the default category name and then use it to get the active category
+            default_category = config.get("default_sync_category")
+            categories = config.get("file_categories", {})
+            active_category = categories.get(default_category) if default_category else None
 
             if not local_path:
                 self.wfile.write(json.dumps({'error': 'No local path configured'}).encode())
                 return
 
             try:
-                files_to_sync = get_local_files(config, local_path, category)
+                # Pass the active category name to get_local_files
+                files_to_sync = get_local_files(config, local_path, default_category)
                 tree = build_file_tree(local_path, files_to_sync, config)
                 labels, parents, values, ids, included = convert_to_plotly_format(tree)
 
