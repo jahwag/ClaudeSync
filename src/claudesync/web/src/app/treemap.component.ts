@@ -12,7 +12,6 @@ interface TreeNode {
 
 interface SelectedNode {
   path: string;
-  type: string;
   size: number;
   totalSize: number;
 }
@@ -22,7 +21,6 @@ interface PlotData {
   parents: string[];
   values: number[];
   ids: string[];
-  types: string[];
 }
 
 @Component({
@@ -33,12 +31,10 @@ interface PlotData {
   styleUrls: ['./treemap.component.css']
 })
 export class TreemapComponent implements OnInit {
-  availableTypes: string[] = ['Source', 'Config', 'Asset', 'Documentation'];
-  activeTypes: Set<string> = new Set(this.availableTypes);
   selectedNode: SelectedNode | null = null;
   private treeData: TreeNode | null = null;
 
-  // Example data as provided
+  // Example data structure remains the same
   private exampleData: TreeNode = {
     name: 'root',
     children: [
@@ -111,48 +107,22 @@ export class TreemapComponent implements OnInit {
   private flattenHierarchy(node: TreeNode, parent: string, plotData: PlotData) {
     const nodeId = parent ? `${parent}/${node.name}` : node.name;
 
-    // Add this node to the plot data
     plotData.ids.push(nodeId);
     plotData.labels.push(node.name);
     plotData.parents.push(parent);
 
     if (node.size !== undefined) {
-      // For files, use the direct size
       plotData.values.push(node.size);
-      plotData.types.push(this.getFileType(node.name));
     } else {
-      // For folders, calculate total size recursively
       const totalSize = this.calculateFolderSize(node);
       plotData.values.push(totalSize);
-      plotData.types.push('folder');
     }
 
-    // Recursively process children
     if (node.children) {
       node.children.forEach(child => {
         this.flattenHierarchy(child, nodeId, plotData);
       });
     }
-  }
-
-  private getFileType(filename: string): string {
-    const ext = filename.split('.').pop()?.toLowerCase();
-    if (!ext) return 'unknown';
-
-    const typeMap: { [key: string]: string } = {
-      'ts': 'Source',
-      'tsx': 'Source',
-      'js': 'Source',
-      'jsx': 'Source',
-      'json': 'Config',
-      'ico': 'Asset',
-      'svg': 'Asset',
-      'png': 'Asset',
-      'jpg': 'Asset',
-      'md': 'Documentation'
-    };
-
-    return typeMap[ext] || 'unknown';
   }
 
   private renderTreemap() {
@@ -166,23 +136,17 @@ export class TreemapComponent implements OnInit {
       labels: [],
       parents: [],
       values: [],
-      ids: [],
-      types: []
+      ids: []
     };
 
     this.flattenHierarchy(this.treeData, '', plotData);
 
-    // Filter data based on active types
-    const filteredIndices = plotData.types.map((type, index) =>
-      this.activeTypes.has(type) || type === 'folder' ? index : -1
-    ).filter(i => i !== -1);
-
     const data = [{
       type: 'treemap',
-      ids: filteredIndices.map(i => plotData.ids[i]),
-      labels: filteredIndices.map(i => plotData.labels[i]),
-      parents: filteredIndices.map(i => plotData.parents[i]),
-      values: filteredIndices.map(i => plotData.values[i]),
+      ids: plotData.ids,
+      labels: plotData.labels,
+      parents: plotData.parents,
+      values: plotData.values,
       textinfo: 'label+value',
       hovertemplate: `
         <b>%{label}</b><br>
@@ -190,16 +154,7 @@ export class TreemapComponent implements OnInit {
         <extra></extra>
       `,
       marker: {
-        colors: filteredIndices.map(i => {
-          const type = plotData.types[i];
-          switch(type) {
-            case 'Source': return '#4CAF50';
-            case 'Config': return '#2196F3';
-            case 'Asset': return '#FFC107';
-            case 'Documentation': return '#9C27B0';
-            default: return '#E0E0E0';
-          }
-        })
+        colorscale: 'Blues'
       }
     }];
 
@@ -216,25 +171,13 @@ export class TreemapComponent implements OnInit {
     chartContainer.on('plotly_click', (data: any) => {
       if (data.points && data.points.length > 0) {
         const point = data.points[0];
-        const index = filteredIndices[point.pointIndex];
-
         this.selectedNode = {
-          path: plotData.ids[index],
-          type: plotData.types[index],
-          size: plotData.values[index],
-          totalSize: plotData.values[index]
+          path: plotData.ids[point.pointIndex],
+          size: plotData.values[point.pointIndex],
+          totalSize: plotData.values[point.pointIndex]
         };
       }
     });
-  }
-
-  toggleType(type: string) {
-    if (this.activeTypes.has(type)) {
-      this.activeTypes.delete(type);
-    } else {
-      this.activeTypes.add(type);
-    }
-    this.renderTreemap();
   }
 
   clearSelection() {
