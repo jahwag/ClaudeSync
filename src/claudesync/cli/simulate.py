@@ -49,6 +49,9 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> Tr
     gitignore = load_gitignore(base_path)
     claudeignore = load_claudeignore(base_path)
 
+    # Create a set of files that will be synced for quick lookup
+    sync_files = set(files_to_sync.keys())
+
     # Process all files in directory
     for root_dir, _, files in os.walk(base_path):
         rel_root = os.path.relpath(root_dir, base_path)
@@ -78,10 +81,6 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> Tr
                 claudeignore
             )
 
-            # Skip files that wouldn't be processed
-            if not would_process:
-                continue
-
             # Get file size
             try:
                 file_size = os.path.getsize(full_path)
@@ -107,7 +106,7 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> Tr
                         'path': current_path,
                         'size': file_size if is_file else None,
                         'children': [] if not is_file else None,
-                        'included': would_process if is_file else None
+                        'included': rel_path in sync_files if is_file else None
                     }
                     current['children'].append(new_node)
                     current = new_node

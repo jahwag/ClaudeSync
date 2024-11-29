@@ -12,6 +12,7 @@ interface TreemapData {
   parents: string[];
   values: number[];
   ids: string[];
+  included: boolean[];
 }
 
 interface SelectedNode {
@@ -120,10 +121,14 @@ export class TreemapComponent implements OnInit, OnDestroy {
     }
 
     // Create custom text array for hover info
-    const customData = data.ids.map(id => ({
+    const customData = data.ids.map((id, index) => ({
       fileCount: fileCountMap.get(id) || 0,
-      sizeFormatted: this.formatSizeForHover(nodeMap.get(id)?.value || 0)
+      sizeFormatted: this.formatSizeForHover(nodeMap.get(id)?.value || 0),
+      included: data.included[index]
     }));
+
+    // Create color array based on included status
+    const colors = data.included.map(included => included ? '#4f46e5' : '#94a3b8');
 
     const plotlyData = [{
       type: 'treemap',
@@ -138,16 +143,11 @@ export class TreemapComponent implements OnInit, OnDestroy {
 <b>%{label}</b><br>
 Size: %{customdata.sizeFormatted}<br>
 Files: %{customdata.fileCount}<br>
+Status: %{customdata.included ? "Included" : "Not Included"}<br>
 <extra></extra>`,
       marker: {
-        colors: data.values,
-        colorscale: 'Blues',
-        showscale: true,
-        colorbar: {
-          title: 'Size',
-          tickformat: '.2s',
-          ticksuffix: 'B'
-        }
+        colors: colors,
+        showscale: false
       },
       pathbar: {
         visible: true,
@@ -160,7 +160,6 @@ Files: %{customdata.fileCount}<br>
       width: chartContainer.offsetWidth,
       height: 400,
       margin: { l: 0, r: 0, t: 30, b: 0 },
-      treemapcolorway: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd']
     };
 
     const config = {
