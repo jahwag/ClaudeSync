@@ -54,12 +54,18 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> Tr
         rel_root = os.path.relpath(root_dir, base_path)
         rel_root = '' if rel_root == '.' else rel_root
 
+        # Skip ignored directories
+        if (gitignore and gitignore.match_file(rel_root)) or \
+                (claudeignore and claudeignore.match_file(rel_root)):
+            continue
+
         for filename in files:
             rel_path = os.path.join(rel_root, filename)
             full_path = os.path.join(root_dir, filename)
 
-            # Skip if file doesn't exist anymore
-            if not os.path.exists(full_path):
+            # Skip if file doesn't exist anymore or is ignored
+            if not os.path.exists(full_path) or \
+                    (claudeignore and claudeignore.match_file(rel_path)):
                 continue
 
             # Check if file would be included in sync
@@ -71,6 +77,10 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> Tr
                 base_path,
                 claudeignore
             )
+
+            # Skip files that wouldn't be processed
+            if not would_process:
+                continue
 
             # Get file size
             try:
