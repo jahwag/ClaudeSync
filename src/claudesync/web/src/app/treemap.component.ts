@@ -65,6 +65,7 @@ export class TreemapComponent implements OnInit, OnDestroy {
 
     const plotlyData = [{
       type: 'treemap',
+      branchvalues: "total",
       labels: data.labels,
       parents: data.parents,
       values: data.values,
