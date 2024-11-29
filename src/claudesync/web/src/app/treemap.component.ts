@@ -38,28 +38,47 @@ export class TreemapComponent implements OnInit {
   private loadData() {
     // TODO: Implement actual data loading from FileDataService
     // For now using mock data
-    this.treeData = {
+    const exampleData = {
       name: 'root',
-      size: 0,
-      type: 'root',
       children: [
         {
           name: 'src',
-          size: 1024000,
-          type: 'Source',
           children: [
             {
-              name: 'app',
-              size: 512000,
-              type: 'Source'
-            }
+              name: 'components',
+              children: [
+                { name: 'Header.tsx', size: 2450 },
+                { name: 'Footer.tsx', size: 1280 },
+                { name: 'Sidebar.tsx', size: 3400 }
+              ]
+            },
+            {
+              name: 'utils',
+              children: [
+                { name: 'formatters.ts', size: 890 },
+                { name: 'helpers.ts', size: 1200 }
+              ]
+            },
+            { name: 'index.ts', size: 340 }
+          ]
+        },
+        {
+          name: 'public',
+          children: [
+            { name: 'favicon.ico', size: 4500 },
+            { name: 'logo.svg', size: 2800 }
           ]
         },
         {
           name: 'docs',
-          size: 256000,
-          type: 'Documentation'
-        }
+          children: [
+            { name: 'README.md', size: 1500 },
+            { name: 'CONTRIBUTING.md', size: 2100 },
+            { name: 'API.md', size: 3400 }
+          ]
+        },
+        { name: 'package.json', size: 720 },
+        { name: 'tsconfig.json', size: 480 }
       ]
     };
 
