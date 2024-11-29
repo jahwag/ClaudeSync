@@ -157,16 +157,26 @@ export class TreemapComponent implements OnInit {
         colorscale: 'Blues'
       },
       textposition: 'middle center',
-      branchvalues: 'total'
+      branchvalues: 'total',
+      pathbar: {
+        visible: true,  // Enable the navigation path bar
+        side: 'top',   // Position it at the top
+        thickness: 20   // Make it thick enough to be clickable
+      }
     }];
 
     const layout = {
       width: chartContainer.offsetWidth,
       height: 400,
-      margin: { l: 0, r: 0, t: 0, b: 0 }
+      margin: { l: 0, r: 0, t: 30, b: 0 }
     };
 
-    Plotly.newPlot('file-treemap', data, layout);
+    const config = {
+      displayModeBar: false,  // Hide the modebar
+      responsive: true
+    };
+
+    Plotly.newPlot('file-treemap', data, layout), config;
 
     // Handle click events
     // @ts-ignore
