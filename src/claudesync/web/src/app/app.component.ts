@@ -8,7 +8,7 @@ import {TreemapComponent} from './treemap.component';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, HttpClientModule, TreemapComponent],
+  imports: [CommonModule, HttpClientModule, TreemapComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',
   providers: [FileDataService]

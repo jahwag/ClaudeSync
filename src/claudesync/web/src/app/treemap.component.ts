@@ -4,29 +4,9 @@ import { FileDataService } from './file-data.service';
 import { HttpClient } from '@angular/common/http';
 import {finalize, Subject} from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import {FileInfo, SelectedNode, TreemapData, TreeNode} from './treemap.types';
 
 declare const Plotly: any;
-
-interface TreemapData {
-  labels: string[];
-  parents: string[];
-  values: number[];
-  ids: string[];
-  included: boolean[];
-}
-
-interface SelectedNode {
-  path: string;
-  size: number;
-  totalSize: number;
-}
-
-interface TreeNode {
-  id: string;
-  label: string;
-  value: number;
-  children: TreeNode[];
-}
 
 @Component({
   selector: 'app-treemap',
@@ -38,8 +18,11 @@ interface TreeNode {
 export class TreemapComponent implements OnInit, OnDestroy {
   selectedNode: SelectedNode | null = null;
   isLoading = false;
+  showFileList = false
   private destroy$ = new Subject<void>();
   private baseUrl = 'http://localhost:4201/api';
+
+  files: FileInfo[] = [];
 
   constructor(private http: HttpClient) {}
 
@@ -75,6 +58,10 @@ export class TreemapComponent implements OnInit, OnDestroy {
     }
 
     return nodeMap;
+  }
+
+  getIncludedFilesCount(): number {
+    return this.files.filter(f => f.included).length;
   }
 
   private countFiles(node: TreeNode): number {
@@ -114,6 +101,14 @@ export class TreemapComponent implements OnInit, OnDestroy {
   }
 
   private renderTreemap(data: TreemapData) {
+
+    this.files = data.ids.map((id, index) => ({
+      path: id,
+      size: data.values[index],
+      included: data.included[index]
+    })).filter(file => !file.path.includes('/'))  // Only include files, not directories
+      .sort((a, b) => a.path.localeCompare(b.path));
+
     const chartContainer = document.getElementById('file-treemap');
     if (!chartContainer) {
       console.warn('Chart container not found');

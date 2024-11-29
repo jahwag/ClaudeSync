@@ -1,39 +1,45 @@
+<!-- src/claudesync/web/src/app/treemap.component.html -->
 <div class="treemap-container">
-  <!-- Loading overlay -->
-  <div class="loading-overlay" *ngIf="isLoading">
-    <div class="loading-content">
-      <div class="spinner"></div>
-      <div class="loading-text">Loading visualization...</div>
-    </div>
-  </div>
+  <!-- Existing loading overlay -->
 
   <!-- Main content with conditional blur -->
   <div [class.content-blur]="isLoading">
-    <h2>File Distribution</h2>
+    <div class="header-container">
+      <h2>File Distribution</h2>
+      <button
+        class="toggle-btn"
+        (click)="showFileList = !showFileList">
+        {{ showFileList ? 'Hide' : 'Show' }} File List
+      </button>
+    </div>
+
     <div id="file-treemap" class="treemap-visualization"></div>
 
-    <div class="selected-info" *ngIf="selectedNode">
-      <h3>Selected File</h3>
-      <table>
-        <thead>
-        <tr>
-          <th>Path</th>
-          <th>Size</th>
-          <th>Total Size</th>
-          <th>Action</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr>
-          <td>{{ selectedNode.path }}</td>
-          <td>{{ formatSize(selectedNode.size) }}</td>
-          <td>{{ formatSize(selectedNode.totalSize) }}</td>
-          <td>
-            <button class="clear-btn" (click)="clearSelection()">Clear</button>
-          </td>
-        </tr>
-        </tbody>
-      </table>
+    <!-- File List Section -->
+    <div class="file-list" *ngIf="showFileList">
+      <h3>Files to Sync ({{getIncludedFilesCount()}} of {{files.length}})</h3>
+      <div class="file-list-table">
+        <table>
+          <thead>
+          <tr>
+            <th>File Path</th>
+            <th>Size</th>
+            <th>Status</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let file of files">
+            <td>{{ file.path }}</td>
+            <td>{{ formatSize(file.size) }}</td>
+            <td [class.included]="file.included">
+              {{ file.included ? 'Included' : 'Excluded' }}
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
+
+    <!-- Existing selected info section -->
   </div>
 </div>
