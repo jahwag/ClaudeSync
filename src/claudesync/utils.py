@@ -246,12 +246,10 @@ def get_local_files(config, local_path, category=None, include_submodules=False)
         for filename in filenames:
             rel_path = os.path.join(rel_root, filename)
             full_path = os.path.join(root, filename)
-            logger.debug(f"Checking file: {rel_path}")
 
             if spec.match_file(rel_path):
                 logger.debug(f"File {rel_path} matches pattern spec")
                 if should_process_file(config, full_path, filename, gitignore, local_path, claudeignore):
-                    # logger.debug(f"Processing file: {rel_path}")
                     file_hash = process_file(full_path)
                     if file_hash:
                         files[rel_path] = file_hash
@@ -260,8 +258,6 @@ def get_local_files(config, local_path, category=None, include_submodules=False)
                         logger.debug(f"Failed to process file {rel_path}")
                 else:
                     logger.debug(f"File {rel_path} should not be processed")
-            else:
-                logger.debug(f"File {rel_path} does not match pattern spec")
 
     logger.debug(f"Found {len(files)} files to sync")
     return files

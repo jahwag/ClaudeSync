@@ -87,12 +87,10 @@ def calculate_sync_stats(config):
 
     for file_path in files_to_sync.keys():
         full_path = os.path.join(local_path, file_path)
-        logger.debug(f"Processing file: {full_path}")
         if os.path.exists(full_path):
             size = os.path.getsize(full_path)
             total_size += size
             total_files += 1
-            logger.debug(f"File size: {size} bytes")
 
     # Convert size to human-readable format
     size_str = format_size(total_size)
