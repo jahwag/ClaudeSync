@@ -1,15 +1,8 @@
 <div class="app-container">
-  <!-- Loading overlay -->
-  <div class="loading-overlay" *ngIf="isLoading">
-    <div class="loading-content">
-      <div class="spinner"></div>
-      <div class="loading-text">Loading data...</div>
-    </div>
-  </div>
-
-  <!-- Main content with conditional blur -->
+  <!-- Main content -->
   <div [class.content-blur]="isLoading">
-    <header class="header">
+    <!-- Header section with blur -->
+    <header class="header blur-section">
       <h1>ClaudeSync Simulate</h1>
       <div class="header-actions">
         <button class="btn btn-primary" (click)="toggleConfig()">
@@ -30,7 +23,8 @@
     </header>
 
     <main class="main-content">
-      <div class="config-panel" [ngClass]="{'hidden': !configVisible}">
+      <!-- Config panel with blur -->
+      <div class="config-panel blur-section" [ngClass]="{'hidden': !configVisible}">
         <h2>Configuration</h2>
         <section class="config-section">
           <h3>Default Sync Category</h3>
@@ -42,12 +36,14 @@
         </section>
       </div>
 
+      <!-- Treemap section without blur -->
       <section class="visualization-panel">
         <app-treemap></app-treemap>
       </section>
     </main>
 
-    <footer class="stats-footer">
+    <!-- Footer section with blur -->
+    <footer class="stats-footer blur-section">
       <div class="stat-item">
         <span class="stat-label">Total Files</span>
         <span class="stat-value">{{stats.totalFiles}}</span>

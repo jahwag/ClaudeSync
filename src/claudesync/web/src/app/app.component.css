@@ -4,11 +4,21 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.8);
+  background: none;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  padding-top: 2rem;
+  pointer-events: none;
   z-index: 1000;
+}
+
+.loading-content {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  text-align: center;
 }
 
 .spinner {
@@ -25,10 +35,6 @@
   100% { transform: rotate(360deg); }
 }
 
-.loading-content {
-  text-align: center;
-}
-
 .loading-text {
   margin-top: 1rem;
   color: #1e293b;
@@ -36,16 +42,25 @@
   font-weight: 500;
 }
 
-.app-container {
-  position: relative;
+/* Remove blur effect from content */
+.content-blur {
+  filter: none;
+  pointer-events: auto;
 }
 
-.content-blur {
+/* Add blur only to specific sections */
+.blur-section {
+  transition: filter 0.2s ease;
+}
+
+.content-blur .blur-section {
   filter: blur(2px);
   pointer-events: none;
 }
 
+/* Rest of the existing styles remain unchanged */
 .app-container {
+  position: relative;
   min-height: 100vh;
   background-color: #f8fafc;
   padding: 1rem;
