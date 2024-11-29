@@ -20,7 +20,7 @@
   </header>
 
   <main class="main-content">
-    <aside class="config-panel" [ngClass]="{'hidden': !configVisible}">
+    <div class="config-panel" [ngClass]="{'hidden': !configVisible}">
       <h2>Configuration</h2>
       <section class="config-section">
         <h3>File Categories</h3>
@@ -30,9 +30,9 @@
         <h3>.claudeignore</h3>
         <pre class="code-block">{{claudeignore}}</pre>
       </section>
-    </aside>
+    </div>
 
-    <section class="visualization-panel" [ngClass]="{'expanded': !configVisible}">
+    <section class="visualization-panel">
       <app-treemap></app-treemap>
     </section>
   </main>

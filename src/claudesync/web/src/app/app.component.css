@@ -72,10 +72,9 @@
 }
 
 .main-content {
-  display: grid;
-  grid-template-columns: 300px 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
-  min-height: 600px;
 }
 
 .config-panel {
@@ -123,10 +122,7 @@
   padding: 1rem;
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.visualization-panel.expanded {
-  grid-column: 1 / -1;
+  flex: 1;
 }
 
 .visualization-content {
@@ -168,10 +164,6 @@
 }
 
 @media (max-width: 768px) {
-  .main-content {
-    grid-template-columns: 1fr;
-  }
-
   .header {
     flex-direction: column;
     gap: 1rem;
