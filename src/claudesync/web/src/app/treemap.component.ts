@@ -7,7 +7,6 @@ declare const Plotly: any;
 interface TreeNode {
   name: string;
   size?: number;
-  type?: string;
   children?: TreeNode[];
 }
 
@@ -95,6 +94,20 @@ export class TreemapComponent implements OnInit {
     this.renderTreemap();
   }
 
+  private calculateFolderSize(node: TreeNode): number {
+    if (node.size !== undefined) {
+      return node.size;
+    }
+
+    let totalSize = 0;
+    if (node.children) {
+      node.children.forEach(child => {
+        totalSize += this.calculateFolderSize(child);
+      });
+    }
+    return totalSize;
+  }
+
   private flattenHierarchy(node: TreeNode, parent: string, plotData: PlotData) {
     const nodeId = parent ? `${parent}/${node.name}` : node.name;
 
@@ -103,21 +116,13 @@ export class TreemapComponent implements OnInit {
     plotData.labels.push(node.name);
     plotData.parents.push(parent);
 
-    // For files (nodes with size), use the size directly
-    // For folders (nodes without size), sum up children's sizes
     if (node.size !== undefined) {
+      // For files, use the direct size
       plotData.values.push(node.size);
-      // Determine file type based on extension
       plotData.types.push(this.getFileType(node.name));
     } else {
-      let totalSize = 0;
-      if (node.children) {
-        node.children.forEach(child => {
-          if (child.size) {
-            totalSize += child.size;
-          }
-        });
-      }
+      // For folders, calculate total size recursively
+      const totalSize = this.calculateFolderSize(node);
       plotData.values.push(totalSize);
       plotData.types.push('folder');
     }
