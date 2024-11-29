@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FileDataService } from './file-data.service';
 import { HttpClient } from '@angular/common/http';
-import { Subject } from 'rxjs';
+import {finalize, Subject} from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 declare const Plotly: any;
@@ -37,6 +37,7 @@ interface TreeNode {
 })
 export class TreemapComponent implements OnInit, OnDestroy {
   selectedNode: SelectedNode | null = null;
+  isLoading = false;
   private destroy$ = new Subject<void>();
   private baseUrl = 'http://localhost:4201/api';
 
@@ -92,8 +93,12 @@ export class TreemapComponent implements OnInit, OnDestroy {
   }
 
   private loadTreemapData() {
+    this.isLoading = true;
     this.http.get<TreemapData>(`${this.baseUrl}/treemap`)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.isLoading = false)
+      )
       .subscribe({
         next: (data) => {
           this.renderTreemap(data);
