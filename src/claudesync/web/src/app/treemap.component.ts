@@ -104,6 +104,10 @@ export class TreemapComponent implements OnInit, OnDestroy {
       });
   }
 
+  public reload() {
+    this.loadTreemapData();
+  }
+
   private renderTreemap(data: TreemapData) {
     const chartContainer = document.getElementById('file-treemap');
     if (!chartContainer) {

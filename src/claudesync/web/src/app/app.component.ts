@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import {Component, OnInit, ViewChild} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
@@ -22,6 +22,8 @@ export class AppComponent implements OnInit {
     filesToSync: 0,
     totalSize: '0 B'
   };
+
+  @ViewChild(TreemapComponent) treemapComponent!: TreemapComponent;
 
   constructor(private fileDataService: FileDataService) {}
 
@@ -52,5 +54,8 @@ export class AppComponent implements OnInit {
 
   reload() {
     this.loadData();
+    if (this.treemapComponent) {
+      this.treemapComponent.reload();
+    }
   }
 }
