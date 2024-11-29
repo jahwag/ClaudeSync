@@ -106,8 +106,10 @@ export class TreemapComponent implements OnInit, OnDestroy {
       path: id,
       size: data.values[index],
       included: data.included[index]
-    })).filter(file => !file.path.includes('/'))  // Only include files, not directories
-      .sort((a, b) => a.path.localeCompare(b.path));
+    })).filter(file => {
+      // Only include leaf nodes (actual files)
+      return file.included;
+    }).sort((a, b) => a.path.localeCompare(b.path));
 
     const chartContainer = document.getElementById('file-treemap');
     if (!chartContainer) {
