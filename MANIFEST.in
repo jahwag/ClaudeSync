@@ -1,1 +1,3 @@
-recursive-include src/claudesync/web/dist/claudesync-simulate *
+recursive-include src/claudesync/web/dist/claudesync-simulate/browser *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[cod]

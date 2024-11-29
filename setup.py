@@ -1,4 +1,34 @@
 from setuptools import setup, find_packages
+import os
+import subprocess
+from setuptools.command.build_py import build_py
+
+class BuildPyCommand(build_py):
+    """Custom build command to build Angular app before Python package"""
+
+    def run(self):
+        # Current directory
+        cwd = os.path.dirname(os.path.abspath(__file__))
+
+        # Angular app directory
+        angular_dir = os.path.join(cwd, 'src', 'claudesync', 'web')
+
+        if os.path.exists(angular_dir):
+            print("Building Angular application...")
+            try:
+                # Install npm dependencies
+                subprocess.check_call(['npm', 'install'], cwd=angular_dir)
+                # Build the Angular app
+                subprocess.check_call(['npm', 'run', 'build'], cwd=angular_dir)
+            except subprocess.CalledProcessError as e:
+                print(f"Failed to build Angular application: {e}")
+                raise
+            except FileNotFoundError:
+                print("npm not found. Please install Node.js and npm first.")
+                raise
+
+        # Run the standard build command
+        build_py.run(self)
 
 setup(
     name="claudesync",
@@ -11,6 +41,13 @@ setup(
     url="https://github.com/tbuechner/claudesync",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
+    package_data={
+        'claudesync': [
+            'web/dist/claudesync-simulate/browser/*',
+            'web/dist/claudesync-simulate/browser/assets/*'
+        ]
+    },
+    include_package_data=True,
     install_requires=[
         "click",
         "click-completion",
@@ -26,6 +63,9 @@ setup(
         "console_scripts": [
             "claudesync=claudesync.cli.main:cli",
         ],
+    },
+    cmdclass={
+        'build_py': BuildPyCommand,
     },
     classifiers=[
         "Development Status :: 3 - Alpha",
