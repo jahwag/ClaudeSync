@@ -1,2 +1,7 @@
-claudesync/web/
+claudesync/web/node_modules
 __pycache__/
+.angular/
+dist/
+package-lock.json
+public/
+*.egg-info/

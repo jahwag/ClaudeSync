@@ -133,7 +133,7 @@ export class TreemapComponent implements OnInit, OnDestroy {
     const customData = data.ids.map((id, index) => ({
       fileCount: fileCountMap.get(id) || 0,
       sizeFormatted: this.formatSizeForHover(nodeMap.get(id)?.value || 0),
-      included: data.included[index]
+      included: data.included[index] ? "Included" : "Not Included"
     }));
 
     // Create color array based on included status
@@ -152,7 +152,7 @@ export class TreemapComponent implements OnInit, OnDestroy {
 <b>%{label}</b><br>
 Size: %{customdata.sizeFormatted}<br>
 Files: %{customdata.fileCount}<br>
-Status: %{customdata.included ? "Included" : "Not Included"}<br>
+Status: %{customdata.included}<br>
 <extra></extra>`,
       marker: {
         colors: colors,

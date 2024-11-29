@@ -286,10 +286,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
     def get_current_config(self):
         """Get a fresh config instance for each request"""
-        logger.debug("Loading fresh config instance")
-        if self.config:
-            return self.config
-        return FileConfigManager()
+        return FileConfigManager()  # Always create new instance with fresh data
 
     def do_GET(self):
         parsed_path = urlparse(self.path)
