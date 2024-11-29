@@ -76,12 +76,18 @@ export class TreemapComponent implements OnInit, OnDestroy {
   }
 
   private countFiles(node: TreeNode): number {
-    // If node has no children, it's a file
     if (node.children.length === 0) {
       return 1;
     }
-    // If node has children, sum up all files in children
     return node.children.reduce((sum, child) => sum + this.countFiles(child), 0);
+  }
+
+  private formatSizeForHover(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
   }
 
   private loadTreemapData() {
@@ -113,6 +119,12 @@ export class TreemapComponent implements OnInit, OnDestroy {
       fileCountMap.set(id, this.countFiles(node));
     }
 
+    // Create custom text array for hover info
+    const customData = data.ids.map(id => ({
+      fileCount: fileCountMap.get(id) || 0,
+      sizeFormatted: this.formatSizeForHover(nodeMap.get(id)?.value || 0)
+    }));
+
     const plotlyData = [{
       type: 'treemap',
       branchvalues: "total",
@@ -120,21 +132,22 @@ export class TreemapComponent implements OnInit, OnDestroy {
       parents: data.parents,
       values: data.values,
       ids: data.ids,
-      textinfo: 'label+value',
-      hovertemplate: (d: any) => {
-        const nodeId = d.id;
-        const fileCount = fileCountMap.get(nodeId) || 0;
-        const sizeText = this.formatSize(d.value);
-        return `
-          <b>${d.label}</b><br>
-          Size: ${sizeText}<br>
-          Files: ${fileCount}<br>
-          <extra></extra>
-        `;
-      },
+      textinfo: 'label',
+      customdata: customData,
+      hovertemplate: `
+<b>%{label}</b><br>
+Size: %{customdata.sizeFormatted}<br>
+Files: %{customdata.fileCount}<br>
+<extra></extra>`,
       marker: {
+        colors: data.values,
         colorscale: 'Blues',
-        showscale: true
+        showscale: true,
+        colorbar: {
+          title: 'Size',
+          tickformat: '.2s',
+          ticksuffix: 'B'
+        }
       },
       pathbar: {
         visible: true,
