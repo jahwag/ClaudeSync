@@ -185,9 +185,16 @@ def get_project_root():
     return project_root
 
 def load_claudeignore_as_string():
-    """Load .claudeignore content from project root directory."""
-    project_root = get_project_root()
-    claudeignore_path = project_root / '.claudeignore'
+    """Load .claudeignore content from local project directory."""
+    config = FileConfigManager()
+    local_path = config.get_local_path()
+    logger.debug(f"Loading .claudeignore from local path: {local_path}")
+
+    if not local_path:
+        logger.warning("No local path found in config")
+        return ""
+
+    claudeignore_path = Path(local_path) / '.claudeignore'
     logger.debug(f"Attempting to load .claudeignore from: {claudeignore_path}")
 
     try:
