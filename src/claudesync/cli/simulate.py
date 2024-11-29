@@ -22,6 +22,7 @@ class TreeNode(TypedDict):
     size: Optional[int]
     path: str
     children: Optional[List['TreeNode']]
+    included: Optional[bool]
 
 def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> TreeNode:
     """
@@ -42,7 +43,8 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> Tr
         'name': os.path.basename(base_path) or 'root',
         'path': '',
         'size': None,
-        'children': []
+        'children': [],
+        'included': None
     }
 
     # Get sync filters
