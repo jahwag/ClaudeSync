@@ -1,3 +1,5 @@
+import traceback
+
 import click
 import logging
 import os
@@ -8,7 +10,7 @@ import webbrowser
 import threading
 from urllib.parse import urlparse, parse_qs
 from pathlib import Path
-from ..utils import get_local_files
+from ..utils import get_local_files, load_gitignore, should_process_file, load_claudeignore
 from ..configmanager import FileConfigManager
 from typing import Dict, List, Optional, TypedDict
 
@@ -21,19 +23,20 @@ class TreeNode(TypedDict):
     path: str
     children: Optional[List['TreeNode']]
 
-def build_file_tree(base_path: str, files_to_sync: Dict[str, str]) -> TreeNode:
+def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> TreeNode:
     """
     Build a hierarchical tree structure from the list of files.
 
     Args:
         base_path: The root directory path
         files_to_sync: Dictionary of relative file paths and their hashes
+        config: Configuration manager instance
 
     Returns:
         TreeNode: Root node of the tree structure
     """
     logger = logging.getLogger(__name__)
-    logger.debug(f"Building file tree from {len(files_to_sync)} files")
+    logger.debug(f"Building file tree from base directory with {len(files_to_sync)} sync-eligible files")
 
     root: TreeNode = {
         'name': os.path.basename(base_path) or 'root',
@@ -42,62 +45,96 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str]) -> TreeNode:
         'children': []
     }
 
-    for file_path in files_to_sync.keys():
-        current = root
-        path_parts = Path(file_path).parts
+    # Get sync filters
+    gitignore = load_gitignore(base_path)
+    claudeignore = load_claudeignore(base_path)
 
-        # Build the path incrementally to track full paths
-        current_path = ''
+    # Process all files in directory
+    for root_dir, _, files in os.walk(base_path):
+        rel_root = os.path.relpath(root_dir, base_path)
+        rel_root = '' if rel_root == '.' else rel_root
 
-        for i, part in enumerate(path_parts):
-            current_path = os.path.join(current_path, part) if current_path else part
+        for filename in files:
+            rel_path = os.path.join(rel_root, filename)
+            full_path = os.path.join(root_dir, filename)
 
-            # Check if this node already exists in children
-            child = next((c for c in current['children'] if c['name'] == part), None)
+            # Skip if file doesn't exist anymore
+            if not os.path.exists(full_path):
+                continue
 
-            if child is None:
-                # Create new node
-                is_file = (i == len(path_parts) - 1)
-                full_path = os.path.join(base_path, current_path)
+            # Check if file would be included in sync
+            would_process = should_process_file(
+                config,
+                full_path,
+                filename,
+                gitignore,
+                base_path,
+                claudeignore
+            )
 
-                new_node: TreeNode = {
-                    'name': part,
-                    'path': current_path,
-                    'size': os.path.getsize(full_path) if is_file else None,
-                    'children': [] if not is_file else None
-                }
+            # Get file size
+            try:
+                file_size = os.path.getsize(full_path)
+            except OSError:
+                continue
 
-                current['children'].append(new_node)
-                current = new_node
-            else:
-                current = child
+            # Build path in tree
+            current = root
+            path_parts = Path(rel_path).parts
 
-    # Calculate directory sizes
-    calculate_directory_sizes(root)
+            current_path = ''
+            for i, part in enumerate(path_parts):
+                current_path = os.path.join(current_path, part) if current_path else part
+
+                # Check if this node already exists in children
+                child = next((c for c in current['children'] if c['name'] == part), None)
+
+                if child is None:
+                    # Create new node
+                    is_file = (i == len(path_parts) - 1)
+                    new_node: TreeNode = {
+                        'name': part,
+                        'path': current_path,
+                        'size': file_size if is_file else None,
+                        'children': [] if not is_file else None,
+                        'included': would_process if is_file else None
+                    }
+                    current['children'].append(new_node)
+                    current = new_node
+                else:
+                    current = child
+
+    # Calculate directory sizes and inclusion status
+    calculate_directory_metadata(root)
     logger.debug("Completed building file tree")
     return root
 
-def calculate_directory_sizes(node: TreeNode) -> int:
+def calculate_directory_metadata(node: TreeNode) -> tuple[int, bool]:
     """
-    Recursively calculate the total size of directories.
+    Recursively calculate the total size and inclusion status of directories.
 
     Args:
         node: Current tree node
 
     Returns:
-        int: Total size of the node and its children
+        tuple[int, bool]: Total size and whether any children are included
     """
     if not node['children']:  # Leaf node (file)
-        return node['size'] or 0
+        return node['size'] or 0, node.get('included', False)
 
     total_size = 0
+    has_included_files = False
+
     for child in node['children']:
-        total_size += calculate_directory_sizes(child)
+        child_size, child_included = calculate_directory_metadata(child)
+        total_size += child_size
+        has_included_files = has_included_files or child_included
 
     node['size'] = total_size
-    return total_size
+    node['included'] = has_included_files
+    return total_size, has_included_files
 
-def convert_to_plotly_format(node: TreeNode) -> tuple[List[str], List[str], List[int], List[str]]:
+def convert_to_plotly_format(node: TreeNode) -> tuple[List[str], List[str], List[int], List[str], List[bool]]:
     """
     Convert the tree structure to Plotly treemap format.
 
@@ -105,12 +142,13 @@ def convert_to_plotly_format(node: TreeNode) -> tuple[List[str], List[str], List
         node: Root node of the tree
 
     Returns:
-        tuple: (labels, parents, values, ids) for Plotly treemap
+        tuple: (labels, parents, values, ids, included) for Plotly treemap
     """
     labels: List[str] = []
     parents: List[str] = []
     values: List[int] = []
     ids: List[str] = []
+    included: List[bool] = []
 
     def traverse(node: TreeNode, parent: str = ""):
         node_id = os.path.join(parent, node['name']) if parent else node['name']
@@ -119,13 +157,14 @@ def convert_to_plotly_format(node: TreeNode) -> tuple[List[str], List[str], List
         parents.append(parent)
         values.append(node['size'] or 0)
         ids.append(node_id)
+        included.append(node.get('included', False))
 
         if node['children']:
             for child in node['children']:
                 traverse(child, node_id)
 
     traverse(node)
-    return labels, parents, values, ids
+    return labels, parents, values, ids, included
 
 def get_project_root():
     """Get the project root directory."""
@@ -134,7 +173,7 @@ def get_project_root():
     logger.debug(f"Project root directory: {project_root}")
     return project_root
 
-def load_claudeignore():
+def load_claudeignore_as_string():
     """Load .claudeignore content from project root directory."""
     project_root = get_project_root()
     claudeignore_path = project_root / '.claudeignore'
@@ -267,19 +306,21 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
             try:
                 files_to_sync = get_local_files(config, local_path, category)
-                tree = build_file_tree(local_path, files_to_sync)
-                labels, parents, values, ids = convert_to_plotly_format(tree)
+                tree = build_file_tree(local_path, files_to_sync, config)
+                labels, parents, values, ids, included = convert_to_plotly_format(tree)
 
                 response_data = {
                     'labels': labels,
                     'parents': parents,
                     'values': values,
-                    'ids': ids
+                    'ids': ids,
+                    'included': included
                 }
                 self.wfile.write(json.dumps(response_data).encode())
             except Exception as e:
                 logger.error(f"Error generating treemap data: {str(e)}")
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
+                traceback.print_exc()
             return
 
         elif parsed_path.path == '/api/config':
@@ -291,7 +332,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             config = self.get_current_config()
             response_data = {
                 'fileCategories': config.get('file_categories', {}),
-                'claudeignore': load_claudeignore()
+                'claudeignore': load_claudeignore_as_string()
             }
             self.wfile.write(json.dumps(response_data).encode())
             return
