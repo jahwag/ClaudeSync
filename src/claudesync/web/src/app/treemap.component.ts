@@ -5,18 +5,20 @@ import { HttpClient } from '@angular/common/http';
 import {finalize, Subject} from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {FileInfo, SelectedNode, TreemapData, TreeNode} from './treemap.types';
+import {FormsModule} from '@angular/forms';
 
 declare const Plotly: any;
 
 @Component({
   selector: 'app-treemap',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './treemap.component.html',
   styleUrls: ['./treemap.component.css']
 })
 export class TreemapComponent implements OnInit, OnDestroy {
   selectedNode: SelectedNode | null = null;
+  showOnlyIncluded = false;
   isLoading = false;
   showFileList = false
   private destroy$ = new Subject<void>();
@@ -139,6 +141,13 @@ export class TreemapComponent implements OnInit, OnDestroy {
 
   getIncludedFilesCount(): number {
     return this.files.filter(f => f.included).length;
+  }
+
+  get filteredFiles(): FileInfo[] {
+    if (this.showOnlyIncluded) {
+      return this.files.filter(f => f.included);
+    }
+    return this.files;
   }
 
   private countFiles(node: TreeNode): number {

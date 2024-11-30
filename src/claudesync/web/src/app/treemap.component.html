@@ -4,11 +4,20 @@
   <div [class.content-blur]="isLoading">
     <div class="header-container">
       <h2>File Distribution</h2>
-      <button
-        class="toggle-btn"
-        (click)="showFileList = !showFileList">
-        {{ showFileList ? 'Hide' : 'Show' }} File List
-      </button>
+      <div class="header-actions">
+        <label class="filter-toggle">
+          <input
+            type="checkbox"
+            [(ngModel)]="showOnlyIncluded"
+            class="filter-checkbox">
+          Show only included files
+        </label>
+        <button
+          class="toggle-btn"
+          (click)="showFileList = !showFileList">
+          {{ showFileList ? 'Hide' : 'Show' }} File List
+        </button>
+      </div>
     </div>
 
     <div id="file-treemap" class="treemap-visualization"></div>
@@ -27,7 +36,7 @@
           </tr>
           </thead>
           <tbody>
-          <tr *ngFor="let file of files">
+          <tr *ngFor="let file of filteredFiles">
             <td>{{ file.path || '/' }}</td>
             <td>{{ file.name }}</td>
             <td>{{ formatSize(file.size) }}</td>
