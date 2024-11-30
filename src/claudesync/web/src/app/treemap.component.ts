@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FileDataService } from './file-data.service';
+import {FileContentResponse, FileDataService} from './file-data.service';
 import { HttpClient } from '@angular/common/http';
 import {finalize, Subject} from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -24,9 +24,14 @@ export class TreemapComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private baseUrl = 'http://localhost:4201/api';
 
+  selectedFile: FileInfo | null = null;
+  fileContent: string | null = null;
+  fileContentError: string | null = null;
+  isLoadingContent = false;
+
   files: FileInfo[] = [];
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private fileDataService: FileDataService) {}
 
   ngOnInit() {
     this.loadTreemapData();
@@ -278,5 +283,38 @@ Status: %{customdata.included}<br>
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  }
+
+  viewFileContent(file: FileInfo) {
+    this.isLoadingContent = true;
+    this.selectedFile = file;
+    this.fileContent = null;
+    this.fileContentError = null;
+
+    const fullPath = file.path ? `${file.path}/${file.name}` : file.name;
+
+    this.fileDataService.getFileContent(fullPath)
+      .pipe(
+        finalize(() => this.isLoadingContent = false)
+      )
+      .subscribe({
+        next: (response: FileContentResponse) => {
+          if (response.error) {
+            this.fileContentError = response.error;
+          } else {
+            this.fileContent = response.content;
+          }
+        },
+        error: (error) => {
+          console.error('Error loading file content:', error);
+          this.fileContentError = 'Failed to load file content';
+        }
+      });
+  }
+
+  closeFileContent() {
+    this.selectedFile = null;
+    this.fileContent = null;
+    this.fileContentError = null;
   }
 }

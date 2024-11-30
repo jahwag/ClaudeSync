@@ -33,6 +33,7 @@
             <th>File Name</th>
             <th>Size</th>
             <th>Status</th>
+            <th></th>
           </tr>
           </thead>
           <tbody>
@@ -43,9 +44,30 @@
             <td [class.included]="file.included">
               {{ file.included ? 'Included' : 'Excluded' }}
             </td>
+            <td>
+              <button class="preview-btn" (click)="viewFileContent(file)">
+                Preview
+              </button>
+            </td>
           </tr>
           </tbody>
         </table>
+        <div class="file-preview" *ngIf="selectedFile">
+          <div class="file-preview-header">
+            <h3>File Preview: {{selectedFile.name}}</h3>
+            <button class="close-btn" (click)="closeFileContent()">Close</button>
+          </div>
+          <div class="file-preview-content" [class.loading]="isLoadingContent">
+            <div class="loading-spinner" *ngIf="isLoadingContent">
+              <div class="spinner"></div>
+              <p>Loading file content...</p>
+            </div>
+            <div class="error-message" *ngIf="fileContentError">
+              {{fileContentError}}
+            </div>
+            <pre class="content" *ngIf="fileContent">{{fileContent}}</pre>
+          </div>
+        </div>
       </div>
     </div>
   </div>

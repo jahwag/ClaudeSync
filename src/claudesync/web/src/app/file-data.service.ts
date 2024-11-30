@@ -25,6 +25,11 @@ export interface TreemapData {
   ids: string[];
 }
 
+export interface FileContentResponse {
+  content: string;
+  error?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -43,5 +48,11 @@ export class FileDataService {
 
   getTreemapData(): Observable<TreemapData> {
     return this.http.get<TreemapData>(`${this.baseUrl}/treemap`);
+  }
+
+  getFileContent(filePath: string): Observable<FileContentResponse> {
+    return this.http.get<FileContentResponse>(
+      `${this.baseUrl}/file-content?path=${encodeURIComponent(filePath)}`
+    );
   }
 }

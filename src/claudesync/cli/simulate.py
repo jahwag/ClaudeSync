@@ -285,6 +285,42 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
             self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 
+        if parsed_path.path.startswith('/api/file-content'):
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            send_cors_headers(self)
+            self.end_headers()
+
+            # Get the file path from query parameters
+            query_params = parse_qs(parsed_path.query)
+            file_path = query_params.get('path', [''])[0]
+
+            if not file_path:
+                self.wfile.write(json.dumps({'error': 'No file path provided'}).encode())
+                return
+
+            config = self.get_current_config()
+            local_path = config.get_local_path()
+
+            if not local_path:
+                self.wfile.write(json.dumps({'error': 'No local path configured'}).encode())
+                return
+
+            try:
+                full_path = os.path.join(local_path, file_path)
+                # Basic security check to ensure the path is within the project directory
+                if not os.path.abspath(full_path).startswith(os.path.abspath(local_path)):
+                    self.wfile.write(json.dumps({'error': 'Invalid file path'}).encode())
+                    return
+
+                with open(full_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    self.wfile.write(json.dumps({'content': content}).encode())
+            except Exception as e:
+                logger.error(f"Error reading file content: {str(e)}")
+                self.wfile.write(json.dumps({'error': str(e)}).encode())
+            return
+
         if parsed_path.path == '/api/treemap':
             logger.debug("Processing /api/treemap request")
             self.send_response(200)
