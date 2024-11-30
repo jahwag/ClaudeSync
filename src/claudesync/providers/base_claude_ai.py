@@ -151,7 +151,7 @@ class BaseClaudeAIProvider(BaseProvider):
         """Get and validate a session key from user input."""
         while True:
             session_key = click.prompt(
-                "Please enter your sessionKey", type=str, hide_input=True
+                "Please enter your sessionKey (hidden)", type=str, hide_input=True
             )
 
             if not session_key.startswith("sk-ant"):
