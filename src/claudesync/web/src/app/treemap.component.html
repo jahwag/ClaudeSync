@@ -1,7 +1,5 @@
 <!-- src/claudesync/web/src/app/treemap.component.html -->
 <div class="treemap-container">
-  <!-- Existing loading overlay -->
-
   <!-- Main content with conditional blur -->
   <div [class.content-blur]="isLoading">
     <div class="header-container">
@@ -22,14 +20,16 @@
         <table>
           <thead>
           <tr>
-            <th>File Path</th>
+            <th>File Name</th>
+            <th>Path</th>
             <th>Size</th>
             <th>Status</th>
           </tr>
           </thead>
           <tbody>
           <tr *ngFor="let file of files">
-            <td>{{ file.path }}</td>
+            <td>{{ file.name }}</td>
+            <td>{{ file.path || '/' }}</td>
             <td>{{ formatSize(file.size) }}</td>
             <td [class.included]="file.included">
               {{ file.included ? 'Included' : 'Excluded' }}
@@ -39,7 +39,5 @@
         </table>
       </div>
     </div>
-
-    <!-- Existing selected info section -->
   </div>
 </div>

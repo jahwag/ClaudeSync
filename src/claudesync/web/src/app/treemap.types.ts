@@ -14,7 +14,9 @@ export interface TreemapData {
 }
 
 export interface FileInfo {
-  path: string;
+  name: string;  // Just the file name
+  path: string;  // Full path excluding file name
+  fullPath: string; // Complete path including file name
   size: number;
   included: boolean;
 }

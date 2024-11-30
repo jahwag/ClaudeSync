@@ -5,3 +5,4 @@ dist/
 package-lock.json
 public/
 *.egg-info/
+__init__.py

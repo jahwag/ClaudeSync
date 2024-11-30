@@ -86,20 +86,30 @@ export class TreemapComponent implements OnInit, OnDestroy {
   private updateFilesList(treeData: any) {
     const files: FileInfo[] = [];
 
-    const processNode = (node: any) => {
+    const processNode = (node: any, parentPath: string = '') => {
+      const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name;
+
       if ('size' in node) {
+        // This is a file node
+        const pathParts = currentPath.split('/');
+        const fileName = pathParts.pop() || '';
+        const filePath = pathParts.join('/');
+
         files.push({
-          path: node.name,
+          name: fileName,
+          path: filePath,
+          fullPath: currentPath,
           size: node.size,
           included: node.included
         });
-      } else {
-        node.children?.forEach((child: any) => processNode(child));
+      } else if (node.children) {
+        // This is a directory node - process its children
+        node.children.forEach((child: any) => processNode(child, currentPath));
       }
     };
 
     processNode(treeData);
-    this.files = files.sort((a, b) => a.path.localeCompare(b.path));
+    this.files = files.sort((a, b) => a.fullPath.localeCompare(b.fullPath));
   }
 
   private buildTree(data: TreemapData): Map<string, TreeNode> {
@@ -170,16 +180,7 @@ export class TreemapComponent implements OnInit, OnDestroy {
   }
 
   private renderTreemap(data: TreemapData) {
-
-    this.files = data.ids.map((id, index) => ({
-      path: id,
-      size: data.values[index],
-      included: data.included[index]
-    })).filter(file => {
-      // Only include leaf nodes (actual files)
-      return file.included;
-    }).sort((a, b) => a.path.localeCompare(b.path));
-
+    this.updateFilesList(data);
     const chartContainer = document.getElementById('file-treemap');
     if (!chartContainer) {
       console.warn('Chart container not found');
