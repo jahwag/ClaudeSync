@@ -35,6 +35,66 @@ export class TreemapComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  private flattenTree(node: any, parentId: string = ''): TreemapData {
+    const data: TreemapData = {
+      labels: [],
+      parents: [],
+      values: [],
+      ids: [],
+      included: []
+    };
+
+    const processNode = (node: any, parentId: string) => {
+      const currentId = parentId ? `${parentId}/${node.name}` : node.name;
+
+      data.labels.push(node.name);
+      data.parents.push(parentId);
+      data.ids.push(currentId);
+
+      if ('size' in node) {
+        // File node
+        data.values.push(node.size);
+        data.included.push(node.included);
+      } else {
+        // Directory node
+        let dirSize = 0;
+        node.children?.forEach((child: any) => {
+          if ('size' in child) {
+            dirSize += child.size;
+          }
+        });
+        data.values.push(dirSize);
+        data.included.push(false);
+      }
+
+      node.children?.forEach((child: any) => {
+        processNode(child, currentId);
+      });
+    };
+
+    processNode(node, '');
+    return data;
+  }
+
+  private updateFilesList(treeData: any) {
+    const files: FileInfo[] = [];
+
+    const processNode = (node: any) => {
+      if ('size' in node) {
+        files.push({
+          path: node.name,
+          size: node.size,
+          included: node.included
+        });
+      } else {
+        node.children?.forEach((child: any) => processNode(child));
+      }
+    };
+
+    processNode(treeData);
+    this.files = files.sort((a, b) => a.path.localeCompare(b.path));
+  }
+
   private buildTree(data: TreemapData): Map<string, TreeNode> {
     const nodeMap = new Map<string, TreeNode>();
 
@@ -81,14 +141,16 @@ export class TreemapComponent implements OnInit, OnDestroy {
 
   private loadTreemapData() {
     this.isLoading = true;
-    this.http.get<TreemapData>(`${this.baseUrl}/treemap`)
+    this.http.get<any>(`${this.baseUrl}/treemap`)
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => this.isLoading = false)
       )
       .subscribe({
-        next: (data) => {
-          this.renderTreemap(data);
+        next: (treeData) => {
+          const plotlyData = this.flattenTree(treeData);
+          this.renderTreemap(plotlyData);
+          this.updateFilesList(treeData);
         },
         error: (error) => {
           console.error('Error loading treemap data:', error);

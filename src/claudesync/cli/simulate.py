@@ -24,7 +24,7 @@ class TreeNode(TypedDict):
     children: Optional[List['TreeNode']]
     included: Optional[bool]
 
-def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> TreeNode:
+def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> dict:
     """
     Build a hierarchical tree structure from the list of files.
 
@@ -34,17 +34,14 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> Tr
         config: Configuration manager instance
 
     Returns:
-        TreeNode: Root node of the tree structure
+        dict: Root node of the tree structure
     """
     logger = logging.getLogger(__name__)
     logger.debug(f"Building file tree from base directory with {len(files_to_sync)} sync-eligible files")
 
-    root: TreeNode = {
+    root = {
         'name': os.path.basename(base_path) or 'root',
-        'path': '',
-        'size': None,
-        'children': [],
-        'included': None
+        'children': []
     }
 
     # Get sync filters
@@ -73,16 +70,6 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> Tr
                     (claudeignore and claudeignore.match_file(rel_path)):
                 continue
 
-            # Check if file would be included in sync
-            would_process = should_process_file(
-                config,
-                full_path,
-                filename,
-                gitignore,
-                base_path,
-                claudeignore
-            )
-
             # Get file size
             try:
                 file_size = os.path.getsize(full_path)
@@ -93,31 +80,25 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> Tr
             current = root
             path_parts = Path(rel_path).parts
 
-            current_path = ''
-            for i, part in enumerate(path_parts):
-                current_path = os.path.join(current_path, part) if current_path else part
-
-                # Check if this node already exists in children
+            # Navigate/build the tree structure
+            for i, part in enumerate(path_parts[:-1]):
+                # Find or create directory node
                 child = next((c for c in current['children'] if c['name'] == part), None)
-
                 if child is None:
-                    # Create new node
-                    is_file = (i == len(path_parts) - 1)
-                    new_node: TreeNode = {
+                    child = {
                         'name': part,
-                        'path': current_path,
-                        'size': file_size if is_file else None,
-                        'children': [] if not is_file else None,
-                        'included': rel_path in sync_files if is_file else None
+                        'children': []
                     }
-                    current['children'].append(new_node)
-                    current = new_node
-                else:
-                    current = child
+                    current['children'].append(child)
+                current = child
 
-    # Calculate directory sizes and inclusion status
-    calculate_directory_metadata(root)
-    logger.debug("Completed building file tree")
+            # Add the file node
+            current['children'].append({
+                'name': path_parts[-1],
+                'size': file_size,
+                'included': rel_path in sync_files
+            })
+
     return root
 
 def calculate_directory_metadata(node: TreeNode) -> tuple[int, bool]:
@@ -299,7 +280,6 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
         parsed_path = urlparse(self.path)
         logger.debug(f"Handling GET request for path: {parsed_path.path}")
 
-        # Add CORS headers for all responses
         def send_cors_headers(self):
             self.send_header('Access-Control-Allow-Origin', '*')
             self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
@@ -325,19 +305,9 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             try:
-                # Pass the active category name to get_local_files
                 files_to_sync = get_local_files(config, local_path, default_category)
                 tree = build_file_tree(local_path, files_to_sync, config)
-                labels, parents, values, ids, included = convert_to_plotly_format(tree)
-
-                response_data = {
-                    'labels': labels,
-                    'parents': parents,
-                    'values': values,
-                    'ids': ids,
-                    'included': included
-                }
-                self.wfile.write(json.dumps(response_data).encode())
+                self.wfile.write(json.dumps(tree).encode())
             except Exception as e:
                 logger.error(f"Error generating treemap data: {str(e)}")
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
