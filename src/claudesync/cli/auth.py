@@ -19,14 +19,34 @@ def auth():
     default="claude.ai",
     help="The provider to use for this project",
 )
+@click.option(
+    "--session-key",
+    help="Directly provide the Claude.ai session key",
+    envvar="CLAUDE_SESSION_KEY",
+)
+@click.option(
+    "--auto-approve",
+    is_flag=True,
+    help="Automatically approve the suggested expiry time",
+)
 @click.pass_context
 @handle_errors
-def login(ctx, provider):
+def login(ctx, provider, session_key, auto_approve):
     """Authenticate with an AI provider."""
     config = ctx.obj
     provider_instance = get_provider(config, provider)
 
     try:
+        if session_key:
+            # If session key is provided, bypass the interactive prompt
+            if not session_key.startswith("sk-ant"):
+                raise ProviderError(
+                    "Invalid sessionKey format. Must start with 'sk-ant'"
+                )
+            # Set auto_approve to True when session key is provided
+            provider_instance._auto_approve_expiry = auto_approve
+            provider_instance._provided_session_key = session_key
+
         session_key, expiry = provider_instance.login()
         config.set_session_key(provider, session_key, expiry)
         click.echo(
