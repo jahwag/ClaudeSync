@@ -44,6 +44,14 @@ export class TreemapComponent implements OnInit, OnDestroy {
       included: []
     };
 
+    // Calculate directory sizes first
+    const calculateSize = (node: any): number => {
+      if ('size' in node) {
+        return node.size;
+      }
+      return (node.children || []).reduce((sum: number, child: any) => sum + calculateSize(child), 0);
+    };
+
     const processNode = (node: any, parentId: string) => {
       const currentId = parentId ? `${parentId}/${node.name}` : node.name;
 
@@ -51,25 +59,24 @@ export class TreemapComponent implements OnInit, OnDestroy {
       data.parents.push(parentId);
       data.ids.push(currentId);
 
-      if ('size' in node) {
-        // File node
-        data.values.push(node.size);
-        data.included.push(node.included);
-      } else {
-        // Directory node
-        let dirSize = 0;
-        node.children?.forEach((child: any) => {
-          if ('size' in child) {
-            dirSize += child.size;
-          }
-        });
-        data.values.push(dirSize);
-        data.included.push(false);
-      }
+      // For both files and directories, calculate the total size
+      const totalSize = calculateSize(node);
+      data.values.push(totalSize);
 
-      node.children?.forEach((child: any) => {
-        processNode(child, currentId);
-      });
+      // For files, use the included property directly
+      // For directories, check if any children are included
+      const isIncluded = 'included' in node ? node.included :
+        (node.children || []).some((child: any) =>
+          'included' in child ? child.included : false
+        );
+      data.included.push(isIncluded);
+
+      // Process children if they exist
+      if (node.children) {
+        node.children.forEach((child: any) => {
+          processNode(child, currentId);
+        });
+      }
     };
 
     processNode(node, '');
