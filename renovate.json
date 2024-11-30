@@ -1,0 +1,24 @@
+{
+  "extends": ["config:base"],
+  "pip_requirements": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["pip_requirements"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "All non-major Python updates"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions updates"
+    }
+  ],
+  "automerge": false,
+  "timezone": "UTC",
+  "schedule": ["after 10pm and before 5am"],
+  "labels": ["dependencies", "renovate"],
+  "dependencyDashboard": true,
+  "prHourlyLimit": 5,
+  "prConcurrentLimit": 10
+}
