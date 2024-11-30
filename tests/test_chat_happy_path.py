@@ -1,10 +1,7 @@
 from typing import override
 import unittest
-import threading
-import time
 from click.testing import CliRunner
 from claudesync.cli.main import cli
-from claudesync.configmanager import InMemoryConfigManager
 from tests.test_base import BaseTestCase
 
 
