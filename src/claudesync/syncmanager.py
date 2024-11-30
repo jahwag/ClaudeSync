@@ -4,7 +4,6 @@ import time
 import logging
 from datetime import datetime, timezone
 import io
-from anthropic import Anthropic
 
 from tqdm import tqdm
 
@@ -55,7 +54,6 @@ class SyncManager:
         self.retry_delay = 1
         self.compression_algorithm = config.get("compression_algorithm", "none")
         self.synced_files = {}
-        self.anthropic_client = Anthropic()
 
     def sync(self, local_files, remote_files):
         self.synced_files = {}  # Reset synced files at the start of sync
@@ -63,7 +61,6 @@ class SyncManager:
             self._sync_without_compression(local_files, remote_files)
         else:
             self._sync_with_compression(local_files, remote_files)
-        self.log_token_count()
 
     def _sync_without_compression(self, local_files, remote_files):
         remote_files_to_delete = set(rf["file_name"] for rf in remote_files)
@@ -98,10 +95,6 @@ class SyncManager:
 
         self.prune_remote_files(remote_files, remote_files_to_delete)
 
-        # Count tokens for synced files
-        for local_file in synced_files:
-            self.count_tokens_for_file(local_file)
-
     def _sync_with_compression(self, local_files, remote_files):
         packed_content = self._pack_files(local_files)
         compressed_content = compress_content(
@@ -122,10 +115,6 @@ class SyncManager:
                 self._unpack_files(remote_packed_content)
 
         self._cleanup_old_remote_files(remote_files)
-
-        # Count tokens for all local files (since they're all included in the compressed file)
-        for local_file in local_files:
-            self.count_tokens_for_file(local_file)
 
     def _pack_files(self, local_files):
         packed_content = io.StringIO()
@@ -332,20 +321,3 @@ class SyncManager:
             )
             pbar.update(1)
         time.sleep(self.upload_delay)
-
-    def count_tokens_for_file(self, file_path):
-        full_path = os.path.join(self.local_path, file_path)
-        with open(full_path, "r", encoding="utf-8", errors="ignore") as file:
-            content = file.read()
-        token_count = self.anthropic_client.count_tokens(content)
-        self.synced_files[file_path] = token_count
-
-    def get_total_token_count(self):
-        return sum(self.synced_files.values())
-
-    def get_synced_file_count(self):
-        return len(self.synced_files)
-
-    def log_token_count(self):
-        total_tokens = self.get_total_token_count()
-        logger.info(f"Total tokens in synced files: {total_tokens:,}")

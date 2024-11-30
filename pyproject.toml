@@ -1,6 +1,6 @@
 [project]
 name = "claudesync"
-version = "0.6.4"
+version = "0.6.5"
 authors = [
     {name = "Jahziah Wagner", email = "540380+jahwag@users.noreply.github.com"},
 ]
@@ -26,7 +26,6 @@ dependencies = [
     "crontab>=1.0.1",
     "python-crontab>=3.2.0",
     "Brotli>=1.1.0",
-    "anthropic>=0.34.2,<0.39.0",
     "cryptography>=42.0.4",
 ]
 keywords = [
