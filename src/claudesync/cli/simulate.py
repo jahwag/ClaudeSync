@@ -15,7 +15,7 @@ from ..configmanager import FileConfigManager
 from typing import Dict, List, Optional, TypedDict
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # Ensure debug level is set
+# logger.setLevel(logging.DEBUG)  # Ensure debug level is set
 
 class TreeNode(TypedDict):
     name: str
