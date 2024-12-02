@@ -1,0 +1,71 @@
+{
+  "file_categories": {
+    "backend": {
+      "description": "Backend files",
+      "patterns": [
+        "/*.py",
+        "/*.md",
+        "package_data_example.json",
+        "src/app/services/**/*",
+        "src/app/models/**/*",
+        "src/app/components/package-overview/**/*",
+        "src/app/components/package-details/**/*"
+      ]
+    },
+    "fe_comparison": {
+      "description": "Frontend - Comparison",
+      "patterns": [
+        "app.py",
+        "src/index.html",
+        "src/main.ts",
+        "src/styles.css",
+        "src/assets/*",
+        "src/app/models/*",
+        "src/app/pipes/*",
+        "src/app/services/*",
+        "src/app/utils/*",
+        "src/app/components/breadcrumb/*",
+        "src/app/components/comparison/*"
+      ]
+    },
+    "fe_all": {
+      "description": "Frontend - All",
+      "patterns": [
+        "app.py",
+        "src/**/*"
+      ]
+    },
+    "fe_table_views": {
+      "description": "Frontend - Table Views",
+      "patterns": [
+        "app.py",
+        "src/index.html",
+        "src/main.ts",
+        "src/styles.css",
+        "src/assets/*",
+        "src/app/models/*",
+        "src/app/pipes/*",
+        "src/app/services/*",
+        "src/app/utils/*",
+        "src/app/components/breadcrumb/*",
+        "src/app/components/table-views/*"
+      ]
+    },
+    "fe_visualizations": {
+      "description": "Frontend - Visualizations",
+      "patterns": [
+        "app.py",
+        "src/index.html",
+        "src/main.ts",
+        "src/styles.css",
+        "src/assets/*",
+        "src/app/models/*",
+        "src/app/pipes/*",
+        "src/app/services/*",
+        "src/app/utils/*",
+        "src/app/components/breadcrumb/*",
+        "src/app/components/visualizations/*"
+      ]
+    }
+  }
+}

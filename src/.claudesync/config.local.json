@@ -1,0 +1,19 @@
+{
+  "active_provider": "claude.ai",
+  "active_organization_id": "xxx",
+  "active_project_id": "xxx",
+  "active_project_name": "ClaudeSync - FE",
+  "local_path": "/Users/thomasbuechner/dev/tmp/ClaudeSync",
+  "file_categories": {
+    "main": {
+      "description": "Active Category",
+      "patterns": [
+        "*.py",
+        "*.ts",
+        "*.css",
+        "*.html"
+      ]
+    }
+  },
+  "default_sync_category": "main"
+}
