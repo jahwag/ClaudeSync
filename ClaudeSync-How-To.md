@@ -98,16 +98,20 @@ File categories can be configured in two ways:
 1. Directly editing `.claudesync/config.local.json`:
 ```json
 {
-  "file_categories": {
-    "mycategory": {
-      "description": "My custom file selection",
-      "patterns": [
-        "*.py",
-        "*.md",
-        "src/**/*.js"
-      ]
-    }
-  }
+   "active_provider": "claude.ai",
+   "active_organization_id": "xxx",
+   "active_project_id": "xxx",
+   "active_project_name": "ClaudeSync - BE",
+   "local_path": "/Users/thomasbuechner/dev/tmp/ClaudeSync",
+   "file_categories": {
+      "main": {
+         "description": "Active Category",
+         "patterns": [
+            "*.py"
+         ]
+      }
+   },
+   "default_sync_category": "main"
 }
 ```
 
@@ -125,7 +129,7 @@ claudesync config category add mycategory \
 claudesync config category set_default mycategory
 ```
 
-Recommendation regarding file categories is to have multiple claude projects for a single codebase.
+Recommendation regarding file categories is to have multiple claude projects for a single codebase. We recommend having multiple `config.local.json` files, each with one file category and one project. Switch between them by renaming the desired `xx-config.local.json` to `config.local.json` and running `claudesync push`.
 
 Before pushing for the first time make use of the _simulate-push_ feature to see which files will be pushed to Claude.ai:
 ```bash
