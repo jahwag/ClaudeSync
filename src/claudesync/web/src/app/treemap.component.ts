@@ -43,6 +43,11 @@ export class TreemapComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.destroy$.next();
     this.destroy$.complete();
+    // Clean up Plotly events
+    const chartContainer = document.getElementById('file-treemap');
+    if (chartContainer) {
+      Plotly.purge(chartContainer);
+    }
   }
 
   private flattenTree(node: any, parentId: string = ''): TreemapData {
@@ -266,12 +271,12 @@ Status: %{customdata.included}<br>
       responsive: true
     };
 
+    // Create the plot and attach the click handler
     Plotly.newPlot('file-treemap', plotlyData, layout, config);
 
     // Handle click events
     // @ts-ignore
     chartContainer.on('plotly_click', (d: any) => {
-      console.log('Clicked:', d);
       if (d.points && d.points.length > 0) {
         const point = d.points[0];
         const customData = point.customdata;
