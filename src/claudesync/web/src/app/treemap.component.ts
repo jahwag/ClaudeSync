@@ -6,13 +6,15 @@ import {finalize, Subject} from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {FileInfo, SelectedNode, TreemapData, TreeNode} from './treemap.types';
 import {FormsModule} from '@angular/forms';
+import {FilePreviewComponent} from './file-preview.component';
+import {ModalComponent} from './modal.component';
 
 declare const Plotly: any;
 
 @Component({
   selector: 'app-treemap',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FilePreviewComponent, ModalComponent],
   templateUrl: './treemap.component.html',
   styleUrls: ['./treemap.component.css']
 })

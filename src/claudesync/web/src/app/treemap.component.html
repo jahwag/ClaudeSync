@@ -1,7 +1,6 @@
-<!-- src/claudesync/web/src/app/treemap.component.html -->
 <div class="treemap-container">
-  <!-- Main content with conditional blur -->
   <div [class.content-blur]="isLoading">
+    <!-- Existing header and treemap content -->
     <div class="header-container">
       <h2>File Distribution</h2>
       <div class="header-actions">
@@ -52,23 +51,19 @@
           </tr>
           </tbody>
         </table>
-        <div class="file-preview" *ngIf="selectedFile">
-          <div class="file-preview-header">
-            <h3>File Preview: {{selectedFile.name}}</h3>
-            <button class="close-btn" (click)="closeFileContent()">Close</button>
-          </div>
-          <div class="file-preview-content" [class.loading]="isLoadingContent">
-            <div class="loading-spinner" *ngIf="isLoadingContent">
-              <div class="spinner"></div>
-              <p>Loading file content...</p>
-            </div>
-            <div class="error-message" *ngIf="fileContentError">
-              {{fileContentError}}
-            </div>
-            <pre class="content" *ngIf="fileContent">{{fileContent}}</pre>
-          </div>
-        </div>
       </div>
     </div>
   </div>
+
+  <!-- Modal for file preview -->
+  <app-modal
+    [isOpen]="!!selectedFile"
+    [title]="selectedFile ? 'File Preview: ' + selectedFile.name : ''"
+    (closeModal)="closeFileContent()">
+    <app-file-preview
+      [content]="fileContent"
+      [error]="fileContentError"
+      [isLoading]="isLoadingContent">
+    </app-file-preview>
+  </app-modal>
 </div>
