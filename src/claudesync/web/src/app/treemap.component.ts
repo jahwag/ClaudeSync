@@ -32,6 +32,7 @@ export class TreemapComponent implements OnInit, OnDestroy {
   isLoadingContent = false;
 
   files: FileInfo[] = [];
+  private fileNodeMap = new Map<string, FileInfo>();
 
   constructor(private http: HttpClient, private fileDataService: FileDataService) {}
 
@@ -94,6 +95,7 @@ export class TreemapComponent implements OnInit, OnDestroy {
 
   private updateFilesList(treeData: any) {
     const files: FileInfo[] = [];
+    this.fileNodeMap.clear();
 
     const processNode = (node: any, parentPath: string = '') => {
       const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name;
@@ -101,18 +103,20 @@ export class TreemapComponent implements OnInit, OnDestroy {
       if ('size' in node) {
         // This is a file node
         const pathParts = currentPath.split('/');
-        // Remove the first element (root directory name)
-        pathParts.shift();
+        pathParts.shift(); // Remove the first element (root directory name)
         const fileName = pathParts.pop() || '';
         const filePath = pathParts.join('/');
 
-        files.push({
+        const fileInfo: FileInfo = {
           name: fileName,
           path: filePath,
           fullPath: currentPath,
           size: node.size,
           included: node.included
-        });
+        };
+
+        files.push(fileInfo);
+        this.fileNodeMap.set(currentPath, fileInfo);
       } else if (node.children) {
         // This is a directory node - process its children
         node.children.forEach((child: any) => processNode(child, currentPath));
@@ -122,6 +126,7 @@ export class TreemapComponent implements OnInit, OnDestroy {
     processNode(treeData);
     this.files = files.sort((a, b) => a.fullPath.localeCompare(b.fullPath));
   }
+
   private buildTree(data: TreemapData): Map<string, TreeNode> {
     const nodeMap = new Map<string, TreeNode>();
 
@@ -217,7 +222,8 @@ export class TreemapComponent implements OnInit, OnDestroy {
     const customData = data.ids.map((id, index) => ({
       fileCount: fileCountMap.get(id) || 0,
       sizeFormatted: this.formatSizeForHover(nodeMap.get(id)?.value || 0),
-      included: data.included[index] ? "Included" : "Not Included"
+      included: data.included[index] ? "Included" : "Not Included",
+      isFile: !nodeMap.get(id)?.children?.length // Add isFile flag
     }));
 
     // Create color array based on included status
@@ -265,13 +271,26 @@ Status: %{customdata.included}<br>
     // Handle click events
     // @ts-ignore
     chartContainer.on('plotly_click', (d: any) => {
+      console.log('Clicked:', d);
       if (d.points && d.points.length > 0) {
         const point = d.points[0];
+        const customData = point.customdata;
+
         this.selectedNode = {
           path: point.id,
           size: point.value,
           totalSize: point.value
         };
+
+        console.log('Selected node:', this.selectedNode);
+
+        // If clicked node is a file, show preview
+        if (customData.isFile) {
+          const fileInfo = this.fileNodeMap.get(point.id);
+          if (fileInfo) {
+            this.viewFileContent(fileInfo);
+          }
+        }
       }
     });
   }
