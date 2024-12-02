@@ -434,7 +434,43 @@ def simulate(config, port, no_browser):
 
     os.chdir(web_dir)
 
+    class LocalhostTCPServer(socketserver.TCPServer):
+        def server_bind(self):
+            self.socket.setsockopt(socketserver.socket.SOL_SOCKET, socketserver.socket.SO_REUSEADDR, 1)
+            # Explicitly bind to localhost
+            self.socket.bind(('127.0.0.1', self.server_address[1]))
+
     handler = lambda *args: SyncDataHandler(*args, config=config)
+
+    try:
+        with LocalhostTCPServer(("127.0.0.1", port), handler) as httpd:
+            url = f"http://localhost:{port}"
+            click.echo(f"Server started at {url}")
+            logger.debug(f"Server started on port {port}, bound to localhost only")
+
+            server_thread = threading.Thread(target=httpd.serve_forever)
+            server_thread.daemon = True
+            server_thread.start()
+
+            if not no_browser:
+                webbrowser.open(url)
+
+            click.echo("Press Ctrl+C to stop the server...")
+            try:
+                server_thread.join()
+            except KeyboardInterrupt:
+                logger.debug("Received KeyboardInterrupt, shutting down server")
+                click.echo("\nShutting down server...")
+                httpd.shutdown()
+                httpd.server_close()
+    except OSError as e:
+        if e.errno == 98:  # Address already in use
+            logger.error(f"Port {port} is already in use")
+            click.echo(f"Error: Port {port} is already in use. Try a different port with --port option.")
+        else:
+            logger.error(f"Failed to start server: {e}")
+            click.echo(f"Error: Failed to start server: {e}")
+        return
 
     with socketserver.TCPServer(("", port), handler) as httpd:
         url = f"http://localhost:{port}"
