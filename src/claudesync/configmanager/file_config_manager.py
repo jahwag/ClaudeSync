@@ -1,8 +1,8 @@
 import json
-import logging
 import os
 from datetime import datetime
 from pathlib import Path
+import logging
 
 from claudesync.configmanager.base_config_manager import BaseConfigManager
 from claudesync.session_key_manager import SessionKeyManager
@@ -85,8 +85,7 @@ class FileConfigManager(BaseConfigManager):
     def _load_local_config(self):
         """
         Loads the local configuration from the nearest .claudesync/config.local.json file.
-
-        Sets the local_config_dir and populates the local_config dictionary.
+        Automatically normalizes any Windows-style paths.
         """
         self.local_config_dir = self._find_local_config_dir()
         if self.local_config_dir:
@@ -96,6 +95,19 @@ class FileConfigManager(BaseConfigManager):
             if local_config_file.exists():
                 with open(local_config_file, "r") as f:
                     self.local_config = json.load(f)
+
+                # Check and fix Windows-style paths in submodules
+                if "submodules" in self.local_config:
+                    needs_save = False
+                    for submodule in self.local_config["submodules"]:
+                        if "\\" in submodule["relative_path"]:
+                            submodule["relative_path"] = submodule[
+                                "relative_path"
+                            ].replace("\\", "/")
+                            needs_save = True
+
+                    if needs_save:
+                        self._save_local_config()
 
     def get_local_path(self):
         """

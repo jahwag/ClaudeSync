@@ -57,8 +57,76 @@ class BaseClaudeAIProvider(BaseProvider):
         self.logger.setLevel(getattr(logging, log_level))
 
     def login(self):
+        """
+        Handle login with support for direct session key and auto-approve options.
+
+        Returns:
+            tuple: (session_key, expires) where session_key is the authenticated key
+                   and expires is the datetime when the key expires
+
+        Raises:
+            ProviderError: If authentication fails or the session key is invalid
+        """
+        if hasattr(self, "_provided_session_key"):
+            return self._handle_provided_session_key()
+        return self._handle_interactive_login()
+
+    def _handle_provided_session_key(self):
+        """Handle login with a pre-provided session key."""
+        session_key = self._provided_session_key
+
+        if not session_key.startswith("sk-ant"):
+            raise ProviderError("Invalid sessionKey format. Must start with 'sk-ant'")
+
+        expires = self._get_session_expiry()
+
+        # Validate the session key
+        try:
+            self.config.set_session_key("claude.ai", session_key, expires)
+            organizations = self.get_organizations()
+            if organizations:
+                return session_key, expires
+        except ProviderError as e:
+            raise ProviderError(f"Invalid session key: {str(e)}")
+
+    def _handle_interactive_login(self):
+        """Handle interactive login flow with user prompts."""
+        self._display_login_instructions()
+
+        while True:
+            session_key = self._get_valid_session_key()
+            expires = self._get_session_expiry()
+
+            try:
+                self.config.set_session_key("claude.ai", session_key, expires)
+                organizations = self.get_organizations()
+                if organizations:
+                    return session_key, expires
+            except ProviderError as e:
+                click.echo(e)
+                click.echo(
+                    "Failed to retrieve organizations. Please enter a valid sessionKey."
+                )
+
+    def _get_session_expiry(self):
+        """Get session expiry time, either auto-approved or user-specified."""
+        if hasattr(self, "_auto_approve_expiry") and self._auto_approve_expiry:
+            return self._get_default_expiry()
+        return _get_session_key_expiry()
+
+    def _get_default_expiry(self):
+        """Get default expiry time (30 days from now)."""
+        expires = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(
+            days=30
+        )
+        date_format = "%a, %d %b %Y %H:%M:%S %Z"
+        expires = expires.strftime(date_format).strip()
+        return datetime.datetime.strptime(expires, date_format)
+
+    def _display_login_instructions(self):
+        """Display instructions for obtaining a session key."""
         click.echo(
-            "A session key is required to call: " + self.config.get("claude_api_url")
+            f"A session key is required to call: {self.config.get('claude_api_url')}"
         )
         click.echo("To obtain your session key, please follow these steps:")
         click.echo("1. Open your web browser and go to https://claude.ai")
@@ -76,39 +144,29 @@ class BaseClaudeAIProvider(BaseProvider):
             "5. In the left sidebar, expand 'Cookies' and select 'https://claude.ai'"
         )
         click.echo(
-            "6. Locate the cookie named 'sessionKey' and copy its value. "
-            "Ensure that the value is not URL-encoded."
+            "6. Locate the cookie named 'sessionKey' and copy its value. Ensure that the value is not URL-encoded."
         )
 
+    def _get_valid_session_key(self):
+        """Get and validate a session key from user input."""
         while True:
             session_key = click.prompt(
                 "Please enter your sessionKey", type=str, hide_input=True
             )
+
             if not session_key.startswith("sk-ant"):
                 click.echo(
                     "Invalid sessionKey format. Please make sure it starts with 'sk-ant'."
                 )
                 continue
+
             if is_url_encoded(session_key):
                 click.echo(
                     "The session key appears to be URL-encoded. Please provide the decoded version."
                 )
                 continue
 
-            expires = _get_session_key_expiry()
-            try:
-                self.config.set_session_key("claude.ai", session_key, expires)
-                organizations = self.get_organizations()
-                if organizations:
-                    return session_key, expires  # Return the session key and expiry
-            except ProviderError as e:
-                click.echo(e)
-                click.echo(
-                    "Failed to retrieve organizations. Please enter a valid sessionKey."
-                )
-
-        # This line should never be reached, but we'll add it for completeness
-        raise ProviderError("Failed to authenticate after multiple attempts")
+            return session_key
 
     def get_organizations(self):
         response = self._make_request("GET", "/organizations")
