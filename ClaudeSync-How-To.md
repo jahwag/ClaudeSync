@@ -165,7 +165,7 @@ claudesync push
 
 1. Keep conversations focused on specific features or issues
 2. Push changes frequently to maintain context
-3. If you have a large codebase, break it down into smaller pieces, try not to exceed 30% of the available knowledge capacity of the claude project. If you do, you increase the risk of running into the rate limit and the knowledge will be less effective. In file `.claudesync/file_categories.json` you can see an exemplary decomposition of this project into smaller subprojects.
+3. If you have a large codebase, break it down into smaller pieces, try not to exceed 30% of the available knowledge capacity of the claude project. If you do, you increase the risk of running into the rate limit and the knowledge will be less effective. In file `.claudesync/example-file-categories.json` you can see an exemplary decomposition of this project into smaller subprojects.
 
 ## Support
 
