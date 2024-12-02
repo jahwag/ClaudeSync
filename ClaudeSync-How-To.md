@@ -22,19 +22,19 @@ Before installing ClaudeSync, ensure you have:
 
 ```bash
 # Create a new virtual environment
-python -m venv venv
+python -m venv .venv
 
 # Activate the virtual environment
 # On Windows:
-venv\Scripts\activate
+.venv\Scripts\activate
 # On macOS/Linux:
-source venv/bin/activate
+source .venv/bin/activate
 ```
 
-2. Install ClaudeSync using pip:
+2. Install ClaudeSync fork with _simulate_ feature using pip:
 
 ```bash
-pip install claudesync
+pip install git+ssh://git@github.com/tbuechner/ClaudeSync.git    
 ```
 
 ## Authentication
