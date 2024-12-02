@@ -222,6 +222,58 @@ export class TreemapComponent implements OnInit, OnDestroy {
     return filtered;
   }
 
+  private getNodeInclusionStatus(node: any): 'included' | 'excluded' | 'partial' {
+    if (!node.children) {
+      // For leaf nodes (files), directly use the included property
+      return node.included ? 'included' : 'excluded';
+    }
+
+    // For directories, check children recursively
+    let hasIncluded = false;
+    let hasExcluded = false;
+
+    const checkChildren = (childNode: any) => {
+      if (!childNode.children) {
+        // Leaf node
+        if (childNode.included) {
+          hasIncluded = true;
+        } else {
+          hasExcluded = true;
+        }
+      } else {
+        // Directory node - process all children
+        childNode.children.forEach(checkChildren);
+      }
+    };
+
+    // Process all children
+    node.children.forEach(checkChildren);
+
+    // Determine status based on children
+    if (hasIncluded && hasExcluded) {
+      return 'partial';
+    } else if (hasIncluded) {
+      return 'included';
+    } else {
+      return 'excluded';
+    }
+  }
+
+  private findNodeInTree(tree: any, nodeName: string): any {
+    if (tree.name === nodeName) {
+      return tree;
+    }
+
+    if (tree.children) {
+      for (const child of tree.children) {
+        const found = this.findNodeInTree(child, nodeName);
+        if (found) return found;
+      }
+    }
+
+    return null;
+  }
+
   clearFilter() {
     this.filterText = '';
   }
@@ -277,22 +329,57 @@ export class TreemapComponent implements OnInit, OnDestroy {
     // Build tree structure and calculate file counts
     const nodeMap = this.buildTree(data);
     const fileCountMap = new Map<string, number>();
+    const inclusionStatusMap = new Map<string, string>();  // Added this line
 
     // Calculate file counts for each node
     for (const [id, node] of nodeMap) {
       fileCountMap.set(id, this.countFiles(node));
     }
 
+    // Process nodes to calculate file counts and inclusion status
+    const processNode = (id: string) => {
+      const node = nodeMap.get(id);
+      if (!node) return;
+
+      // Calculate file count
+      fileCountMap.set(id, this.countFiles(node));
+
+      // Calculate inclusion status by checking the original tree data
+      let treeNode = this.findNodeInTree(this.originalTreeData, node.label);
+      if (treeNode) {
+        inclusionStatusMap.set(id, this.getNodeInclusionStatus(treeNode));
+      }
+
+      // Process children
+      node.children.forEach(child => processNode(child.id));
+    };
+
+    // Start processing from root nodes (nodes with no parents)
+    data.ids.forEach((id, index) => {
+      if (!data.parents[index]) {
+        processNode(id);
+      }
+    });
     // Create custom text array for hover info
     const customData = data.ids.map((id, index) => ({
       fileCount: fileCountMap.get(id) || 0,
       sizeFormatted: this.formatSizeForHover(nodeMap.get(id)?.value || 0),
-      included: data.included[index] ? "Included" : "Not Included",
-      isFile: !nodeMap.get(id)?.children?.length // Add isFile flag
+      included: inclusionStatusMap.get(id),
+      isFile: !nodeMap.get(id)?.children?.length
     }));
 
     // Create color array based on included status
-    const colors = data.included.map(included => included ? '#4f46e5' : '#94a3b8');
+    const colors = data.ids.map(id => {
+      const status = inclusionStatusMap.get(id);
+      switch (status) {
+        case 'included':
+          return '#4f46e5'; // Indigo for included
+        case 'partial':
+          return '#eab308'; // Yellow for partially included
+        default:
+          return '#94a3b8'; // Gray for excluded
+      }
+    });
 
     const plotlyData = [{
       type: 'treemap',
