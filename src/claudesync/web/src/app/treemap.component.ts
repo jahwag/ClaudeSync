@@ -99,6 +99,8 @@ export class TreemapComponent implements OnInit, OnDestroy {
       if ('size' in node) {
         // This is a file node
         const pathParts = currentPath.split('/');
+        // Remove the first element (root directory name)
+        pathParts.shift();
         const fileName = pathParts.pop() || '';
         const filePath = pathParts.join('/');
 
@@ -118,7 +120,6 @@ export class TreemapComponent implements OnInit, OnDestroy {
     processNode(treeData);
     this.files = files.sort((a, b) => a.fullPath.localeCompare(b.fullPath));
   }
-
   private buildTree(data: TreemapData): Map<string, TreeNode> {
     const nodeMap = new Map<string, TreeNode>();
 
