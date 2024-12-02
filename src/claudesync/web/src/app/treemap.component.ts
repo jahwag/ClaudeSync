@@ -409,7 +409,7 @@ Status: %{customdata.included}<br>
 
     const layout = {
       width: chartContainer.offsetWidth,
-      height: 400,
+      height: 800,
       margin: { l: 0, r: 0, t: 30, b: 0 },
     };
 
