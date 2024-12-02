@@ -190,6 +190,22 @@ def load_claudeignore_as_string():
         logger.error(f"Error reading .claudeignore at {claudeignore_path}: {e}")
         return ""
 
+def is_safe_path(base_dir: str, requested_path: str) -> bool:
+    """
+    Safely verify that the requested path is within the base directory.
+    """
+    try:
+        # Resolve any symlinks and normalize path
+        base_dir = os.path.realpath(base_dir)
+        requested_path = os.path.realpath(os.path.join(base_dir, requested_path))
+
+        # Check if the resolved path starts with the base directory
+        common_prefix = os.path.commonpath([requested_path, base_dir])
+        return common_prefix == base_dir
+    except (ValueError, OSError):
+        # Handle any path manipulation errors
+        return False
+
 def load_config():
     """Load configuration from .claudesync/config.local.json."""
     project_root = get_project_root()
@@ -307,6 +323,10 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             try:
+                if not is_safe_path(local_path, file_path):
+                    self.send_error(403, 'Access denied')
+                    return
+
                 full_path = os.path.join(local_path, file_path)
                 # Basic security check to ensure the path is within the project directory
                 if not os.path.abspath(full_path).startswith(os.path.abspath(local_path)):
