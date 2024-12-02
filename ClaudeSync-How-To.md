@@ -31,7 +31,7 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-2. Install ClaudeSync fork with _simulate_ feature using pip:
+2. Install ClaudeSync fork with _simulate-push_ feature using pip:
 
 ```bash
 pip install git+ssh://git@github.com/tbuechner/ClaudeSync.git    
@@ -91,23 +91,11 @@ node_modules/
 
 ### Option 2: Using File Categories
 
+File categories are important if you have a large codebase and want to synchronize only specific files with Claude.ai.
+
 File categories can be configured in two ways:
 
-1. Using CLI commands:
-```bash
-# List available categories
-claudesync config category ls
-
-# Create a custom category
-claudesync config category add mycategory \
-  --description "My custom file selection" \
-  --patterns "*.py" "*.md" "src/**/*.js"
-
-# Set as default category
-claudesync config category set_default mycategory
-```
-
-2. Directly editing `.claudesync/config.local.json`:
+1. Directly editing `.claudesync/config.local.json`:
 ```json
 {
   "file_categories": {
@@ -123,6 +111,27 @@ claudesync config category set_default mycategory
 }
 ```
 
+2. Using CLI commands:
+```bash
+# List available categories
+claudesync config category ls
+
+# Create a custom category
+claudesync config category add mycategory \
+  --description "My custom file selection" \
+  --patterns "*.py" "*.md" "src/**/*.js"
+
+# Set as default category
+claudesync config category set_default mycategory
+```
+
+Recommendation regarding file categories is to have multiple claude projects for a single codebase.
+
+Before pushing for the first time make use of the _simulate-push_ feature to see which files will be pushed to Claude.ai:
+```bash
+claudesync simulate-push
+```
+
 ## Working with Claude.ai
 
 ### Initial Push
@@ -134,19 +143,17 @@ claudesync push
 
 ### Development Workflow Example
 
-1. Visit [Claude.ai](https://claude.ai) in your browser and start a new chat in your project.
-
-2. Ask Claude about a feature you want to implement. For example:
+1. Visit [Claude.ai](https://claude.ai), browse to your project and ask Claude about a feature you want to implement. For example:
    "How can I implement error handling for network timeouts in my Python application?"
 
-3. Implement the suggested changes locally in your development environment.
+2. Implement the suggested changes locally in your development environment.
 
-4. Push the updated files to Claude:
+3. Push the updated files to Claude:
 ```bash
 claudesync push
 ```
 
-5. Return to your [Claude.ai](https://claude.ai) chat in the browser to discuss the implementation and ask for improvements or additional features.
+4. Return to your [Claude.ai](https://claude.ai) project in the browser to discuss the implementation and ask for improvements or additional features.
 
 ### Tips for Effective Collaboration
 

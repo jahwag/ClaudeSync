@@ -417,7 +417,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 @click.option('--port', default=4201, help='Port to run the server on')
 @click.option('--no-browser', is_flag=True, help='Do not open browser automatically')
 @click.pass_obj
-def simulate(config, port, no_browser):
+def simulate_push(config, port, no_browser):
     """Launch a visualization of files to be synchronized."""
     logger.debug("Starting simulate command")
     logger.debug(f"Configuration object type: {type(config)}")
