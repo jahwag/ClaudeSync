@@ -8,6 +8,7 @@
           <input
             type="checkbox"
             [(ngModel)]="showOnlyIncluded"
+            (ngModelChange)="onShowOnlyIncludedChange()"
             class="filter-checkbox">
           Show only included files
         </label>

@@ -31,6 +31,8 @@ export class TreemapComponent implements OnInit, OnDestroy {
   fileContentError: string | null = null;
   isLoadingContent = false;
 
+  private originalTreeData: any = null;
+
   files: FileInfo[] = [];
   private fileNodeMap = new Map<string, FileInfo>();
 
@@ -47,6 +49,44 @@ export class TreemapComponent implements OnInit, OnDestroy {
     const chartContainer = document.getElementById('file-treemap');
     if (chartContainer) {
       Plotly.purge(chartContainer);
+    }
+  }
+
+  private filterTree(node: any): any {
+    if (!this.showOnlyIncluded) {
+      return node;
+    }
+
+    if (!node.children) {
+      // Leaf node (file)
+      return node.included ? node : null;
+    }
+
+    // Filter children recursively
+    const filteredChildren = (node.children || [])
+      // @ts-ignore
+      .map(child => this.filterTree(child))
+      // @ts-ignore
+      .filter(child => child !== null);
+
+    if (filteredChildren.length === 0) {
+      return null;
+    }
+
+    return {
+      ...node,
+      children: filteredChildren
+    };
+  }
+
+  private updateTreemap() {
+    if (!this.originalTreeData) return;
+
+    const filteredData = this.filterTree(this.originalTreeData);
+    if (filteredData) {
+      const plotlyData = this.flattenTree(filteredData);
+      this.renderTreemap(plotlyData);
+      this.updateFilesList(this.originalTreeData);
     }
   }
 
@@ -192,6 +232,8 @@ export class TreemapComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (treeData) => {
+          this.originalTreeData = treeData;
+          this.updateTreemap();
           const plotlyData = this.flattenTree(treeData);
           this.renderTreemap(plotlyData);
           this.updateFilesList(treeData);
@@ -343,5 +385,9 @@ Status: %{customdata.included}<br>
     this.selectedFile = null;
     this.fileContent = null;
     this.fileContentError = null;
+  }
+
+  onShowOnlyIncludedChange() {
+    this.updateTreemap();
   }
 }
