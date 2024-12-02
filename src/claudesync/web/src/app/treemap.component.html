@@ -24,7 +24,24 @@
 
     <!-- File List Section -->
     <div class="file-list" *ngIf="showFileList">
-      <h3>Files to Sync ({{getIncludedFilesCount()}} of {{files.length}})</h3>
+      <div class="file-list-header">
+        <div class="file-count">Files to Sync ({{getIncludedFilesCount()}} of {{files.length}})</div>
+        <div class="search-container">
+          <input
+            type="text"
+            [(ngModel)]="filterText"
+            placeholder="Filter files..."
+            class="search-input"
+          >
+          <button
+            *ngIf="filterText"
+            class="clear-search-btn"
+            (click)="clearFilter()"
+          >
+            ×
+          </button>
+        </div>
+      </div>
       <div class="file-list-table">
         <table>
           <thead>

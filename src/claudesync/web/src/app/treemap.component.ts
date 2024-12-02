@@ -36,6 +36,8 @@ export class TreemapComponent implements OnInit, OnDestroy {
   files: FileInfo[] = [];
   private fileNodeMap = new Map<string, FileInfo>();
 
+  filterText = '';
+
   constructor(private http: HttpClient, private fileDataService: FileDataService) {}
 
   ngOnInit() {
@@ -202,10 +204,26 @@ export class TreemapComponent implements OnInit, OnDestroy {
   }
 
   get filteredFiles(): FileInfo[] {
+    let filtered = this.files;
+
     if (this.showOnlyIncluded) {
-      return this.files.filter(f => f.included);
+      filtered = filtered.filter(f => f.included);
     }
-    return this.files;
+
+    if (this.filterText.trim()) {
+      const searchText = this.filterText.toLowerCase();
+      filtered = filtered.filter(f =>
+        f.name.toLowerCase().includes(searchText) ||
+        f.path.toLowerCase().includes(searchText) ||
+        `${f.path}/${f.name}`.toLowerCase().includes(searchText)
+      );
+    }
+
+    return filtered;
+  }
+
+  clearFilter() {
+    this.filterText = '';
   }
 
   private countFiles(node: TreeNode): number {
