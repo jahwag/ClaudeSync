@@ -145,6 +145,8 @@ Push your project files to Claude.ai:
 claudesync push
 ```
 
+Visit the project on [Claude.ai](https://claude.ai) to see the synchronized files.
+
 ### Development Workflow Example
 
 1. Visit [Claude.ai](https://claude.ai), browse to your project and ask Claude about a feature you want to implement. For example:
