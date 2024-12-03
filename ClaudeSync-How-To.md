@@ -52,6 +52,8 @@ Authentication with Claude.ai needs to be done once:
 claudesync auth login
 ```
 
+Note: The ssh key must sit at the default location `~/.ssh/id_ed25519`.
+
 2. Follow the on-screen instructions:
     - Open Claude.ai in your browser
     - Open Developer Tools (F12 or Ctrl+Shift+I)
