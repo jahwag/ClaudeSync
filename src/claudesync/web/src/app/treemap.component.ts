@@ -2,12 +2,13 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {FileContentResponse, FileDataService} from './file-data.service';
 import { HttpClient } from '@angular/common/http';
-import {finalize, Subject} from 'rxjs';
+import {finalize} from 'rxjs/operators';
 import { takeUntil } from 'rxjs/operators';
 import {FileInfo, SelectedNode, TreemapData, TreeNode} from './treemap.types';
 import {FormsModule} from '@angular/forms';
 import {FilePreviewComponent} from './file-preview.component';
 import {ModalComponent} from './modal.component';
+import {Subject} from 'rxjs';
 
 declare const Plotly: any;
 

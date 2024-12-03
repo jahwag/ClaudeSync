@@ -10,7 +10,7 @@ import {TreemapComponent} from './treemap.component';
   standalone: true,
   imports: [CommonModule, HttpClientModule, TreemapComponent],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css',
+  styleUrls: ['./app.component.css'],
   providers: [FileDataService]
 })
 export class AppComponent implements OnInit {
@@ -42,6 +42,7 @@ export class AppComponent implements OnInit {
     ];
 
     // Execute requests in parallel
+    // @ts-ignore
     Promise.all(requests.map(obs => obs.toPromise()))
       .then(([config, stats]) => {
         // @ts-ignore

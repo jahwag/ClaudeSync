@@ -424,7 +424,7 @@ def simulate_push(config, port, no_browser):
     logger.debug(f"Configuration local path: {config.get_local_path()}")
     logger.debug(f"Configuration default category: {config.get_default_category()}")
 
-    web_dir = os.path.join(os.path.dirname(__file__), '../web/dist/claudesync-simulate/browser')
+    web_dir = os.path.join(os.path.dirname(__file__), '../web/dist/claudesync-simulate')
     logger.debug(f"Web directory path: {web_dir}")
 
     if not os.path.exists(web_dir):

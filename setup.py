@@ -43,8 +43,7 @@ setup(
     package_dir={"": "src"},
     package_data={
         'claudesync': [
-            'web/dist/claudesync-simulate/browser/*',
-            'web/dist/claudesync-simulate/browser/assets/*'
+            'web/dist/claudesync-simulate/*'
         ]
     },
     include_package_data=True,
