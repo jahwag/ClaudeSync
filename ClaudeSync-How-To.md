@@ -22,7 +22,7 @@ Before installing ClaudeSync, ensure you have:
 
 ```bash
 # Create a new virtual environment
-python -m venv .venv
+python3 -m venv .venv
 
 # Activate the virtual environment
 # On Windows:
@@ -30,6 +30,8 @@ python -m venv .venv
 # On macOS/Linux:
 source .venv/bin/activate
 ```
+
+Make sure, that the virtual environment is added to your .gitignore file.
 
 2. Install ClaudeSync fork with _simulate-push_ feature using pip:
 
