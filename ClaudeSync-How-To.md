@@ -31,7 +31,11 @@ python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-Make sure, that the virtual environment is added to your .gitignore file.
+Make sure, that the virtual environment is added to your .gitignore file:
+```
+# .gitignore
+.venv/
+```
 
 2. Install ClaudeSync fork with _simulate-push_ feature using pip:
 
