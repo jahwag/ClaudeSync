@@ -1,3 +1,11 @@
-recursive-include src/claudesync/web/dist/claudesync-simulate *
-recursive-exclude * __pycache__
-recursive-exclude * *.py[cod]
+# Include frontend dist files
+recursive-include src/claudesync/web/dist *
+
+# Include documentation
+include README.md
+include CONTRIBUTING.md
+include SECURITY.md
+include LICENSE
+
+# Include additional files
+include requirements.txt
