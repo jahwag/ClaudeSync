@@ -448,16 +448,12 @@ def simulate_push(config, port, no_browser):
             click.echo(f"Server started at {url}")
             logger.debug(f"Server started on port {port}, bound to localhost only")
 
-            server_thread = threading.Thread(target=httpd.serve_forever)
-            server_thread.daemon = True
-            server_thread.start()
-
             if not no_browser:
                 webbrowser.open(url)
 
             click.echo("Press Ctrl+C to stop the server...")
             try:
-                server_thread.join()
+                httpd.serve_forever()
             except KeyboardInterrupt:
                 logger.debug("Received KeyboardInterrupt, shutting down server")
                 click.echo("\nShutting down server...")
@@ -470,25 +466,3 @@ def simulate_push(config, port, no_browser):
         else:
             logger.error(f"Failed to start server: {e}")
             click.echo(f"Error: Failed to start server: {e}")
-        return
-
-    with socketserver.TCPServer(("", port), handler) as httpd:
-        url = f"http://localhost:{port}"
-        click.echo(f"Server started at {url}")
-        logger.debug(f"Server started on port {port}")
-
-        server_thread = threading.Thread(target=httpd.serve_forever)
-        server_thread.daemon = True
-        server_thread.start()
-
-        if not no_browser:
-            webbrowser.open(url)
-
-        click.echo("Press Ctrl+C to stop the server...")
-        try:
-            server_thread.join()
-        except KeyboardInterrupt:
-            logger.debug("Received KeyboardInterrupt, shutting down server")
-            click.echo("\nShutting down server...")
-            httpd.shutdown()
-            httpd.server_close()
