@@ -1,0 +1,22 @@
+{
+  "active_provider": "claude.ai",
+  "active_organization_id": "ac6765aa-0772-417d-86bb-f6621aeb3d68",
+  "active_project_id": "5218ae78-5ca3-4734-b369-5bb40f33461d",
+  "active_project_name": "ClaudeSync - All",
+  "local_path": "/Users/thomasbuechner/dev/tmp/ClaudeSync",
+  "file_categories": {
+    "main": {
+      "description": "Active Category",
+      "patterns": [
+        "src/claudesync/cli/simulate.py",
+        "src/claudesync/web/package.json",
+        "src/claudesync/web/angular.json",
+        "src/claudesync/web/tsconfig.json",
+        "src/claudesync/web/src/**",
+        "*.py",
+        "*.md"
+      ]
+    }
+  },
+  "default_sync_category": "main"
+}
