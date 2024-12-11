@@ -1,11 +1,11 @@
 [project]
-name = "claudesync"
-version = "0.6.9"
+name = "claudesync-fork"
+version = "0.0.2"
 # include_package_data = true
 authors = [
-    {name = "Jahziah Wagner", email = "540380+jahwag@users.noreply.github.com"},
+    {name = "Thomas Buechner", email = "thomas.buechner@cplace.com"},
 ]
-description = "A tool to synchronize local files with Claude.ai projects"
+description = "A fork of ClaudeSync - a tool to synchronize local files with Claude.ai projects"
 license = {file = "LICENSE"}
 readme = "README.md"
 requires-python = ">=3.10"
