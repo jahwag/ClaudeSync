@@ -67,6 +67,11 @@ class BaseConfigManager(ABC):
                         "*.go",
                         "*.rs",
                     ],
+                    "excludes": [
+                        "**/test/**",  # Exclude test directories
+                        "**/*test*",   # Exclude files with test in name
+                        "**/*mock*"    # Exclude mock files
+                    ],
                 },
                 "production_code": {
                     "description": "Production source code",

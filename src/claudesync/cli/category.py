@@ -11,14 +11,13 @@ def category():
 @category.command()
 @click.argument("name")
 @click.option("--description", required=True, help="Description of the category")
-@click.option(
-    "--patterns", required=True, multiple=True, help="File patterns for the category"
-)
+@click.option("--patterns", required=True, multiple=True, help="File patterns for the category")
+@click.option("--excludes", multiple=True, help="Patterns to exclude from the category")
 @click.pass_obj
 @handle_errors
-def add(config, name, description, patterns):
-    """Add a new file category."""
-    config.add_file_category(name, description, list(patterns))
+def add(config, name, description, patterns, excludes):
+    """Add a new file category with optional exclude patterns."""
+    config.add_file_category(name, description, list(patterns), list(excludes))
     click.echo(f"File category '{name}' added successfully.")
 
 

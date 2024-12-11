@@ -245,7 +245,7 @@ class FileConfigManager(BaseConfigManager):
             logging.error(f"Failed to decrypt session key: {str(e)}")
             return None, None
 
-    def add_file_category(self, category_name, description, patterns):
+    def add_file_category(self, category_name, description, patterns, excludes=None):
         """
         Adds a new file category to the global configuration.
 
@@ -253,12 +253,14 @@ class FileConfigManager(BaseConfigManager):
             category_name (str): The name of the category to add.
             description (str): A description of the category.
             patterns (list): A list of file patterns for the category.
+            excludes (list, optional): A list of patterns to exclude.
         """
         if "file_categories" not in self.global_config:
             self.global_config["file_categories"] = {}
         self.global_config["file_categories"][category_name] = {
             "description": description,
             "patterns": patterns,
+            "excludes": excludes or []
         }
         self._save_global_config()
 

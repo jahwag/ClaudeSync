@@ -10,7 +10,7 @@ import webbrowser
 import threading
 from urllib.parse import urlparse, parse_qs
 from pathlib import Path
-from ..utils import get_local_files, load_gitignore, should_process_file, load_claudeignore
+from ..utils import get_local_files, load_gitignore, load_claudeignore
 from ..configmanager import FileConfigManager
 from typing import Dict, List, Optional, TypedDict
 

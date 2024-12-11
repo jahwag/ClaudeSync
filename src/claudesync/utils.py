@@ -96,7 +96,7 @@ def compute_md5_hash(content):
 
 
 def should_process_file(
-    config_manager, file_path, filename, gitignore, base_path, claudeignore
+    config_manager, file_path, filename, gitignore, base_path, claudeignore, category_excludes=None
 ):
     """
     Determines whether a file should be processed based on various criteria.
@@ -135,6 +135,11 @@ def should_process_file(
 
     # Use .claudeignore rules if available
     if claudeignore and claudeignore.match_file(rel_path):
+        return False
+
+    # Check category-specific exclusions
+    if category_excludes and category_excludes.match_file(rel_path):
+        logger.debug(f"File {rel_path} excluded by category exclusion patterns")
         return False
 
     # Check if it's a text file
@@ -217,6 +222,16 @@ def get_local_files(config, local_path, category=None, include_submodules=False)
         logger.debug("No category specified, using default pattern '*'")
     logger.debug(f"Using patterns: {patterns}")
 
+    category_excludes = None
+    if category:
+        categories = config.get("file_categories", {})
+        active_category = categories.get(category)
+        if active_category and "excludes" in active_category:
+            exclude_patterns = active_category.get("excludes", [])
+            if exclude_patterns:
+                category_excludes = pathspec.PathSpec.from_lines("gitwildmatch", exclude_patterns)
+                logger.debug(f"Created category excludes PathSpec with patterns: {exclude_patterns}")
+
     submodules = config.get("submodules", [])
     submodule_paths = [sm["relative_path"] for sm in submodules]
     logger.debug(f"Submodule paths: {submodule_paths}")
@@ -254,7 +269,7 @@ def get_local_files(config, local_path, category=None, include_submodules=False)
 
             if spec.match_file(rel_path):
                 logger.debug(f"File {rel_path} matches pattern spec")
-                if should_process_file(config, full_path, filename, gitignore, local_path, claudeignore):
+                if should_process_file(config, full_path, filename, gitignore, local_path, claudeignore, category_excludes):
                     file_hash = process_file(full_path)
                     if file_hash:
                         files[rel_path] = file_hash
