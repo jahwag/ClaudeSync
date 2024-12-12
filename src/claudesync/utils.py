@@ -232,10 +232,6 @@ def get_local_files(config, local_path, category=None):
                 category_excludes = pathspec.PathSpec.from_lines("gitwildmatch", exclude_patterns)
                 logger.debug(f"Created category excludes PathSpec with patterns: {exclude_patterns}")
 
-    submodules = config.get("submodules", [])
-    submodule_paths = [sm["relative_path"] for sm in submodules]
-    logger.debug(f"Submodule paths: {submodule_paths}")
-
     spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
     logger.debug("Created PathSpec for patterns")
 
@@ -243,13 +239,6 @@ def get_local_files(config, local_path, category=None):
         rel_root = os.path.relpath(root, local_path)
         rel_root = "" if rel_root == "." else rel_root
         logger.debug(f"Processing directory: {rel_root}")
-
-        # Skip submodule directories if not including submodules
-        if not include_submodules:
-            original_dirs = dirs.copy()
-            dirs[:] = [d for d in dirs if os.path.join(rel_root, d) not in submodule_paths]
-            if len(dirs) != len(original_dirs):
-                logger.debug(f"Filtered out submodule directories in {rel_root}")
 
         # Filter out excluded directories
         original_dirs = dirs.copy()

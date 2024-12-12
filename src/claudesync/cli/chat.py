@@ -270,12 +270,8 @@ def select_project(
         p
         for p in all_projects
         if p["id"] == active_project_id
-        or (
-            p["name"].startswith(f"{active_project_name}-SubModule-")
-            and not p.get("archived_at")
-        )
+           and not p.get("archived_at")
     ]
-
     if not filtered_projects:
         click.echo("No active project or related submodules found.")
         return None
@@ -321,19 +317,12 @@ def get_default_project(
     if not local_path:
         return None
 
-    # Find the project that matches the current directory
+    # Find project that matches current directory
     default_project = None
     for idx, proj in enumerate(filtered_projects):
         if proj["id"] == active_project_id:
             project_path = os.path.abspath(local_path)
-        else:
-            submodule_name = proj["name"].replace(
-                f"{active_project_name}-SubModule-", ""
-            )
-            project_path = os.path.abspath(
-                os.path.join(local_path, "services", submodule_name)
-            )
-        if current_dir.startswith(project_path):
-            default_project = idx
-            break
+            if current_dir.startswith(project_path):
+                default_project = idx
+                break
     return default_project
