@@ -171,7 +171,7 @@ def process_file(file_path):
     return None
 
 
-def get_local_files(config, local_path, category=None, include_submodules=False):
+def get_local_files(config, local_path, category=None):
     """
     Retrieves a dictionary of local files within a specified path, applying various filters.
 
@@ -184,7 +184,7 @@ def get_local_files(config, local_path, category=None, include_submodules=False)
     Returns:
         dict: A dictionary where keys are relative file paths, and values are MD5 hashes of the file contents.
     """
-    logger.debug(f"Starting get_local_files with path: {local_path}, category: {category}, include_submodules: {include_submodules}")
+    logger.debug(f"Starting get_local_files with path: {local_path}, category: {category}")
 
     gitignore = load_gitignore(local_path)
     logger.debug(f"Loaded gitignore: {'Yes' if gitignore else 'No'}")
@@ -411,47 +411,3 @@ def load_claudeignore(base_path):
             return pathspec.PathSpec.from_lines("gitwildmatch", f)
     return None
 
-
-def detect_submodules(base_path, submodule_detect_filenames):
-    """
-    Detects submodules within a project based on specific filenames, respecting .gitignore and .claudeignore.
-
-    Args:
-        base_path (str): The base directory path to start the search from.
-        submodule_detect_filenames (list): List of filenames that indicate a submodule.
-
-    Returns:
-        list: A list of tuples (relative_path, detected_filename) for detected submodules,
-              excluding the root directory and respecting ignore files.
-    """
-    submodules = []
-    base_path = Path(base_path)
-    gitignore = load_gitignore(base_path)
-    claudeignore = load_claudeignore(base_path)
-
-    for root, dirs, files in os.walk(base_path):
-        rel_root = Path(root).relative_to(base_path)
-
-        # Check if the current directory should be ignored
-        if gitignore and gitignore.match_file(str(rel_root)):
-            dirs[:] = []  # Don't descend into this directory
-            continue
-        if claudeignore and claudeignore.match_file(str(rel_root)):
-            dirs[:] = []  # Don't descend into this directory
-            continue
-
-        for filename in submodule_detect_filenames:
-            if filename in files:
-                relative_path = str(rel_root)
-                # Exclude the root directory (represented by an empty string or '.')
-                if relative_path not in ("", "."):
-                    # Check if the file itself should be ignored
-                    file_path = rel_root / filename
-                    if (gitignore and gitignore.match_file(str(file_path))) or (
-                        claudeignore and claudeignore.match_file(str(file_path))
-                    ):
-                        continue
-                    submodules.append((relative_path, filename))
-                break  # Stop searching this directory once a submodule is found
-
-    return submodules

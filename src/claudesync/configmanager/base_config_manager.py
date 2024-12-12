@@ -40,14 +40,6 @@ class BaseConfigManager(ABC):
             "prune_remote_files": True,
             "claude_api_url": "https://api.claude.ai/api",
             "compression_algorithm": "none",
-            "submodule_detect_filenames": [
-                "pom.xml",
-                "build.gradle",
-                "package.json",
-                "setup.py",
-                "Cargo.toml",
-                "go.mod",
-            ],
             "file_categories": {
                 "all_files": {
                     "description": "All files not ignored",
