@@ -179,7 +179,6 @@ def get_local_files(config, local_path, category=None):
         config: config manager to use
         local_path (str): The base directory path to search for files.
         category (str, optional): The file category to filter by.
-        include_submodules (bool, optional): Whether to include files from submodules.
 
     Returns:
         dict: A dictionary where keys are relative file paths, and values are MD5 hashes of the file contents.

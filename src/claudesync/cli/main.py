@@ -112,7 +112,7 @@ def upgrade(ctx):
 @click.pass_obj
 @handle_errors
 def push(config, category):
-    """Synchronize the project files, optionally including submodules in the parent project."""
+    """Synchronize the project files."""
     provider = validate_and_get_provider(config, require_project=True)
 
     if not category:

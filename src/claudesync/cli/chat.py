@@ -265,7 +265,7 @@ def select_project(
         click.echo("No projects found in the active organization.")
         return None
 
-    # Filter projects to include only the active project and its submodules
+    # Filter projects to include only the active project
     filtered_projects = [
         p
         for p in all_projects
@@ -273,7 +273,7 @@ def select_project(
            and not p.get("archived_at")
     ]
     if not filtered_projects:
-        click.echo("No active project or related submodules found.")
+        click.echo("No active project found.")
         return None
 
     # Determine the current working directory
@@ -286,7 +286,7 @@ def select_project(
     click.echo("Available projects:")
     for idx, proj in enumerate(filtered_projects, 1):
         project_type = (
-            "Active Project" if proj["id"] == active_project_id else "Submodule"
+            "Active Project" if proj["id"] == active_project_id else "Error..."
         )
         default_marker = " (default)" if idx - 1 == default_project else ""
         click.echo(
