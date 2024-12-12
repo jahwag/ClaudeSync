@@ -84,8 +84,8 @@ def create(ctx, name, internal_name, description, provider, organization, no_git
 
         # Create project configuration file
         project_config = {
-            "active_project_id": new_project["uuid"],
-            "active_project_name": new_project["name"]
+            "project_id": new_project["uuid"],
+            "project_name": new_project["name"]
         }
 
         # Create files configuration file

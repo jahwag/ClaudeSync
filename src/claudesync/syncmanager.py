@@ -42,11 +42,11 @@ def retry_on_403(max_retries=3, delay=1):
 
 
 class SyncManager:
-    def __init__(self, provider, config, local_path):
+    def __init__(self, provider, config, project_id, local_path):
         self.provider = provider
         self.config = config
         self.active_organization_id = config.get("active_organization_id")
-        self.active_project_id = config.get("active_project_id")
+        self.active_project_id = project_id
         self.local_path = local_path
         self.upload_delay = config.get("upload_delay", 0.5)
         self.two_way_sync = config.get("two_way_sync", False)

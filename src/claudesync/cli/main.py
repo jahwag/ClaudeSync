@@ -54,61 +54,6 @@ def install_completion(shell):
 
 
 @cli.command()
-@click.pass_context
-def upgrade(ctx):
-    """Upgrade ClaudeSync to the latest version and reset configuration, preserving sessionKey."""
-    config = ctx.obj
-    current_version = get_distribution("claudesync").version
-
-    # Check for the latest version
-    try:
-        with urllib.request.urlopen(
-            "https://pypi.org/pypi/claudesync/json"
-        ) as response:
-            data = json.loads(response.read())
-            latest_version = data["info"]["version"]
-
-        if current_version == latest_version:
-            click.echo(
-                f"You are already on the latest version of ClaudeSync (v{current_version})."
-            )
-            return
-    except Exception as e:
-        click.echo(f"Unable to check for the latest version: {str(e)}")
-        click.echo("Proceeding with the upgrade process.")
-
-    session_key = config.get_session_key()
-    session_key_expiry = config.get("session_key_expiry")
-
-    # Upgrade ClaudeSync
-    click.echo(f"Upgrading ClaudeSync from v{current_version} to v{latest_version}...")
-    try:
-        subprocess.run(["pip", "install", "--upgrade", "claudesync"], check=True)
-        click.echo("ClaudeSync has been successfully upgraded.")
-    except subprocess.CalledProcessError:
-        click.echo(
-            "Failed to upgrade ClaudeSync. Please try manually: pip install --upgrade claudesync"
-        )
-
-    # Preserve the session key and its expiry
-    if session_key and session_key_expiry:
-        config.set_session_key(session_key, session_key_expiry)
-        click.echo("Session key preserved in the new configuration.")
-    else:
-        click.echo("No valid session key found in the old configuration.")
-
-    # Inform user about the upgrade process
-    click.echo("\nUpgrade process completed:")
-    click.echo(
-        f"1. ClaudeSync has been upgraded from v{current_version} to v{latest_version}."
-    )
-    click.echo("2. Your session key has been preserved (if it existed and was valid).")
-    click.echo(
-        "\nPlease run 'claudesync auth login' to complete your configuration setup if needed."
-    )
-
-
-@cli.command()
 @click.argument("project", required=False)
 @click.pass_obj
 @handle_errors
@@ -152,7 +97,7 @@ def push(config, project):
 
     # Sync files
     remote_files = provider.list_files(active_organization_id, project_id)
-    sync_manager = SyncManager(provider, config, config.get_project_root())
+    sync_manager = SyncManager(provider, config, project_id, config.get_project_root())
     sync_manager.sync(local_files, remote_files)
 
     click.echo(f"Project '{project}' synced successfully")
