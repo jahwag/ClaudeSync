@@ -2,7 +2,6 @@ import json
 
 import click
 
-from .category import category
 from ..exceptions import ConfigurationError
 from ..utils import handle_errors
 
@@ -67,6 +66,3 @@ def ls(config):
 
     # Print the combined configuration as JSON
     click.echo(json.dumps(combined_config, indent=2, sort_keys=True))
-
-
-config.add_command(category)

@@ -180,14 +180,14 @@ def get_local_files(config, root_path, files_config):
     exclude_dirs = {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS", "claude_chats", ".claudesync"}
 
     # Use patterns from files configuration
-    patterns = files_config.get("patterns", ["*"])
+    includes = files_config.get("includes", ["*"])
     excludes = files_config.get("excludes", [])
 
     category_excludes = None
     if excludes:
         category_excludes = pathspec.PathSpec.from_lines("gitwildmatch", excludes)
 
-    spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
+    spec = pathspec.PathSpec.from_lines("gitwildmatch", includes)
 
     for root, dirs, filenames in os.walk(root_path, topdown=True):
         # Filter directories

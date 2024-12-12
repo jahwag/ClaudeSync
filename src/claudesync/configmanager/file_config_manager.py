@@ -285,21 +285,21 @@ class FileConfigManager(BaseConfigManager):
             logging.error(f"Failed to decrypt session key: {str(e)}")
             return None, None
 
-    def add_file_category(self, category_name, description, patterns, excludes=None):
+    def add_file_category(self, category_name, description, includes, excludes=None):
         """
         Adds a new file category to the global configuration.
 
         Args:
             category_name (str): The name of the category to add.
             description (str): A description of the category.
-            patterns (list): A list of file patterns for the category.
+            includes (list): A list of file patterns for the category.
             excludes (list, optional): A list of patterns to exclude.
         """
         if "file_categories" not in self.global_config:
             self.global_config["file_categories"] = {}
         self.global_config["file_categories"][category_name] = {
             "description": description,
-            "patterns": patterns,
+            "includes": includes,
             "excludes": excludes or []
         }
         self._save_global_config()
@@ -316,29 +316,6 @@ class FileConfigManager(BaseConfigManager):
             and category_name in self.global_config["file_categories"]
         ):
             del self.global_config["file_categories"][category_name]
-            self._save_global_config()
-
-    def update_file_category(self, category_name, description=None, patterns=None):
-        """
-        Updates an existing file category in the global configuration.
-
-        Args:
-            category_name (str): The name of the category to update.
-            description (str, optional): The new description for the category. If None, the description is not updated.
-            patterns (list, optional): The new list of file patterns for the category. If None, the patterns are not updated.
-        """
-        if (
-            "file_categories" in self.global_config
-            and category_name in self.global_config["file_categories"]
-        ):
-            if description is not None:
-                self.global_config["file_categories"][category_name][
-                    "description"
-                ] = description
-            if patterns is not None:
-                self.global_config["file_categories"][category_name][
-                    "patterns"
-                ] = patterns
             self._save_global_config()
 
     def clear_all_session_keys(self):
