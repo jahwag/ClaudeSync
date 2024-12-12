@@ -25,26 +25,6 @@ def pull(config):
 
 
 @chat.command()
-@click.pass_obj
-@handle_errors
-def ls(config):
-    """List all chats."""
-    provider = validate_and_get_provider(config)
-    organization_id = config.get("active_organization_id")
-    chats = provider.get_chat_conversations(organization_id)
-
-    for chat in chats:
-        project = chat.get("project")
-        project_name = project.get("name") if project else ""
-        click.echo(
-            f"UUID: {chat.get('uuid', 'Unknown')}, "
-            f"Name: {chat.get('name', 'Unnamed')}, "
-            f"Project: {project_name}, "
-            f"Updated: {chat.get('updated_at', 'Unknown')}"
-        )
-
-
-@chat.command()
 @click.option("-a", "--all", "delete_all", is_flag=True, help="Delete all chats")
 @click.pass_obj
 @handle_errors
