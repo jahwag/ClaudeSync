@@ -5,6 +5,7 @@ from pathlib import Path
 import logging
 
 from claudesync.configmanager.base_config_manager import BaseConfigManager
+from claudesync.exceptions import ConfigurationError
 from claudesync.session_key_manager import SessionKeyManager
 
 
@@ -28,9 +29,61 @@ class FileConfigManager(BaseConfigManager):
         self.global_config_dir = Path.home() / ".claudesync"
         self.global_config_file = self.global_config_dir / "config.json"
         self.global_config = self._load_global_config()
-        self.local_config = {}
-        self.local_config_dir = None
-        self._load_local_config()
+        self.config_dir = self._find_config_dir()
+
+    def _find_config_dir(self, max_depth=100):
+        """Find the nearest directory containing a .claudesync folder."""
+        current_dir = Path.cwd()
+        root_dir = Path(current_dir.root)
+        depth = 0
+
+        while current_dir != root_dir and depth < max_depth:
+            config_dir = current_dir / ".claudesync"
+            if config_dir.is_dir():
+                return config_dir
+            current_dir = current_dir.parent
+            depth += 1
+
+        return None
+
+    def get_project_config(self, project_path):
+        """Get project configuration from project-specific JSON file."""
+        if not self.config_dir:
+            raise ConfigurationError("No .claudesync directory found")
+
+        project_file = self.config_dir / f"{project_path}-project.json"
+        if not project_file.exists():
+            # Try with subdirectories
+            parts = project_path.split('/')
+            project_file = self.config_dir / '/'.join(parts[:-1]) / f"{parts[-1]}-project.json"
+
+        if not project_file.exists():
+            raise ConfigurationError(f"Project configuration not found for {project_path}")
+
+        with open(project_file) as f:
+            return json.load(f)
+
+    def get_files_config(self, project_path):
+        """Get files configuration from files-specific JSON file."""
+        if not self.config_dir:
+            raise ConfigurationError("No .claudesync directory found")
+
+        files_file = self.config_dir / f"{project_path}-files.json"
+        if not files_file.exists():
+            # Try with subdirectories
+            parts = project_path.split('/')
+            files_file = self.config_dir / '/'.join(parts[:-1]) / f"{parts[-1]}-files.json"
+
+        if not files_file.exists():
+            raise ConfigurationError(f"Files configuration not found for {project_path}")
+
+        with open(files_file) as f:
+            return json.load(f)
+
+    def get_project_root(self):
+        """Get the root directory containing .claudesync."""
+        return self.config_dir.parent if self.config_dir else None
+
 
     def _load_global_config(self):
         """

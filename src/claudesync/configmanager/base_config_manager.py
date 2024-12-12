@@ -33,98 +33,42 @@ class BaseConfigManager(ABC):
             dict: The default configuration settings.
         """
         return {
+            "active_provider": None,
+            "active_organization_id": None,
             "log_level": "INFO",
             "upload_delay": 0.5,
             "max_file_size": 32 * 1024,
             "two_way_sync": False,
             "prune_remote_files": True,
             "claude_api_url": "https://api.claude.ai/api",
-            "compression_algorithm": "none",
-            "file_categories": {
-                "all_files": {
-                    "description": "All files not ignored",
-                    "patterns": ["*"],
-                },
-                "all_source_code": {
-                    "description": "All source code files",
-                    "patterns": [
-                        "*.java",
-                        "*.py",
-                        "*.js",
-                        "*.ts",
-                        "*.c",
-                        "*.cpp",
-                        "*.h",
-                        "*.hpp",
-                        "*.go",
-                        "*.rs",
-                    ],
-                    "excludes": [
-                        "**/test/**",  # Exclude test directories
-                        "**/*test*",   # Exclude files with test in name
-                        "**/*mock*"    # Exclude mock files
-                    ],
-                },
-                "production_code": {
-                    "description": "Production source code",
-                    "patterns": [
-                        "**/src/**/*.java",
-                        "**/*.py",
-                        "**/*.js",
-                        "**/*.ts",
-                        "**/*.vue",
-                    ],
-                },
-                "test_code": {
-                    "description": "Test source code",
-                    "patterns": [
-                        "**/test/**/*.java",
-                        "**/tests/**/*.py",
-                        "**/test_*.py",
-                        "**/*Test.java",
-                    ],
-                },
-                "build_config": {
-                    "description": "Build configuration files",
-                    "patterns": [
-                        "**/pom.xml",
-                        "**/build.gradle",
-                        "**/package.json",
-                        "**/setup.py",
-                        "**/Cargo.toml",
-                        "**/go.mod",
-                        "**/pyproject.toml",
-                        "**/requirements.txt",
-                        "**/*.tf",
-                        "**/*.yaml",
-                        "**/*.yml",
-                        "**/*.properties",
-                    ],
-                },
-                "uberproject_java": {
-                    "description": "Uberproject Java + Javascript",
-                    "patterns": [
-                        "**/src/**/*.java",
-                        "**/*.py",
-                        "**/*.js",
-                        "**/*.ts",
-                        "**/*.vue",
-                        "**/pom.xml",
-                        "**/build.gradle",
-                        "**/package.json",
-                        "**/setup.py",
-                        "**/Cargo.toml",
-                        "**/go.mod",
-                        "**/pyproject.toml",
-                        "**/requirements.txt",
-                        "**/*.tf",
-                        "**/*.yaml",
-                        "**/*.yml",
-                        "**/*.properties",
-                    ],
-                },
-            },
+            "compression_algorithm": "none"
         }
+
+    @abstractmethod
+    def get_project_config(self, project_path):
+        """
+        Get project configuration for the specified project path.
+
+        Args:
+            project_path (str): Project path like 'datamodel/typeconstraints'
+
+        Returns:
+            dict: Project configuration
+        """
+        pass
+
+    @abstractmethod
+    def get_files_config(self, project_path):
+        """
+        Get files configuration for the specified project path.
+
+        Args:
+            project_path (str): Project path like 'datamodel/typeconstraints'
+
+        Returns:
+            dict: Files configuration with patterns and categories
+        """
+        pass
 
     @abstractmethod
     def _load_global_config(self):

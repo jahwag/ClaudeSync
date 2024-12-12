@@ -171,103 +171,38 @@ def process_file(file_path):
     return None
 
 
-def get_local_files(config, local_path, category=None):
-    """
-    Retrieves a dictionary of local files within a specified path, applying various filters.
-
-    Args:
-        config: config manager to use
-        local_path (str): The base directory path to search for files.
-        category (str, optional): The file category to filter by.
-
-    Returns:
-        dict: A dictionary where keys are relative file paths, and values are MD5 hashes of the file contents.
-    """
-    logger.debug(f"Starting get_local_files with path: {local_path}, category: {category}")
-
-    gitignore = load_gitignore(local_path)
-    logger.debug(f"Loaded gitignore: {'Yes' if gitignore else 'No'}")
-
-    claudeignore = load_claudeignore(local_path)
-    logger.debug(f"Loaded claudeignore: {'Yes' if claudeignore else 'No'}")
+def get_local_files(config, root_path, files_config):
+    """Get local files matching the patterns in files configuration."""
+    gitignore = load_gitignore(root_path)
+    claudeignore = load_claudeignore(root_path)
 
     files = {}
-    exclude_dirs = {
-        ".git",
-        ".svn",
-        ".hg",
-        ".bzr",
-        "_darcs",
-        "CVS",
-        "claude_chats",
-        ".claudesync",
-    }
-    logger.debug(f"Exclude directories: {exclude_dirs}")
+    exclude_dirs = {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS", "claude_chats", ".claudesync"}
 
-    categories = config.get("file_categories", {})
-    logger.debug(f"Available categories: {list(categories.keys())}")
-
-    # Verify that the requested category exists
-    if category and category not in categories:
-        logger.error(f"Invalid category: {category}")
-        raise ValueError(f"Invalid category: {category}")
-
-    # Use the patterns from the specified category, or default to all files
-    patterns = ["*"]  # Default to all files
-    if category:
-        patterns = categories[category]["patterns"]
-        logger.debug(f"Using patterns from category '{category}': {patterns}")
-    else:
-        logger.debug("No category specified, using default pattern '*'")
-    logger.debug(f"Using patterns: {patterns}")
+    # Use patterns from files configuration
+    patterns = files_config.get("patterns", ["*"])
+    excludes = files_config.get("excludes", [])
 
     category_excludes = None
-    if category:
-        categories = config.get("file_categories", {})
-        active_category = categories.get(category)
-        if active_category and "excludes" in active_category:
-            exclude_patterns = active_category.get("excludes", [])
-            if exclude_patterns:
-                category_excludes = pathspec.PathSpec.from_lines("gitwildmatch", exclude_patterns)
-                logger.debug(f"Created category excludes PathSpec with patterns: {exclude_patterns}")
+    if excludes:
+        category_excludes = pathspec.PathSpec.from_lines("gitwildmatch", excludes)
 
     spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
-    logger.debug("Created PathSpec for patterns")
 
-    for root, dirs, filenames in os.walk(local_path, topdown=True):
-        rel_root = os.path.relpath(root, local_path)
-        rel_root = "" if rel_root == "." else rel_root
-        logger.debug(f"Processing directory: {rel_root}")
-
-        # Filter out excluded directories
-        original_dirs = dirs.copy()
-        dirs[:] = [
-            d
-            for d in dirs
-            if d not in exclude_dirs
-               and not (gitignore and gitignore.match_file(os.path.join(rel_root, d)))
-               and not (claudeignore and claudeignore.match_file(os.path.join(rel_root, d)))
-        ]
-        if len(dirs) != len(original_dirs):
-            logger.debug(f"Filtered out {len(original_dirs) - len(dirs)} excluded directories in {rel_root}")
+    for root, dirs, filenames in os.walk(root_path, topdown=True):
+        # Filter directories
+        dirs[:] = [d for d in dirs if d not in exclude_dirs]
 
         for filename in filenames:
-            rel_path = os.path.join(rel_root, filename)
-            full_path = os.path.join(root, filename)
+            rel_path = os.path.relpath(os.path.join(root, filename), root_path)
 
             if spec.match_file(rel_path):
-                logger.debug(f"File {rel_path} matches pattern spec")
-                if should_process_file(config, full_path, filename, gitignore, local_path, claudeignore, category_excludes):
+                full_path = os.path.join(root, filename)
+                if should_process_file(config, full_path, filename, gitignore, root_path, claudeignore, category_excludes):
                     file_hash = process_file(full_path)
                     if file_hash:
                         files[rel_path] = file_hash
-                        logger.debug(f"Added file {rel_path} with hash {file_hash}")
-                    else:
-                        logger.debug(f"Failed to process file {rel_path}")
-                else:
-                    logger.debug(f"File {rel_path} should not be processed")
 
-    logger.debug(f"Found {len(files)} files to sync")
     return files
 
 def handle_errors(func):
