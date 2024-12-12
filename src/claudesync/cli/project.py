@@ -1,3 +1,6 @@
+import json
+from pathlib import Path
+
 import click
 import os
 import logging
@@ -21,10 +24,13 @@ def project():
 @project.command()
 @click.option(
     "--name",
-    default=lambda: os.path.basename(os.getcwd()),
     prompt="Enter a title for your new project",
-    help="The name of the project (defaults to current directory name)",
-    show_default="current directory name",
+    help="The name of the project",
+)
+@click.option(
+    "--internal-name",
+    prompt="Enter the internal name for your project (used for config files)",
+    help="The internal name used for configuration files",
 )
 @click.option(
     "--description",
@@ -32,14 +38,6 @@ def project():
     prompt="Enter the project description",
     help="The project description",
     show_default=True,
-)
-@click.option(
-    "--local-path",
-    default=lambda: os.getcwd(),
-    prompt="Enter the absolute path to your local project directory",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True, resolve_path=True),
-    help="The local path for the project (defaults to current working directory)",
-    show_default="current working directory",
 )
 @click.option(
     "--provider",
@@ -53,9 +51,14 @@ def project():
     default=None,
     help="The organization ID to use for this project",
 )
+@click.option(
+    "--no-git-check",
+    is_flag=True,
+    help="Skip git repository check",
+)
 @click.pass_context
 @handle_errors
-def create(ctx, name, description, local_path, provider, organization):
+def create(ctx, name, internal_name, description, provider, organization, no_git_check):
     """Creates a new project for the selected provider."""
     config = ctx.obj
     provider_instance = get_provider(config, provider)
@@ -65,32 +68,59 @@ def create(ctx, name, description, local_path, provider, organization):
         organization_instance = organizations[0] if organizations else None
         organization = organization_instance["id"]
 
+    # Get the current directory
+    current_dir = Path.cwd()
+
+    # Create .claudesync directory if it doesn't exist
+    claudesync_dir = current_dir / ".claudesync"
+    os.makedirs(claudesync_dir, exist_ok=True)
+
     try:
+        # Create the project remotely
         new_project = provider_instance.create_project(organization, name, description)
         click.echo(
             f"Project '{new_project['name']}' (uuid: {new_project['uuid']}) has been created successfully."
         )
 
-        # Update configuration
-        config.set("active_provider", provider, local=True)
-        config.set("active_organization_id", organization, local=True)
-        config.set("active_project_id", new_project["uuid"], local=True)
-        config.set("active_project_name", new_project["name"], local=True)
-        config.set("local_path", local_path, local=True)
+        # Create project configuration file
+        project_config = {
+            "active_project_id": new_project["uuid"],
+            "active_project_name": new_project["name"]
+        }
 
-        # Create .claudesync directory and save config
-        claudesync_dir = os.path.join(local_path, ".claudesync")
-        os.makedirs(claudesync_dir, exist_ok=True)
-        config_file_path = os.path.join(claudesync_dir, "config.local.json")
-        config._save_local_config()
+        # Create files configuration file
+        files_config = {
+            "description": description,
+            "patterns": [],
+            "excludes": []
+        }
+
+        # Determine if internal_name contains a path
+        config_path = Path(internal_name)
+        if len(config_path.parts) > 1:
+            # Create subdirectories if needed
+            os.makedirs(claudesync_dir / config_path.parent, exist_ok=True)
+
+        # Save project configuration
+        project_config_path = claudesync_dir / f"{internal_name}-project.json"
+        with open(project_config_path, 'w') as f:
+            json.dump(project_config, f, indent=2)
+
+        # Save files configuration
+        files_config_path = claudesync_dir / f"{internal_name}-files.json"
+        with open(files_config_path, 'w') as f:
+            json.dump(files_config, f, indent=2)
 
         click.echo("\nProject created:")
-        click.echo(f"  - Project location: {local_path}")
-        click.echo(f"  - Project config location: {config_file_path}")
+        click.echo(f"  - Project location: {current_dir}")
+        click.echo(f"  - Project config: {project_config_path}")
+        click.echo(f"  - Files config: {files_config_path}")
         click.echo(f"  - Remote URL: https://claude.ai/project/{new_project['uuid']}")
 
     except (ProviderError, ConfigurationError) as e:
         click.echo(f"Failed to create project: {str(e)}")
+
+project.add_command(file)
 
 
 @project.command()
