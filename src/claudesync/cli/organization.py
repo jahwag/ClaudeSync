@@ -89,10 +89,3 @@ def set(ctx, org_id, provider):
             )
         else:
             click.echo("Invalid selection. Please try again.")
-
-    # Clear project-related settings when changing organization
-    config.set("active_project_id", None, local=True)
-    config.set("active_project_name", None, local=True)
-    click.echo(
-        "Project settings cleared. Please select or create a new project for this organization."
-    )

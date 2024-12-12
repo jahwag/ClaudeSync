@@ -23,7 +23,7 @@ def ls(config, project):
         click.echo("No files found in the active project.")
     else:
         click.echo(
-            f"Files in project '{config.get('active_project_name')}' (ID: {project_id}):"
+            f"Files in project '{config.get('project_name')}' (ID: {project_id}):"
         )
         for file in files:
             click.echo(
