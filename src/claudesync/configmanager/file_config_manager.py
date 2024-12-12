@@ -355,7 +355,7 @@ class FileConfigManager(BaseConfigManager):
         Returns:
             str: The name of the active provider, or None if not set.
         """
-        return self.local_config.get("active_provider")
+        return self.global_config.get("active_provider")
 
     def get_providers_with_session_keys(self):
         """

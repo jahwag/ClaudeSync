@@ -234,50 +234,45 @@ def handle_errors(func):
 
 def validate_and_get_provider(config, require_org=True, require_project=False):
     """
-    Validates the configuration for the presence of an active provider and session key,
-    and optionally checks for an active organization ID and project ID. If validation passes,
-    it retrieves the provider instance based on the active provider name.
+    Validates global configuration and optionally project configuration, then returns the provider instance.
 
     Args:
-        config (ConfigManager): The configuration manager instance containing settings.
-        require_org (bool, optional): Flag to indicate whether an active organization ID
-                                      is required. Defaults to True.
-        require_project (bool, optional): Flag to indicate whether an active project ID
-                                          is required. Defaults to False.
+        config (ConfigManager): The configuration manager instance containing settings
+        require_org (bool): Whether to require an active organization ID. Defaults to True.
+        require_project (bool): Whether to require an active project ID. Defaults to False.
 
     Returns:
-        object: An instance of the provider specified in the configuration.
+        BaseProvider: An instance of the configured provider.
 
     Raises:
-        ConfigurationError: If the active provider or session key is missing, or if
-                            require_org is True and no active organization ID is set,
-                            or if require_project is True and no active project ID is set.
-        ProviderError: If the session key has expired.
+        ConfigurationError: If required configuration is missing or invalid
     """
-    if require_org and not config.get("active_organization_id"):
-        raise ConfigurationError(
-            "No active organization set. Please select an organization (claudesync organization set)."
-        )
-
-    if require_project and not config.get("active_project_id"):
-        raise ConfigurationError(
-            "No active project set. Please select or create a project (claudesync project set)."
-        )
-
+    # Check global settings from ~/.claudesync/config.json
     active_provider = config.get_active_provider()
     if not active_provider:
         raise ConfigurationError(
-            "No active provider set. Please select a provider for this project."
+            "No active provider set in global config. Please set one in ~/.claudesync/config.json"
         )
 
+    if require_org and not config.get("active_organization_id"):
+        raise ConfigurationError(
+            "No active organization set in global config. Please set one in ~/.claudesync/config.json"
+        )
+
+    # Verify session key
     session_key, session_key_expiry = config.get_session_key(active_provider)
     if not session_key:
         raise ConfigurationError(
             f"No valid session key found for {active_provider}. Please log in again."
         )
 
-    return get_provider(config, active_provider)
+    if require_project:
+        # Project settings will be loaded from the appropriate project config file
+        # by the caller - we don't need to validate them here since they're
+        # not part of the provider setup
+        pass
 
+    return get_provider(config, active_provider)
 
 def validate_and_store_local_path(config):
     """
