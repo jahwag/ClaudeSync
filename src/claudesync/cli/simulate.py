@@ -428,10 +428,10 @@ def simulate_push(config, port, no_browser, project):
     logger.debug(f"Configuration local path: {config.get_local_path()}")
 
     if not project:
-        active_project, _ = config.get_active_project()
-        if not active_project:
+        active_project_path, active_project_id = config.get_active_project()
+        if not active_project_path:
             raise ConfigurationError("No active project found. Please specify a project or set an active one using 'project set'")
-        project = active_project
+        project = active_project_path
 
     web_dir = os.path.join(os.path.dirname(__file__), '../web/dist/claudesync-simulate')
     logger.debug(f"Web directory path: {web_dir}")

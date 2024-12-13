@@ -60,10 +60,10 @@ def push(config, project):
     """Synchronize the project files."""
     if not project:
         # Use the active project if no project specified
-        active_project, active_id = config.get_active_project()
-        if not active_project:
+        active_project_path, active_project_id = config.get_active_project()
+        if not active_project_path:
             raise ConfigurationError("No active project found. Please specify a project or set an active one using 'project set'")
-        project = active_project
+        project = active_project_path
 
     # Get configurations
     files_config = config.get_files_config(project)

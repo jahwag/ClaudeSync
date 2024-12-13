@@ -60,17 +60,17 @@ def init(config, name, project):
 @click.option("--timezone", default="UTC", help="Timezone for the message")
 @click.pass_obj
 @handle_errors
-def message(config, project, message, chat, timezone):
+def message(config, project_path, message, chat, timezone):
     """Send a message to a specified chat or create a new chat and send the message."""
 
-    if not project:
-        active_project, active_id = config.get_active_project()
-        if not active_project:
+    if not project_path:
+        active_project_path, active_project_id = config.get_active_project()
+        if not active_project_path:
             raise ConfigurationError("No active project found. Please specify a project or set an active one using 'project set'")
-        project = active_project
-        project_id = active_id
+        project_path = active_project_path
+        project_id = active_project_id
     else:
-        project_id = config.get_project_id(project)
+        project_id = config.get_project_id(project_path)
 
     provider = validate_and_get_provider(config, require_project=True)
     active_organization_id = config.get("active_organization_id")
