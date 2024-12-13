@@ -171,9 +171,7 @@ config.json
 claudesync.log
 claude_chats
 some_value
-.claudesync/config.local.json
-.claudesync/be-config.local.json
-.claudesync/fe-config.local.json
+*.project_id.json
 
 ROADMAP.md
 

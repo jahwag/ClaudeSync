@@ -1,0 +1,7 @@
+{
+  "project_name": "ClaudeSync - BE",
+  "includes": [
+    "*.py",
+    "*.md"
+  ]
+}

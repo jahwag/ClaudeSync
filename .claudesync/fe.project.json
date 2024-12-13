@@ -1,0 +1,10 @@
+{
+  "project_name": "ClaudeSync - FE",
+  "includes": [
+    "src/claudesync/cli/simulate.py",
+    "src/claudesync/web/package.json",
+    "src/claudesync/web/angular.json",
+    "src/claudesync/web/tsconfig.json",
+    "src/claudesync/web/src/**"
+  ]
+}
