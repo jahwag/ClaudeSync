@@ -11,7 +11,6 @@ from claudesync.exceptions import ConfigurationError, ProviderError
 from claudesync.provider_factory import get_provider
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)  # Ensure debug level is set
 
 def normalize_and_calculate_md5(content):
     """
