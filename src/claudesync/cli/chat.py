@@ -2,7 +2,7 @@ import os
 
 import click
 import logging
-from ..exceptions import ProviderError
+from ..exceptions import ProviderError, ConfigurationError
 from ..utils import handle_errors, validate_and_get_provider
 
 logger = logging.getLogger(__name__)
@@ -62,8 +62,17 @@ def init(config, name, project):
 @handle_errors
 def message(config, project, message, chat, timezone):
     """Send a message to a specified chat or create a new chat and send the message."""
+
+    if not project:
+        active_project, active_id = config.get_active_project()
+        if not active_project:
+            raise ConfigurationError("No active project found. Please specify a project or set an active one using 'project set'")
+        project = active_project
+        project_id = active_id
+    else:
+        project_id = config.get_project_id(project)
+
     provider = validate_and_get_provider(config, require_project=True)
-    project_id = config.get_project_id(project)
     active_organization_id = config.get("active_organization_id")
     active_project_name = config.get("active_project_name")
 

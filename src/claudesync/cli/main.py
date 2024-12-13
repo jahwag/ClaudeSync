@@ -59,27 +59,11 @@ def install_completion(shell):
 def push(config, project):
     """Synchronize the project files."""
     if not project:
-        # Try to determine project from current directory
-        current_dir = Path.cwd()
-        config_dir = config._find_config_dir()
-        if not config_dir:
-            raise ConfigurationError("No .claudesync directory found")
-
-        rel_path = current_dir.relative_to(config_dir.parent)
-        parts = rel_path.parts
-
-        # Look for matching project configuration
-        for i in range(len(parts), 0, -1):
-            potential_project = '/'.join(parts[:i])
-            try:
-                config.get_project_id(potential_project)
-                project = potential_project
-                break
-            except ConfigurationError:
-                continue
-
-        if not project:
-            raise ConfigurationError("Could not determine project from current directory")
+        # Use the active project if no project specified
+        active_project, active_id = config.get_active_project()
+        if not active_project:
+            raise ConfigurationError("No active project found. Please specify a project or set an active one using 'project set'")
+        project = active_project
 
     # Get configurations
     files_config = config.get_files_config(project)

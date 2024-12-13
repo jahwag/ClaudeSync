@@ -10,6 +10,8 @@ import webbrowser
 import threading
 from urllib.parse import urlparse, parse_qs
 from pathlib import Path
+
+from ..exceptions import ConfigurationError
 from ..utils import get_local_files, load_gitignore, load_claudeignore
 from ..configmanager import FileConfigManager
 from typing import Dict, List, Optional, TypedDict
@@ -416,13 +418,20 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 @click.command()
 @click.option('--port', default=4201, help='Port to run the server on')
 @click.option('--no-browser', is_flag=True, help='Do not open browser automatically')
+@click.option('--project', help='Project to simulate (defaults to active project)')
 @click.pass_obj
-def simulate_push(config, port, no_browser):
+def simulate_push(config, port, no_browser, project):
     """Launch a visualization of files to be synchronized."""
     logger.debug("Starting simulate command")
+    logger.debug(f"Project: {project}")
     logger.debug(f"Configuration object type: {type(config)}")
     logger.debug(f"Configuration local path: {config.get_local_path()}")
-    logger.debug(f"Configuration default category: {config.get_default_category()}")
+
+    if not project:
+        active_project, _ = config.get_active_project()
+        if not active_project:
+            raise ConfigurationError("No active project found. Please specify a project or set an active one using 'project set'")
+        project = active_project
 
     web_dir = os.path.join(os.path.dirname(__file__), '../web/dist/claudesync-simulate')
     logger.debug(f"Web directory path: {web_dir}")
