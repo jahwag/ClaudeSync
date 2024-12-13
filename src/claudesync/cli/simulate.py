@@ -433,11 +433,11 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
 
 @click.command()
+@click.argument("project", required=False)
 @click.option('--port', default=4201, help='Port to run the server on')
 @click.option('--no-browser', is_flag=True, help='Do not open browser automatically')
-@click.option('--project', help='Project to simulate (defaults to active project)')
 @click.pass_obj
-def simulate_push(config, port, no_browser, project):
+def simulate_push(config, project, port, no_browser):
     """Launch a visualization of files to be synchronized."""
     logger.debug("Starting simulate command")
     logger.debug(f"Project: {project}")
