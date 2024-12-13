@@ -229,53 +229,6 @@ def load_config():
         logger.error(f"Error reading config file at {config_path}: {e}")
         return {}
 
-def calculate_sync_stats(config):
-    """Calculate statistics about files that would be synced."""
-    local_path = config.get_local_path()
-    logger.debug(f"Calculating sync stats for local path: {local_path}")
-
-    if not local_path:
-        logger.warning("No local path found in config")
-        return {
-            "totalFiles": 0,
-            "filesToSync": 0,
-            "totalSize": "0 B"
-        }
-
-    # Get the default category name
-    default_category = config.get("default_sync_category")
-    logger.debug(f"Using default sync category: {default_category}")
-
-    # Get list of files that would be synced
-    files_to_sync = get_local_files(config, local_path, default_category)
-    logger.debug(f"Found {len(files_to_sync)} files to sync")
-
-    # Calculate total size of files to sync
-    total_size = 0
-    total_files = 0
-
-    for file_path in files_to_sync.keys():
-        full_path = os.path.join(local_path, file_path)
-        if os.path.exists(full_path):
-            size = os.path.getsize(full_path)
-            total_size += size
-            total_files += 1
-
-    # Convert size to human-readable format
-    size_str = format_size(total_size)
-
-    # Count all files in project directory for comparison
-    all_files = sum(1 for _ in Path(local_path).rglob('*') if _.is_file())
-    logger.debug(f"Total files in directory: {all_files}")
-    logger.debug(f"Files to sync: {total_files}")
-    logger.debug(f"Total size to sync: {size_str}")
-
-    return {
-        "totalFiles": all_files,
-        "filesToSync": total_files,
-        "totalSize": size_str
-    }
-
 def format_size(size):
     """Convert size in bytes to human readable format."""
     for unit in ['B', 'KB', 'MB', 'GB']:
