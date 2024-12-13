@@ -286,8 +286,9 @@ def format_size(size):
     return f"{size:.1f} TB"
 
 class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, config=None, **kwargs):
+    def __init__(self, *args, config=None, project=None, **kwargs):
         self.config = config
+        self.project = project
         super().__init__(*args, **kwargs)
 
     def get_current_config(self):
@@ -309,7 +310,6 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             send_cors_headers(self)
             self.end_headers()
 
-            # Get the file path from query parameters
             query_params = parse_qs(parsed_path.query)
             file_path = query_params.get('path', [''])[0]
 
@@ -318,7 +318,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
             config = self.get_current_config()
-            local_path = config.get_local_path()
+            local_path = config.get_project_root()
 
             if not local_path:
                 self.wfile.write(json.dumps({'error': 'No local path configured'}).encode())
@@ -330,7 +330,6 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                     return
 
                 full_path = os.path.join(local_path, file_path)
-                # Basic security check to ensure the path is within the project directory
                 if not os.path.abspath(full_path).startswith(os.path.abspath(local_path)):
                     self.wfile.write(json.dumps({'error': 'Invalid file path'}).encode())
                     return
@@ -351,19 +350,15 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
             config = self.get_current_config()
-            local_path = config.get_local_path()
-
-            # Get the default category name and then use it to get the active category
-            default_category = config.get("default_sync_category")
-            categories = config.get("file_categories", {})
-            active_category = categories.get(default_category) if default_category else None
-
-            if not local_path:
-                self.wfile.write(json.dumps({'error': 'No local path configured'}).encode())
-                return
+            local_path = config.get_project_root()
 
             try:
-                files_to_sync = get_local_files(config, local_path, default_category)
+                # Get files configuration for the specific project
+                files_config = config.get_files_config(self.project)
+
+                # Get files that would be synced based on project configuration
+                files_to_sync = get_local_files(config, local_path, files_config)
+
                 tree = build_file_tree(local_path, files_to_sync, config)
                 self.wfile.write(json.dumps(tree).encode())
             except Exception as e:
@@ -380,18 +375,19 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
             config = self.get_current_config()
 
-            # Get the default category name and then the active category
-            default_category = config.get("default_sync_category")
-            categories = config.get("file_categories", {})
-            active_category = {
-                default_category: categories.get(default_category)
-            } if default_category and default_category in categories else {}
+            try:
+                # Get files configuration for the specific project
+                files_config = config.get_files_config(self.project)
 
-            response_data = {
-                'fileCategories': active_category,
-                'claudeignore': load_claudeignore_as_string()
-            }
-            self.wfile.write(json.dumps(response_data).encode())
+                response_data = {
+                    'fileCategories': files_config,
+                    'claudeignore': load_claudeignore_as_string(),
+                    'project': self.project
+                }
+                self.wfile.write(json.dumps(response_data).encode())
+            except Exception as e:
+                logger.error(f"Error getting config data: {str(e)}")
+                self.wfile.write(json.dumps({'error': str(e)}).encode())
             return
 
         elif parsed_path.path == '/api/stats':
@@ -400,20 +396,41 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             send_cors_headers(self)
             self.end_headers()
 
-            config = self.get_current_config()
-            stats = calculate_sync_stats(config)
-            self.wfile.write(json.dumps(stats).encode())
+            try:
+                config = self.get_current_config()
+                files_config = config.get_files_config(self.project)
+                local_path = config.get_project_root()
+
+                # Get files that would be synced based on project configuration
+                files_to_sync = get_local_files(config, local_path, files_config)
+
+                # Calculate total size of files to sync
+                total_size = 0
+                total_files = 0
+                for file_path in files_to_sync:
+                    full_path = os.path.join(local_path, file_path)
+                    if os.path.exists(full_path):
+                        size = os.path.getsize(full_path)
+                        total_size += size
+                        total_files += 1
+
+                # Count all files in project directory
+                all_files = sum(1 for _ in Path(local_path).rglob('*') if _.is_file())
+
+                stats = {
+                    "totalFiles": all_files,
+                    "filesToSync": total_files,
+                    "totalSize": format_size(total_size)
+                }
+                self.wfile.write(json.dumps(stats).encode())
+            except Exception as e:
+                logger.error(f"Error calculating stats: {str(e)}")
+                self.wfile.write(json.dumps({'error': str(e)}).encode())
             return
 
         # For all other paths, serve static files
         return super().do_GET()
 
-    def do_OPTIONS(self):
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-        self.end_headers()
 
 @click.command()
 @click.option('--port', default=4201, help='Port to run the server on')
@@ -424,14 +441,22 @@ def simulate_push(config, port, no_browser, project):
     """Launch a visualization of files to be synchronized."""
     logger.debug("Starting simulate command")
     logger.debug(f"Project: {project}")
-    logger.debug(f"Configuration object type: {type(config)}")
-    logger.debug(f"Configuration local path: {config.get_local_path()}")
 
     if not project:
         active_project_path, active_project_id = config.get_active_project()
         if not active_project_path:
             raise ConfigurationError("No active project found. Please specify a project or set an active one using 'project set'")
         project = active_project_path
+
+    # Verify the project exists and get its configuration
+    try:
+        project_id = config.get_project_id(project)
+        files_config = config.get_files_config(project)
+        logger.debug(f"Using project: {project} (ID: {project_id})")
+    except ConfigurationError as e:
+        logger.error(f"Project configuration error: {e}")
+        click.echo(f"Error: {str(e)}")
+        return
 
     web_dir = os.path.join(os.path.dirname(__file__), '../web/dist/claudesync-simulate')
     logger.debug(f"Web directory path: {web_dir}")
@@ -446,15 +471,15 @@ def simulate_push(config, port, no_browser, project):
     class LocalhostTCPServer(socketserver.TCPServer):
         def server_bind(self):
             self.socket.setsockopt(socketserver.socket.SOL_SOCKET, socketserver.socket.SO_REUSEADDR, 1)
-            # Explicitly bind to localhost
             self.socket.bind(('127.0.0.1', self.server_address[1]))
 
-    handler = lambda *args: SyncDataHandler(*args, config=config)
+    handler = lambda *args: SyncDataHandler(*args, config=config, project=project)
 
     try:
         with LocalhostTCPServer(("127.0.0.1", port), handler) as httpd:
             url = f"http://localhost:{port}"
             click.echo(f"Server started at {url}")
+            click.echo(f"Simulating sync for project: {project}")
             logger.debug(f"Server started on port {port}, bound to localhost only")
 
             if not no_browser:
