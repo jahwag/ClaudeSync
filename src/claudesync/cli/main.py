@@ -72,7 +72,7 @@ def push(config, project):
         for i in range(len(parts), 0, -1):
             potential_project = '/'.join(parts[:i])
             try:
-                config.get_project_config(potential_project)
+                config.get_project_id(potential_project)
                 project = potential_project
                 break
             except ConfigurationError:
@@ -82,14 +82,13 @@ def push(config, project):
             raise ConfigurationError("Could not determine project from current directory")
 
     # Get configurations
-    project_config = config.get_project_config(project)
     files_config = config.get_files_config(project)
 
     provider = validate_and_get_provider(config)
 
     # Use project configuration
     active_organization_id = config.get("active_organization_id")
-    project_id = project_config["project_id"]
+    project_id = config.get_project_id(project)
 
     # Get files to sync using patterns from files configuration
     local_files = get_local_files(config, config.get_project_root(), files_config)

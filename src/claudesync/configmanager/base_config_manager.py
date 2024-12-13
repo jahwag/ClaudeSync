@@ -45,15 +45,15 @@ class BaseConfigManager(ABC):
         }
 
     @abstractmethod
-    def get_project_config(self, project_path):
+    def get_project_id(self, project_path):
         """
-        Get project configuration for the specified project path.
+        Get project id for the specified project path.
 
         Args:
             project_path (str): Project path like 'datamodel/typeconstraints'
 
         Returns:
-            dict: Project configuration
+            str: Project id
         """
         pass
 

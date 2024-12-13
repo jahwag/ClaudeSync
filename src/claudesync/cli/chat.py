@@ -63,8 +63,7 @@ def init(config, name, project):
 def message(config, project, message, chat, timezone):
     """Send a message to a specified chat or create a new chat and send the message."""
     provider = validate_and_get_provider(config, require_project=True)
-    project_config = config.get_project_config(project)
-    project_id = project_config["project_id"]
+    project_id = config.get_project_id(project)
     active_organization_id = config.get("active_organization_id")
     active_project_name = config.get("active_project_name")
 

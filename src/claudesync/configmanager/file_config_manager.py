@@ -46,22 +46,21 @@ class FileConfigManager(BaseConfigManager):
 
         return None
 
-    def get_project_config(self, project_path):
-        """Get project configuration from project-specific JSON file."""
+    def get_project_id(self, project_path):
         if not self.config_dir:
             raise ConfigurationError("No .claudesync directory found")
 
-        project_file = self.config_dir / f"{project_path}-project.json"
+        project_file = self.config_dir / f"{project_path}.project_id.json"
         if not project_file.exists():
             # Try with subdirectories
             parts = project_path.split('/')
-            project_file = self.config_dir / '/'.join(parts[:-1]) / f"{parts[-1]}-project.json"
+            project_file = self.config_dir / '/'.join(parts[:-1]) / f"{parts[-1]}.project_id.json"
 
         if not project_file.exists():
             raise ConfigurationError(f"Project configuration not found for {project_path}")
 
         with open(project_file) as f:
-            return json.load(f)
+            return json.load(f)['project_id']
 
     def get_files_config(self, project_path):
         """Get files configuration from files-specific JSON file."""
@@ -72,7 +71,7 @@ class FileConfigManager(BaseConfigManager):
         if not files_file.exists():
             # Try with subdirectories
             parts = project_path.split('/')
-            files_file = self.config_dir / '/'.join(parts[:-1]) / f"{parts[-1]}-files.json"
+            files_file = self.config_dir / '/'.join(parts[:-1]) / f"{parts[-1]}.project.json"
 
         if not files_file.exists():
             raise ConfigurationError(f"Files configuration not found for {project_path}")

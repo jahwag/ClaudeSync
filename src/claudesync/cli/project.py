@@ -82,16 +82,16 @@ def create(ctx, name, internal_name, description, provider, organization, no_git
             f"Project '{new_project['name']}' (uuid: {new_project['uuid']}) has been created successfully."
         )
 
-        # Create project configuration file
-        project_config = {
+        # Create project ID configuration file
+        project_id_config = {
             "project_id": new_project["uuid"],
-            "project_name": new_project["name"]
         }
 
-        # Create files configuration file
-        files_config = {
-            "description": description,
-            "patterns": [],
+        # Create project configuration file
+        project_config = {
+            "project_name": new_project["name"],
+            "project_description": description,
+            "includes": [],
             "excludes": []
         }
 
@@ -102,19 +102,19 @@ def create(ctx, name, internal_name, description, provider, organization, no_git
             os.makedirs(claudesync_dir / config_path.parent, exist_ok=True)
 
         # Save project configuration
-        project_config_path = claudesync_dir / f"{internal_name}-project.json"
+        project_id_config_path = claudesync_dir / f"{internal_name}.project_id.json"
+        with open(project_id_config_path, 'w') as f:
+            json.dump(project_id_config, f, indent=2)
+
+        # Save files configuration
+        project_config_path = claudesync_dir / f"{internal_name}.project.json"
         with open(project_config_path, 'w') as f:
             json.dump(project_config, f, indent=2)
 
-        # Save files configuration
-        files_config_path = claudesync_dir / f"{internal_name}-files.json"
-        with open(files_config_path, 'w') as f:
-            json.dump(files_config, f, indent=2)
-
         click.echo("\nProject created:")
         click.echo(f"  - Project location: {current_dir}")
+        click.echo(f"  - Project ID config: {project_id_config_path}")
         click.echo(f"  - Project config: {project_config_path}")
-        click.echo(f"  - Files config: {files_config_path}")
         click.echo(f"  - Remote URL: https://claude.ai/project/{new_project['uuid']}")
 
     except (ProviderError, ConfigurationError) as e:

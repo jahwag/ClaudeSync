@@ -16,8 +16,7 @@ def ls(config, project):
     """List files in the active remote project."""
     provider = validate_and_get_provider(config, require_project=True)
     active_organization_id = config.get("active_organization_id")
-    project_config = config.get_project_config(project)
-    project_id = project_config["project_id"]
+    project_id = config.get_project_id(project)
     files = provider.list_files(active_organization_id, project_id)
     if not files:
         click.echo("No files found in the active project.")
