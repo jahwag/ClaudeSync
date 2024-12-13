@@ -111,7 +111,10 @@ def create(ctx, name, internal_name, description, provider, organization, no_git
         with open(project_config_path, 'w') as f:
             json.dump(project_config, f, indent=2)
 
-        click.echo("\nProject created:")
+        # Set as active project
+        config.set_active_project(internal_name, new_project["uuid"])
+
+        click.echo("\nProject created and set as active:")
         click.echo(f"  - Project location: {current_dir}")
         click.echo(f"  - Project ID config: {project_id_config_path}")
         click.echo(f"  - Project config: {project_config_path}")
@@ -119,6 +122,38 @@ def create(ctx, name, internal_name, description, provider, organization, no_git
 
     except (ProviderError, ConfigurationError) as e:
         click.echo(f"Failed to create project: {str(e)}")
+
+# Add this to src/claudesync/cli/project.py, right after the @project.command() create function
+
+@project.command()
+@click.argument("project-path", required=True)
+@click.pass_obj
+@handle_errors
+def set(config, project_path):
+    """Set the active project for the current directory.
+
+    PROJECT_PATH: The project path like 'datamodel/typeconstraints' or 'myproject'"""
+    try:
+        # Get project ID from config
+        project_id = config.get_project_id(project_path)
+
+        # Set as active project
+        config.set_active_project(project_path, project_id)
+
+        # Get project details
+        files_config = config.get_files_config(project_path)
+        project_name = files_config.get('project_name', 'Unknown Project')
+
+        click.echo(f"Set active project to '{project_name}'")
+        click.echo(f"  - Project path: {project_path}")
+        click.echo(f"  - Project ID: {project_id}")
+        click.echo(f"  - Project location: {config.get_project_root()}")
+        click.echo(f"  - Remote URL: https://claude.ai/project/{project_id}")
+
+    except ConfigurationError as e:
+        click.echo(f"Error: {str(e)}")
+        click.echo("Make sure the project exists and has been properly configured.")
+        click.echo("You may need to create the project first using 'claudesync project create'")
 
 project.add_command(file)
 

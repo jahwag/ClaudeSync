@@ -93,6 +93,9 @@ def push(config, project):
     # Get files to sync using patterns from files configuration
     local_files = get_local_files(config, config.get_project_root(), files_config)
 
+    # Set as active project
+    config.set_active_project(project, project_id)
+
     # Sync files
     remote_files = provider.list_files(active_organization_id, project_id)
     sync_manager = SyncManager(provider, config, project_id, config.get_project_root())

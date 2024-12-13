@@ -45,6 +45,31 @@ class BaseConfigManager(ABC):
         }
 
     @abstractmethod
+    def get_active_project(self):
+        """
+        Get the currently active project.
+
+        Returns:
+            tuple: (project_path, project_id) if an active project exists, (None, None) otherwise
+        """
+        pass
+
+    @abstractmethod
+    def set_active_project(self, project_path, project_id):
+        """
+        Set the active project.
+
+        Args:
+            project_path (str): Path to the project like 'datamodel/typeconstraints'
+            project_id (str): UUID of the project
+
+        Raises:
+            ConfigurationError: If the configuration directory is not found or there are
+                              issues writing the active project configuration
+        """
+        pass
+
+    @abstractmethod
     def get_project_id(self, project_path):
         """
         Get project id for the specified project path.

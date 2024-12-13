@@ -31,6 +31,48 @@ class FileConfigManager(BaseConfigManager):
         self.global_config = self._load_global_config()
         self.config_dir = self._find_config_dir()
 
+    def get_active_project(self):
+        """
+        Get the currently active project.
+
+        Returns:
+            tuple: (project_path, project_id) if an active project exists, (None, None) otherwise
+        """
+        if not self.config_dir:
+            return None, None
+
+        active_project_file = self.config_dir / "active_project.json"
+        if not active_project_file.exists():
+            return None, None
+
+        try:
+            with open(active_project_file) as f:
+                data = json.load(f)
+                return data.get("project_path"), data.get("project_id")
+        except (json.JSONDecodeError, IOError):
+            return None, None
+
+    def set_active_project(self, project_path, project_id):
+        """
+        Set the active project.
+
+        Args:
+            project_path (str): Path to the project like 'datamodel/typeconstraints'
+            project_id (str): UUID of the project
+        """
+        if not self.config_dir:
+            raise ConfigurationError("No .claudesync directory found")
+
+        active_project_file = self.config_dir / "active_project.json"
+
+        data = {
+            "project_path": project_path,
+            "project_id": project_id
+        }
+
+        with open(active_project_file, "w") as f:
+            json.dump(data, f, indent=2)
+
     def _find_config_dir(self, max_depth=100):
         """Find the nearest directory containing a .claudesync folder."""
         current_dir = Path.cwd()
