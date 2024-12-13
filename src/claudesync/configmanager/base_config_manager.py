@@ -106,16 +106,6 @@ class BaseConfigManager(ABC):
         pass
 
     @abstractmethod
-    def _load_local_config(self):
-        """
-        Loads the local configuration settings.
-
-        This method should be implemented by subclasses to load the local configuration
-        from the appropriate source (e.g., a file or an in-memory structure).
-        """
-        pass
-
-    @abstractmethod
     def _save_global_config(self):
         """
         Saves the global configuration settings.

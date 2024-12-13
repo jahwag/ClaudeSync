@@ -109,7 +109,7 @@ class FileConfigManager(BaseConfigManager):
         if not self.config_dir:
             raise ConfigurationError("No .claudesync directory found")
 
-        files_file = self.config_dir / f"{project_path}-files.json"
+        files_file = self.config_dir / f"{project_path}.project.json"
         if not files_file.exists():
             # Try with subdirectories
             parts = project_path.split('/')
@@ -176,20 +176,6 @@ class FileConfigManager(BaseConfigManager):
 
         return None
 
-    def _load_local_config(self):
-        """
-        Loads the local configuration from the nearest .claudesync/config.local.json file.
-        Automatically normalizes any Windows-style paths.
-        """
-        self.local_config_dir = self._find_local_config_dir()
-        if self.local_config_dir:
-            local_config_file = (
-                self.local_config_dir / ".claudesync" / "config.local.json"
-            )
-            if local_config_file.exists():
-                with open(local_config_file, "r") as f:
-                    self.local_config = json.load(f)
-
     def get_local_path(self):
         """
         Retrieves the path of the directory containing the .claudesync folder.
@@ -197,7 +183,10 @@ class FileConfigManager(BaseConfigManager):
         Returns:
             str: The path of the directory containing the .claudesync folder, or None if not found.
         """
-        return str(self.local_config_dir) if self.local_config_dir else None
+        if not self.config_dir:
+            return None
+        # Return the parent directory of .claudesync folder which is the project root
+        return str(self.config_dir.parent)
 
     def get(self, key, default=None):
         """

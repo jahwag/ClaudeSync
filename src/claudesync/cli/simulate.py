@@ -338,7 +338,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                 }
                 self.wfile.write(json.dumps(response_data).encode())
             except Exception as e:
-                logger.error(f"Error getting config data: {str(e)}")
+                logger.error(f"Error getting config data: {str(e)}\n{traceback.format_exc()}")
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
             return
 
