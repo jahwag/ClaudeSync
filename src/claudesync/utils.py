@@ -1,5 +1,6 @@
 import os
 import hashlib
+import time as time_module
 from functools import wraps
 from pathlib import Path
 
@@ -169,9 +170,43 @@ def process_file(file_path):
         logger.error(f"Error reading file {file_path}: {str(e)}")
     return None
 
+def should_skip_directory(dir_path: str, base_path: str, gitignore, claudeignore, category_excludes) -> bool:
+    """
+    Check if a directory should be skipped based on ignore patterns.
+
+    Args:
+        dir_path: Path to the directory
+        base_path: Root path of the project
+        gitignore: PathSpec object for .gitignore patterns
+        claudeignore: PathSpec object for .claudeignore patterns
+        category_excludes: PathSpec object for category-specific exclude patterns
+
+    Returns:
+        bool: True if directory should be skipped, False otherwise
+    """
+    rel_path = os.path.relpath(dir_path, base_path)
+
+    # Check claudeignore first since it's our primary ignore mechanism
+    if claudeignore and claudeignore.match_file(rel_path + '/'):
+        logger.debug(f"Skipping directory {rel_path} due to claudeignore pattern")
+        return True
+
+    # Then check gitignore
+    if gitignore and gitignore.match_file(rel_path + '/'):
+        logger.debug(f"Skipping directory {rel_path} due to gitignore pattern")
+        return True
+
+    # Finally check category excludes
+    if category_excludes and category_excludes.match_file(rel_path + '/'):
+        logger.debug(f"Skipping directory {rel_path} due to category exclude pattern")
+        return True
+
+    return False
 
 def get_local_files(config, root_path, files_config):
-    """Get local files matching the patterns in files configuration."""
+    """
+    Get local files matching the patterns in files configuration with optimized directory traversal.
+    """
     gitignore = load_gitignore(root_path)
     claudeignore = load_claudeignore(root_path)
 
@@ -188,10 +223,26 @@ def get_local_files(config, root_path, files_config):
 
     spec = pathspec.PathSpec.from_lines("gitwildmatch", includes)
 
+    logger.debug(f"Starting file system traversal at {root_path}")
+    traversal_start = time_module.time()  # Use renamed import
+
     for root, dirs, filenames in os.walk(root_path, topdown=True):
-        # Filter directories
+        # Filter out excluded directories first
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
 
+        # Filter directories based on ignore patterns - this is the key optimization
+        dirs[:] = [
+            d for d in dirs
+            if not should_skip_directory(
+                os.path.join(root, d),
+                root_path,
+                gitignore,
+                claudeignore,
+                category_excludes
+            )
+        ]
+
+        # Process files in non-ignored directories
         for filename in filenames:
             rel_path = os.path.relpath(os.path.join(root, filename), root_path)
 
@@ -201,6 +252,10 @@ def get_local_files(config, root_path, files_config):
                     file_hash = process_file(full_path)
                     if file_hash:
                         files[rel_path] = file_hash
+
+    traversal_time = time_module.time() - traversal_start  # Use renamed import
+    logger.debug(f"File system traversal completed in {traversal_time:.2f} seconds")
+    logger.debug(f"Found {len(files)} files to sync")
 
     return files
 
