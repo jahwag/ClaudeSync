@@ -3,7 +3,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface SyncStats {
-  totalFiles: number;
   filesToSync: number;
   totalSize: string;
 }

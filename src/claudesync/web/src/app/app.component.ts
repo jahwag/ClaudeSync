@@ -19,7 +19,6 @@ export class AppComponent implements OnInit {
   claudeignore = '';
   isLoading = false;
   stats: SyncStats = {
-    totalFiles: 0,
     filesToSync: 0,
     totalSize: '0 B'
   };

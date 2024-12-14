@@ -367,10 +367,8 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                         total_files += 1
 
                 # Count all files in project directory
-                all_files = sum(1 for _ in Path(local_path).rglob('*') if _.is_file())
 
                 stats = {
-                    "totalFiles": all_files,
                     "filesToSync": total_files,
                     "totalSize": format_size(total_size)
                 }
