@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, ReplaySubject } from 'rxjs';
-import {map, shareReplay, switchMap, tap} from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 
 export interface SyncStats {
   filesToSync: number;
@@ -41,33 +41,24 @@ export interface SyncData {
 })
 export class FileDataService {
   private baseUrl = 'http://localhost:4201/api';
-  private cache$: Observable<SyncData> | null = null;
-  private cacheRefreshTrigger = new ReplaySubject<void>(1);
+  private cachedData: SyncData | null = null;
 
   constructor(private http: HttpClient) {}
 
   private getSyncDataFromApi(): Observable<SyncData> {
-    return this.http.get<SyncData>(`${this.baseUrl}/sync-data`);
+    return this.http.get<SyncData>(`${this.baseUrl}/sync-data`).pipe(
+      tap(data => {
+        this.cachedData = data;
+        console.debug('Cached sync data updated');
+      })
+    );
   }
 
   getSyncData(): Observable<SyncData> {
-    // Initialize cache if it doesn't exist
-    if (!this.cache$) {
-      this.cache$ = this.cacheRefreshTrigger.pipe(
-        // Switch to new API call when refresh is triggered
-        switchMap(() => this.getSyncDataFromApi()),
-        // Log cache refresh for debugging
-        tap(() => console.debug('Refreshing sync data cache')),
-        // Cache the last emitted value and share it between subscribers
-        shareReplay(1)
-      );
-
-      // Trigger initial load
-      this.refreshCache();
+    if (this.cachedData) {
+      return of(this.cachedData);
     }
-
-    // Assert that cache$ is not null since we just initialized it if it was
-    return this.cache$ as Observable<SyncData>;
+    return this.getSyncDataFromApi();
   }
 
   // Helper methods to extract specific parts of the sync data
@@ -89,19 +80,19 @@ export class FileDataService {
     );
   }
 
-  refreshCache(): void {
-    this.cacheRefreshTrigger.next();
+  refreshCache(): Observable<SyncData> {
+    this.cachedData = null;
+    return this.getSyncData();
   }
 
+  clearCache(): void {
+    this.cachedData = null;
+  }
+
+  // File content is not cached as it's requested on-demand
   getFileContent(filePath: string): Observable<FileContentResponse> {
-    // File content is not cached as it's requested on-demand
     return this.http.get<FileContentResponse>(`${this.baseUrl}/file-content`, {
       params: { path: filePath }
     });
-  }
-
-  // Call this method to clear the cache if needed
-  clearCache(): void {
-    this.cache$ = null;
   }
 }
