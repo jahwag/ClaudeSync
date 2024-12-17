@@ -312,6 +312,7 @@ export class TreemapComponent implements OnInit, OnDestroy {
         }
       });
   }
+
   public reload() {
     this.loadTreemapData();
   }

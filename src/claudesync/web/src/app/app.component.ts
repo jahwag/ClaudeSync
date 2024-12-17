@@ -53,7 +53,8 @@ export class AppComponent implements OnInit {
   }
 
   reload() {
-    this.loadData();
+    this.isLoading = true;
+    this.fileDataService.refreshCache();
     if (this.treemapComponent) {
       this.treemapComponent.reload();
     }
