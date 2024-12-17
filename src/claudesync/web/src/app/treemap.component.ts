@@ -296,6 +296,7 @@ export class TreemapComponent implements OnInit, OnDestroy {
 
   private loadTreemapData() {
     this.isLoading = true;
+    console.log('Loading treemap data');
     this.fileDataService.getSyncData()
       .subscribe({
         next: (data) => {
@@ -305,6 +306,7 @@ export class TreemapComponent implements OnInit, OnDestroy {
           this.renderTreemap(plotlyData);
           this.updateFilesList(data.treemap);
           this.isLoading = false;
+          console.log('Finished loading treemap data');
         },
         error: (error) => {
           console.error('Error loading treemap data:', error);
