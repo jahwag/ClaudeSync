@@ -1,6 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {Component, OnInit, OnDestroy, Input} from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {FileContentResponse, FileDataService} from './file-data.service';
+import {FileContentResponse, FileDataService, SyncData} from './file-data.service';
 import { HttpClient } from '@angular/common/http';
 import {finalize} from 'rxjs/operators';
 import { takeUntil } from 'rxjs/operators';
@@ -19,7 +19,7 @@ declare const Plotly: any;
   templateUrl: './treemap.component.html',
   styleUrls: ['./treemap.component.css']
 })
-export class TreemapComponent implements OnInit, OnDestroy {
+export class TreemapComponent implements OnDestroy {
   selectedNode: SelectedNode | null = null;
   showOnlyIncluded = false;
   isLoading = false;
@@ -41,11 +41,17 @@ export class TreemapComponent implements OnInit, OnDestroy {
 
   private currentSubscription?: Subscription;
 
-  constructor(private http: HttpClient, private fileDataService: FileDataService) {}
-
-  ngOnInit() {
-    this.loadTreemapData();
+  @Input() set syncData(data: SyncData | null) {
+    if (data) {
+      this.originalTreeData = data.treemap;
+      this.updateTreemap();
+      const plotlyData = this.flattenTree(data.treemap);
+      this.renderTreemap(plotlyData);
+      this.updateFilesList(data.treemap);
+    }
   }
+
+  constructor(private http: HttpClient, private fileDataService: FileDataService) {}
 
   ngOnDestroy() {
     this.currentSubscription?.unsubscribe();
@@ -298,7 +304,7 @@ export class TreemapComponent implements OnInit, OnDestroy {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
   }
 
-  private loadTreemapData() {
+  public loadTreemapData() {
     // Unsubscribe from any existing subscription
     this.currentSubscription?.unsubscribe();
 
