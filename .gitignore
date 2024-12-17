@@ -172,6 +172,7 @@ claudesync.log
 claude_chats
 some_value
 *.project_id.json
+active_project.json
 
 ROADMAP.md
 
