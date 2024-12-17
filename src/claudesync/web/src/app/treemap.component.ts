@@ -296,25 +296,24 @@ export class TreemapComponent implements OnInit, OnDestroy {
 
   private loadTreemapData() {
     this.isLoading = true;
-    this.http.get<any>(`${this.baseUrl}/treemap`)
+    this.fileDataService.getSyncData()
       .pipe(
         takeUntil(this.destroy$),
         finalize(() => this.isLoading = false)
       )
       .subscribe({
-        next: (treeData) => {
-          this.originalTreeData = treeData;
+        next: (data) => {
+          this.originalTreeData = data.treemap;
           this.updateTreemap();
-          const plotlyData = this.flattenTree(treeData);
+          const plotlyData = this.flattenTree(data.treemap);
           this.renderTreemap(plotlyData);
-          this.updateFilesList(treeData);
+          this.updateFilesList(data.treemap);
         },
         error: (error) => {
           console.error('Error loading treemap data:', error);
         }
       });
   }
-
   public reload() {
     this.loadTreemapData();
   }

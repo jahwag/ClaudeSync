@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import {map} from 'rxjs/operators';
 
 export interface SyncStats {
   filesToSync: number;
@@ -29,6 +30,12 @@ export interface FileContentResponse {
   error?: string;
 }
 
+export interface SyncData {
+  config: FileConfig;
+  stats: SyncStats;
+  treemap: any; // Using any for treemap data as it's a complex nested structure
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -37,21 +44,32 @@ export class FileDataService {
 
   constructor(private http: HttpClient) {}
 
+  getSyncData(): Observable<SyncData> {
+    return this.http.get<SyncData>(`${this.baseUrl}/sync-data`);
+  }
+
+  // Helper methods to extract specific parts of the sync data
   getFileConfig(): Observable<FileConfig> {
-    return this.http.get<FileConfig>(`${this.baseUrl}/config`);
+    return this.getSyncData().pipe(
+      map(data => data.config)
+    );
   }
 
   getStats(): Observable<SyncStats> {
-    return this.http.get<SyncStats>(`${this.baseUrl}/stats`);
+    return this.getSyncData().pipe(
+      map(data => data.stats)
+    );
   }
 
-  getTreemapData(): Observable<TreemapData> {
-    return this.http.get<TreemapData>(`${this.baseUrl}/treemap`);
+  getTreemapData(): Observable<any> {
+    return this.getSyncData().pipe(
+      map(data => data.treemap)
+    );
   }
 
   getFileContent(filePath: string): Observable<FileContentResponse> {
-    return this.http.get<FileContentResponse>(
-      `${this.baseUrl}/file-content?path=${encodeURIComponent(filePath)}`
-    );
+    return this.http.get<FileContentResponse>(`${this.baseUrl}/file-content`, {
+      params: { path: filePath }
+    });
   }
 }

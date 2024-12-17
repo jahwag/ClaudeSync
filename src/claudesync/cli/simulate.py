@@ -17,6 +17,7 @@ from ..configmanager import FileConfigManager
 from typing import Dict, List, Optional, TypedDict
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 class TreeNode(TypedDict):
     name: str
@@ -101,31 +102,6 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> di
             })
 
     return root
-
-def calculate_directory_metadata(node: TreeNode) -> tuple[int, bool]:
-    """
-    Recursively calculate the total size and inclusion status of directories.
-
-    Args:
-        node: Current tree node
-
-    Returns:
-        tuple[int, bool]: Total size and whether any children are included
-    """
-    if not node['children']:  # Leaf node (file)
-        return node['size'] or 0, node.get('included', False)
-
-    total_size = 0
-    has_included_files = False
-
-    for child in node['children']:
-        child_size, child_included = calculate_directory_metadata(child)
-        total_size += child_size
-        has_included_files = has_included_files or child_included
-
-    node['size'] = total_size
-    node['included'] = has_included_files
-    return total_size, has_included_files
 
 def convert_to_plotly_format(node: TreeNode) -> tuple[List[str], List[str], List[int], List[str], List[bool]]:
     """
@@ -247,140 +223,70 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
         """Get a fresh config instance for each request"""
         return FileConfigManager()  # Always create new instance with fresh data
 
+    def send_cors_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+
     def do_GET(self):
         parsed_path = urlparse(self.path)
         logger.debug(f"Handling GET request for path: {parsed_path.path}")
 
-        def send_cors_headers(self):
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
-            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
-
-        if parsed_path.path.startswith('/api/file-content'):
+        if parsed_path.path == '/api/sync-data':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
-            send_cors_headers(self)
-            self.end_headers()
-
-            query_params = parse_qs(parsed_path.query)
-            file_path = query_params.get('path', [''])[0]
-
-            if not file_path:
-                self.wfile.write(json.dumps({'error': 'No file path provided'}).encode())
-                return
-
-            config = self.get_current_config()
-            local_path = config.get_project_root()
-
-            if not local_path:
-                self.wfile.write(json.dumps({'error': 'No local path configured'}).encode())
-                return
-
-            try:
-                if not is_safe_path(local_path, file_path):
-                    self.send_error(403, 'Access denied')
-                    return
-
-                full_path = os.path.join(local_path, file_path)
-                if not os.path.abspath(full_path).startswith(os.path.abspath(local_path)):
-                    self.wfile.write(json.dumps({'error': 'Invalid file path'}).encode())
-                    return
-
-                with open(full_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                    self.wfile.write(json.dumps({'content': content}).encode())
-            except Exception as e:
-                logger.error(f"Error reading file content: {str(e)}")
-                self.wfile.write(json.dumps({'error': str(e)}).encode())
-            return
-
-        if parsed_path.path == '/api/treemap':
-            logger.debug("Processing /api/treemap request")
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            send_cors_headers(self)
-            self.end_headers()
-
-            config = self.get_current_config()
-            local_path = config.get_project_root()
-
-            try:
-                # Get files configuration for the specific project
-                files_config = config.get_files_config(self.project)
-
-                # Get files that would be synced based on project configuration
-                files_to_sync = get_local_files(config, local_path, files_config)
-
-                tree = build_file_tree(local_path, files_to_sync, config)
-                self.wfile.write(json.dumps(tree).encode())
-            except Exception as e:
-                logger.error(f"Error generating treemap data: {str(e)}")
-                self.wfile.write(json.dumps({'error': str(e)}).encode())
-                traceback.print_exc()
-            return
-
-        elif parsed_path.path == '/api/config':
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            send_cors_headers(self)
-            self.end_headers()
-
-            config = self.get_current_config()
-
-            try:
-                # Get files configuration for the specific project
-                files_config = config.get_files_config(self.project)
-
-                response_data = {
-                    'fileCategories': files_config,
-                    'claudeignore': load_claudeignore_as_string(),
-                    'project': self.project
-                }
-                self.wfile.write(json.dumps(response_data).encode())
-            except Exception as e:
-                logger.error(f"Error getting config data: {str(e)}\n{traceback.format_exc()}")
-                self.wfile.write(json.dumps({'error': str(e)}).encode())
-            return
-
-        elif parsed_path.path == '/api/stats':
-            self.send_response(200)
-            self.send_header('Content-type', 'application/json')
-            send_cors_headers(self)
+            self.send_cors_headers()
             self.end_headers()
 
             try:
                 config = self.get_current_config()
-                files_config = config.get_files_config(self.project)
                 local_path = config.get_project_root()
+                files_config = config.get_files_config(self.project)
 
                 # Get files that would be synced based on project configuration
                 files_to_sync = get_local_files(config, local_path, files_config)
 
-                # Calculate total size of files to sync
-                total_size = 0
-                total_files = 0
-                for file_path in files_to_sync:
-                    full_path = os.path.join(local_path, file_path)
-                    if os.path.exists(full_path):
-                        size = os.path.getsize(full_path)
-                        total_size += size
-                        total_files += 1
-
-                # Count all files in project directory
-
-                stats = {
-                    "filesToSync": total_files,
-                    "totalSize": format_size(total_size)
+                # Build response data
+                response_data = {
+                    'config': {
+                        'fileCategories': files_config,
+                        'claudeignore': load_claudeignore_as_string(),
+                        'project': self.project
+                    },
+                    'stats': self._get_stats(local_path, files_to_sync),
+                    'treemap': self._get_treemap(local_path, files_to_sync, config)
                 }
-                self.wfile.write(json.dumps(stats).encode())
+
+                self.wfile.write(json.dumps(response_data).encode())
             except Exception as e:
-                logger.error(f"Error calculating stats: {str(e)}")
+                logger.error(f"Error processing sync data request: {str(e)}\n{traceback.format_exc()}")
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
             return
 
         # For all other paths, serve static files
         return super().do_GET()
 
+    def _get_stats(self, local_path, files_to_sync):
+        """Calculate sync statistics"""
+        total_size = 0
+        total_files = 0
+
+        for file_path in files_to_sync:
+            full_path = os.path.join(local_path, file_path)
+            if os.path.exists(full_path):
+                size = os.path.getsize(full_path)
+                total_size += size
+                total_files += 1
+
+        return {
+            "filesToSync": total_files,
+            "totalSize": format_size(total_size)
+        }
+
+    def _get_treemap(self, local_path, files_to_sync, config):
+        """Generate treemap data"""
+        tree = build_file_tree(local_path, files_to_sync, config)
+        return tree
 
 @click.command()
 @click.argument("project", required=False)
