@@ -57,16 +57,15 @@ export class AppComponent implements OnInit {
 
   reload() {
     this.isLoading = true;
-    // Just let the treemap component handle the reload
-    if (this.treemapComponent) {
-      this.treemapComponent.reload();
-    }
-    // Listen for completion of reload to update loading state
-    this.fileDataService.getSyncData().subscribe({
+    this.fileDataService.refreshCache().subscribe({
       next: (data) => {
+        this.syncData = data;  // Add this line
         this.fileCategories = JSON.stringify(data.config.fileCategories, null, 2);
         this.claudeignore = data.config.claudeignore;
         this.stats = data.stats;
+        if (this.treemapComponent) {
+          this.treemapComponent.reload();
+        }
         this.isLoading = false;
       },
       error: (error) => {
