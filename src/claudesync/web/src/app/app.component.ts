@@ -4,6 +4,7 @@ import { RouterOutlet } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
 import { FileDataService, SyncStats, FileConfig } from './file-data.service';
 import {TreemapComponent} from './treemap.component';
+import {finalize} from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
@@ -33,27 +34,17 @@ export class AppComponent implements OnInit {
 
   loadData() {
     this.isLoading = true;
-
-    // Create an array of observables for parallel execution
-    const requests = [
-      this.fileDataService.getFileConfig(),
-      this.fileDataService.getStats()
-    ];
-
-    // Execute requests in parallel
-    // @ts-ignore
-    Promise.all(requests.map(obs => obs.toPromise()))
-      .then(([config, stats]) => {
-        // @ts-ignore
-        this.fileCategories = JSON.stringify(config.fileCategories, null, 2);
-        // @ts-ignore
-        this.claudeignore = config.claudeignore;
-        // @ts-ignore
-        this.stats = stats;
-      })
-      .catch(error => console.error('Error loading data:', error))
-      .finally(() => {
-        this.isLoading = false;
+    this.fileDataService.getSyncData()
+      .subscribe({
+        next: (data) => {
+          this.fileCategories = JSON.stringify(data.config.fileCategories, null, 2);
+          this.claudeignore = data.config.claudeignore;
+          this.stats = data.stats;
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading data:', error);
+        }
       });
   }
 

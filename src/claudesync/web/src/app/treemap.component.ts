@@ -297,10 +297,6 @@ export class TreemapComponent implements OnInit, OnDestroy {
   private loadTreemapData() {
     this.isLoading = true;
     this.fileDataService.getSyncData()
-      .pipe(
-        takeUntil(this.destroy$),
-        finalize(() => this.isLoading = false)
-      )
       .subscribe({
         next: (data) => {
           this.originalTreeData = data.treemap;
@@ -308,9 +304,11 @@ export class TreemapComponent implements OnInit, OnDestroy {
           const plotlyData = this.flattenTree(data.treemap);
           this.renderTreemap(plotlyData);
           this.updateFilesList(data.treemap);
+          this.isLoading = false;
         },
         error: (error) => {
           console.error('Error loading treemap data:', error);
+          this.isLoading = false;
         }
       });
   }
@@ -468,9 +466,6 @@ Status: %{customdata.included}<br>
     const fullPath = file.path ? `${file.path}/${file.name}` : file.name;
 
     this.fileDataService.getFileContent(fullPath)
-      .pipe(
-        finalize(() => this.isLoadingContent = false)
-      )
       .subscribe({
         next: (response: FileContentResponse) => {
           if (response.error) {
@@ -478,10 +473,12 @@ Status: %{customdata.included}<br>
           } else {
             this.fileContent = response.content;
           }
+          this.isLoadingContent = false;
         },
         error: (error) => {
           console.error('Error loading file content:', error);
           this.fileContentError = 'Failed to load file content';
+          this.isLoadingContent = false;
         }
       });
   }

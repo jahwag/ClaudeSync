@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-import {map} from 'rxjs/operators';
+import { Observable, ReplaySubject } from 'rxjs';
+import {map, shareReplay, switchMap, tap} from 'rxjs/operators';
 
 export interface SyncStats {
   filesToSync: number;
@@ -33,7 +33,7 @@ export interface FileContentResponse {
 export interface SyncData {
   config: FileConfig;
   stats: SyncStats;
-  treemap: any; // Using any for treemap data as it's a complex nested structure
+  treemap: any;
 }
 
 @Injectable({
@@ -41,11 +41,33 @@ export interface SyncData {
 })
 export class FileDataService {
   private baseUrl = 'http://localhost:4201/api';
+  private cache$: Observable<SyncData> | null = null;
+  private cacheRefreshTrigger = new ReplaySubject<void>(1);
 
   constructor(private http: HttpClient) {}
 
-  getSyncData(): Observable<SyncData> {
+  private getSyncDataFromApi(): Observable<SyncData> {
     return this.http.get<SyncData>(`${this.baseUrl}/sync-data`);
+  }
+
+  getSyncData(): Observable<SyncData> {
+    // Initialize cache if it doesn't exist
+    if (!this.cache$) {
+      this.cache$ = this.cacheRefreshTrigger.pipe(
+        // Switch to new API call when refresh is triggered
+        switchMap(() => this.getSyncDataFromApi()),
+        // Log cache refresh for debugging
+        tap(() => console.debug('Refreshing sync data cache')),
+        // Cache the last emitted value and share it between subscribers
+        shareReplay(1)
+      );
+
+      // Trigger initial load
+      this.refreshCache();
+    }
+
+    // Assert that cache$ is not null since we just initialized it if it was
+    return this.cache$ as Observable<SyncData>;
   }
 
   // Helper methods to extract specific parts of the sync data
@@ -67,9 +89,19 @@ export class FileDataService {
     );
   }
 
+  refreshCache(): void {
+    this.cacheRefreshTrigger.next();
+  }
+
   getFileContent(filePath: string): Observable<FileContentResponse> {
+    // File content is not cached as it's requested on-demand
     return this.http.get<FileContentResponse>(`${this.baseUrl}/file-content`, {
       params: { path: filePath }
     });
+  }
+
+  // Call this method to clear the cache if needed
+  clearCache(): void {
+    this.cache$ = null;
   }
 }
