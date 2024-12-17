@@ -8,7 +8,7 @@ import {FileInfo, SelectedNode, TreemapData, TreeNode} from './treemap.types';
 import {FormsModule} from '@angular/forms';
 import {FilePreviewComponent} from './file-preview.component';
 import {ModalComponent} from './modal.component';
-import {Subject} from 'rxjs';
+import {Subject, Subscription} from 'rxjs';
 
 declare const Plotly: any;
 
@@ -39,6 +39,8 @@ export class TreemapComponent implements OnInit, OnDestroy {
 
   filterText = '';
 
+  private currentSubscription?: Subscription;
+
   constructor(private http: HttpClient, private fileDataService: FileDataService) {}
 
   ngOnInit() {
@@ -46,6 +48,8 @@ export class TreemapComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.currentSubscription?.unsubscribe();
+
     this.destroy$.next();
     this.destroy$.complete();
     // Clean up Plotly events
@@ -295,9 +299,14 @@ export class TreemapComponent implements OnInit, OnDestroy {
   }
 
   private loadTreemapData() {
+    // Unsubscribe from any existing subscription
+    this.currentSubscription?.unsubscribe();
+
     this.isLoading = true;
     console.log('Loading treemap data');
-    this.fileDataService.getSyncData()
+
+    // Store the new subscription
+    this.currentSubscription = this.fileDataService.getSyncData()
       .subscribe({
         next: (data) => {
           this.originalTreeData = data.treemap;
