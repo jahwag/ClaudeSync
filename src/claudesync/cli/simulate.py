@@ -11,6 +11,8 @@ import threading
 from urllib.parse import urlparse, parse_qs
 from pathlib import Path
 
+from pathspec import pathspec
+
 from ..exceptions import ConfigurationError
 from ..utils import get_local_files, load_gitignore, load_claudeignore
 from ..configmanager import FileConfigManager
@@ -28,7 +30,7 @@ class TreeNode(TypedDict):
 
 def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> dict:
     """
-    Build a hierarchical tree structure from the list of files.
+    Build a hierarchical tree structure from the list of files with support for multiple roots.
 
     Args:
         base_path: The root directory path
@@ -36,36 +38,77 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> di
         config: Configuration manager instance
 
     Returns:
-        dict: Root node of the tree structure
+        dict: Root node of the tree structure with support for multiple roots
     """
     logger = logging.getLogger(__name__)
-    logger.debug(f"Building file tree from base directory with {len(files_to_sync)} sync-eligible files")
-
-    root = {
-        'name': os.path.basename(base_path) or 'root',
-        'children': []
-    }
 
     # Get sync filters
     gitignore = load_gitignore(base_path)
     claudeignore = load_claudeignore(base_path)
 
+    # Create root node
+    root = {
+        'name': 'root',
+        'children': []
+    }
+
+    # Get simulate_push_roots from project config
+    project_config = config.get_files_config(config.get_active_project()[0])
+    simulate_push_roots = project_config.get('simulate_push_roots', [])
+
     # Create a set of files that will be synced for quick lookup
     sync_files = set(files_to_sync.keys())
 
-    # Process all files in directory
-    for root_dir, _, files in os.walk(base_path):
-        rel_root = os.path.relpath(root_dir, base_path)
+    if not simulate_push_roots:
+        # Original behavior - use base_path as single root
+        process_root(base_path, '', root, sync_files, gitignore, claudeignore)
+    else:
+        # Process each specified root directory
+        for root_dir in simulate_push_roots:
+            full_root_path = os.path.join(base_path, root_dir)
+            if not os.path.exists(full_root_path):
+                logger.warning(f"Specified root path does not exist: {full_root_path}")
+                continue
+
+            # Create node for this root directory
+            root_node = {
+                'name': root_dir,
+                'children': []
+            }
+            root['children'].append(root_node)
+
+            # Process files under this root
+            process_root(full_root_path, root_dir, root_node, sync_files, gitignore, claudeignore)
+
+    return root
+
+def process_root(root_dir: str, rel_root_base: str, node: dict, sync_files: set,
+                 gitignore: Optional[pathspec.PathSpec], claudeignore: Optional[pathspec.PathSpec]):
+    """
+    Process a single root directory and build its tree structure.
+
+    Args:
+        root_dir: The full path to the root directory
+        rel_root_base: The relative path base for this root
+        node: The node to populate with the tree structure
+        sync_files: Set of files that will be synced
+        gitignore: PathSpec object for gitignore patterns
+        claudeignore: PathSpec object for claudeignore patterns
+    """
+    for current_dir, _, files in os.walk(root_dir):
+        # Get path relative to the project root
+        rel_root = os.path.relpath(current_dir, root_dir)
         rel_root = '' if rel_root == '.' else rel_root
 
         # Skip ignored directories
-        if (gitignore and gitignore.match_file(rel_root)) or \
-                (claudeignore and claudeignore.match_file(rel_root)):
+        full_rel_path = os.path.join(rel_root_base, rel_root) if rel_root_base else rel_root
+        if (gitignore and gitignore.match_file(full_rel_path)) or \
+                (claudeignore and claudeignore.match_file(full_rel_path)):
             continue
 
         for filename in files:
-            rel_path = os.path.join(rel_root, filename)
-            full_path = os.path.join(root_dir, filename)
+            rel_path = os.path.join(full_rel_path, filename)
+            full_path = os.path.join(current_dir, filename)
 
             # Skip if file doesn't exist anymore or is ignored
             if not os.path.exists(full_path) or \
@@ -79,7 +122,7 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> di
                 continue
 
             # Build path in tree
-            current = root
+            current = node
             path_parts = Path(rel_path).parts
 
             # Navigate/build the tree structure
@@ -100,8 +143,6 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> di
                 'size': file_size,
                 'included': rel_path in sync_files
             })
-
-    return root
 
 def convert_to_plotly_format(node: TreeNode) -> tuple[List[str], List[str], List[int], List[str], List[bool]]:
     """
