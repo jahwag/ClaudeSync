@@ -276,8 +276,11 @@ def ls(config, show_all):
             status = " (Archived)" if project.get("archived_at") else ""
             click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
 
+
 @project.command()
-@click.option("-a", "--include-archived", is_flag=True, help="Include archived projects")
+@click.option(
+    "-a", "--include-archived", is_flag=True, help="Include archived projects"
+)
 @click.option("--all", "truncate_all", is_flag=True, help="Truncate all projects")
 @click.option("-y", "--yes", is_flag=True, help="Skip confirmation prompt")
 @click.pass_obj
@@ -287,7 +290,9 @@ def truncate(config, include_archived, truncate_all, yes):
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
 
-    projects = provider.get_projects(active_organization_id, include_archived=include_archived)
+    projects = provider.get_projects(
+        active_organization_id, include_archived=include_archived
+    )
 
     if not projects:
         click.echo("No projects found.")
@@ -299,7 +304,9 @@ def truncate(config, include_archived, truncate_all, yes):
             for project in projects:
                 status = " (Archived)" if project.get("archived_at") else ""
                 click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
-            if not click.confirm("Are you sure you want to continue? This may take some time."):
+            if not click.confirm(
+                "Are you sure you want to continue? This may take some time."
+            ):
                 click.echo("Operation cancelled.")
                 return
 
@@ -328,11 +335,14 @@ def truncate(config, include_archived, truncate_all, yes):
                 provider,
                 active_organization_id,
                 selected_project["id"],
-                selected_project["name"]
+                selected_project["name"],
             )
-            click.echo(f"All files have been deleted from project '{selected_project['name']}'.")
+            click.echo(
+                f"All files have been deleted from project '{selected_project['name']}'."
+            )
     else:
         click.echo("Invalid selection. Please try again.")
+
 
 @retry_on_403()
 def delete_files_from_project(provider, organization_id, project_id, project_name):
