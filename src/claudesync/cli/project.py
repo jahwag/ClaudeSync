@@ -92,7 +92,8 @@ def create(ctx, name, internal_name, description, provider, organization, no_git
             "project_name": new_project["name"],
             "project_description": description,
             "includes": [],
-            "excludes": []
+            "excludes": [],
+            "simulate_push_roots": []
         }
 
         # Determine if internal_name contains a path
