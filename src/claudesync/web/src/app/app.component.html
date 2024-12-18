@@ -3,7 +3,19 @@
   <div [class.content-blur]="isLoading">
     <!-- Header section with blur -->
     <header class="header blur-section">
-      <h1>ClaudeSync Simulate</h1>
+      <div class="header-content">
+        <h1>ClaudeSync Simulate</h1>
+        <div class="header-stats">
+          <div class="stat-item">
+            <span class="stat-label">Files to Sync</span>
+            <span class="stat-value">{{stats.filesToSync}}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Sync Size</span>
+            <span class="stat-value">{{stats.totalSize}}</span>
+          </div>
+        </div>
+      </div>
       <div class="header-actions">
         <app-project-dropdown
           [projects]="projects"
@@ -44,17 +56,5 @@
         <app-treemap [syncData]="syncData"></app-treemap>
       </section>
     </main>
-
-    <!-- Footer section with blur -->
-    <footer class="stats-footer blur-section">
-      <div class="stat-item">
-        <span class="stat-label">Files to Sync</span>
-        <span class="stat-value">{{stats.filesToSync}}</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-label">Sync Size</span>
-        <span class="stat-value">{{stats.totalSize}}</span>
-      </div>
-    </footer>
   </div>
 </div>
