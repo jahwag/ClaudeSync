@@ -43,12 +43,15 @@ export class AppComponent implements OnInit {
     this.fileDataService.getProjects()
       .pipe(finalize(() => this.isLoading = false))
       .subscribe({
-        next: (projects) => {
-          this.projects = projects;
-          // Select the first project by default if none is selected
-          if (projects.length > 0 && !this.selectedProject) {
-            this.selectedProject = projects[0].path;
+        next: (response:any) => {
+          this.projects = response.projects;
+          if (response.activeProject) {
+            this.selectedProject = response.activeProject;
             this.loadData();
+          } else if (this.projects.length > 0) {
+            // If no active project but projects exist, select the first one
+            this.selectedProject = this.projects[0].path;
+            this.onProjectChange(this.projects[0].path);
           }
         },
         error: (error) => {

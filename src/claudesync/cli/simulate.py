@@ -438,10 +438,17 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 config = self.get_current_config()
                 projects = config.get_projects()
-                project_list = [{'id': project_id, 'path': project_path}
-                                for project_path, project_id in projects.items()]
+                active_project_path, active_project_id = config.get_active_project()
 
-                self.wfile.write(json.dumps(project_list).encode())
+                response = {
+                    'projects': [
+                        {'id': project_id, 'path': project_path}
+                        for project_path, project_id in projects.items()
+                    ],
+                    'activeProject': active_project_path
+                }
+
+                self.wfile.write(json.dumps(response).encode())
             except Exception as e:
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
             return
