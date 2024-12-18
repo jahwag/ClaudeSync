@@ -9,14 +9,11 @@ export interface SyncStats {
   totalSize: string;
 }
 
-export interface FileConfig {
-  fileCategories: {
-    [key: string]: {
-      description: string;
-      patterns: string[];
-    };
-  };
-  claudeignore: string;
+export interface ProjectConfig {
+  name: string;
+  description: string;
+  includes: string[];
+  excludes: string[];
 }
 
 export interface TreemapData {
@@ -32,7 +29,8 @@ export interface FileContentResponse {
 }
 
 export interface SyncData {
-  config: FileConfig;
+  claudeignore: string;
+  project: ProjectConfig;
   stats: SyncStats;
   treemap: any;
 }
@@ -62,10 +60,15 @@ export class FileDataService {
     return this.getSyncDataFromApi();
   }
 
-  // Helper methods to extract specific parts of the sync data
-  getFileConfig(): Observable<FileConfig> {
+  getProjectConfig(): Observable<ProjectConfig> {
     return this.getSyncData().pipe(
-      map(data => data.config)
+      map(data => data.project)
+    );
+  }
+
+  getClaudeIgnore(): Observable<string> {
+    return this.getSyncData().pipe(
+      map(data => data.claudeignore)
     );
   }
 

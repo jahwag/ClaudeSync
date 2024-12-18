@@ -360,11 +360,8 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
                 # Build response data
                 response_data = {
-                    'config': {
-                        'fileCategories': files_config,
-                        'claudeignore': load_claudeignore_as_string(),
-                        'project': self.project
-                    },
+                    'claudeignore': load_claudeignore_as_string(),
+                    'project': files_config,  # This already contains name, description, includes, excludes
                     'stats': self._get_stats(local_path, files_to_sync),
                     'treemap': self._get_treemap(local_path, files_to_sync, config)
                 }

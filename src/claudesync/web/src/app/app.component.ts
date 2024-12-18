@@ -2,7 +2,7 @@ import {Component, OnInit, ViewChild} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { HttpClientModule } from '@angular/common/http';
-import {FileDataService, SyncStats, FileConfig, SyncData} from './file-data.service';
+import {FileDataService, SyncStats, SyncData, ProjectConfig} from './file-data.service';
 import {TreemapComponent} from './treemap.component';
 import {finalize} from 'rxjs/operators';
 import {Project, ProjectDropdownComponent} from './project-dropdown.component';
@@ -17,7 +17,6 @@ import {Project, ProjectDropdownComponent} from './project-dropdown.component';
 })
 export class AppComponent implements OnInit {
   configVisible = false;
-  fileCategories = '';
   claudeignore = '';
   isLoading = false;
   stats: SyncStats = {
@@ -29,6 +28,7 @@ export class AppComponent implements OnInit {
 
   projects: Project[] = [];
   selectedProject: string = '';
+  projectConfig: ProjectConfig | null = null;
 
   @ViewChild(TreemapComponent) treemapComponent!: TreemapComponent;
 
@@ -80,16 +80,17 @@ export class AppComponent implements OnInit {
   loadData() {
     this.isLoading = true;
     this.fileDataService.getSyncData()
-      .pipe(finalize(() => this.isLoading = false))
       .subscribe({
         next: (data) => {
           this.syncData = data;
-          this.fileCategories = JSON.stringify(data.config.fileCategories, null, 2);
-          this.claudeignore = data.config.claudeignore;
+          this.projectConfig = data.project;
+          this.claudeignore = data.claudeignore;
           this.stats = data.stats;
+          this.isLoading = false;
         },
         error: (error) => {
           console.error('Error loading data:', error);
+          this.isLoading = false;
         }
       });
   }
@@ -104,8 +105,8 @@ export class AppComponent implements OnInit {
       .subscribe({
         next: (data) => {
           this.syncData = data;
-          this.fileCategories = JSON.stringify(data.config.fileCategories, null, 2);
-          this.claudeignore = data.config.claudeignore;
+          this.projectConfig = data.project;
+          this.claudeignore = data.claudeignore;
           this.stats = data.stats;
           if (this.treemapComponent) {
             this.treemapComponent.reload();
@@ -117,5 +118,9 @@ export class AppComponent implements OnInit {
           this.isLoading = false;
         }
       });
+  }
+
+  getProjectConfigAsJson() {
+      return this.projectConfig ? JSON.stringify(this.projectConfig, null, 2) : '';
   }
 }
