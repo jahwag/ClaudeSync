@@ -28,11 +28,10 @@
     </header>
 
     <main class="main-content">
-      <!-- Config panel with blur -->
       <div class="config-panel blur-section" [ngClass]="{'hidden': !configVisible}">
         <h2>Configuration</h2>
         <section class="config-section">
-          <h3>Default Sync Category</h3>
+          <h3>Project Definition ({{selectedProject}}.project.json)</h3>
           <pre class="code-block">{{fileCategories}}</pre>
         </section>
         <section class="config-section">
@@ -41,7 +40,6 @@
         </section>
       </div>
 
-      <!-- Treemap section without blur -->
       <section class="visualization-panel blur-section">
         <app-treemap [syncData]="syncData"></app-treemap>
       </section>

@@ -35,7 +35,6 @@ export class AppComponent implements OnInit {
   constructor(private fileDataService: FileDataService) {}
 
   ngOnInit() {
-    this.loadData();
     this.loadProjects();
   }
 
@@ -61,14 +60,19 @@ export class AppComponent implements OnInit {
   onProjectChange(projectPath: string) {
     this.selectedProject = projectPath;
     this.isLoading = true;
+
+    // Clear the current data before loading new project
+    this.fileDataService.clearCache();
+
     this.fileDataService.setActiveProject(projectPath)
-      .pipe(finalize(() => this.isLoading = false))
       .subscribe({
         next: () => {
-          this.loadData();
+          // After setting the project, trigger a full reload
+          this.reload();
         },
         error: (error) => {
           console.error('Error setting active project:', error);
+          this.isLoading = false;
         }
       });
   }
@@ -76,13 +80,13 @@ export class AppComponent implements OnInit {
   loadData() {
     this.isLoading = true;
     this.fileDataService.getSyncData()
+      .pipe(finalize(() => this.isLoading = false))
       .subscribe({
         next: (data) => {
           this.syncData = data;
           this.fileCategories = JSON.stringify(data.config.fileCategories, null, 2);
           this.claudeignore = data.config.claudeignore;
           this.stats = data.stats;
-          this.isLoading = false;
         },
         error: (error) => {
           console.error('Error loading data:', error);
@@ -96,21 +100,22 @@ export class AppComponent implements OnInit {
 
   reload() {
     this.isLoading = true;
-    this.fileDataService.refreshCache().subscribe({
-      next: (data) => {
-        this.syncData = data;  // Add this line
-        this.fileCategories = JSON.stringify(data.config.fileCategories, null, 2);
-        this.claudeignore = data.config.claudeignore;
-        this.stats = data.stats;
-        if (this.treemapComponent) {
-          this.treemapComponent.reload();
+    this.fileDataService.refreshCache()
+      .subscribe({
+        next: (data) => {
+          this.syncData = data;
+          this.fileCategories = JSON.stringify(data.config.fileCategories, null, 2);
+          this.claudeignore = data.config.claudeignore;
+          this.stats = data.stats;
+          if (this.treemapComponent) {
+            this.treemapComponent.reload();
+          }
+          this.isLoading = false;
+        },
+        error: (error) => {
+          console.error('Error loading data:', error);
+          this.isLoading = false;
         }
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Error loading data:', error);
-        this.isLoading = false;
-      }
-    });
+      });
   }
 }
