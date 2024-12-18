@@ -151,10 +151,16 @@ claudesync simulate-push
 
 Push your project files to Claude.ai:
 ```bash
-claudesync push
+claudesync push name-of-the-project
 ```
 
 Visit the project on [Claude.ai](https://claude.ai) to see the synchronized files.
+
+After pushing the specified project, the project is set to be the _active project_. The active project is used for all subsequent commands. To change the active project, use the following command:
+
+```bash
+claudesync project set name-of-the-project
+```
 
 ### Development Workflow Example
 
