@@ -351,6 +351,55 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
         parsed_path = urlparse(self.path)
         logger.debug(f"Handling GET request for path: {parsed_path.path}")
 
+        if parsed_path.path.startswith('/api/file-content'):
+            try:
+                # Parse the file path from query parameters
+                query_params = parse_qs(parsed_path.query)
+                file_path = query_params.get('path', [''])[0]
+
+                if not file_path:
+                    self._send_error_response(400, "Missing file path parameter")
+                    return
+
+                # Get current config and project root
+                config = self.get_current_config()
+                project_root = config.get_project_root()
+
+                # Validate the requested path is within project root for security
+                full_path = os.path.join(project_root, file_path)
+                if not is_safe_path(project_root, file_path):
+                    self._send_error_response(403, "Access denied - path is outside project root")
+                    return
+
+                # Check if file exists
+                if not os.path.exists(full_path) or not os.path.isfile(full_path):
+                    self._send_error_response(404, "File not found")
+                    return
+
+                # Read and return file content
+                try:
+                    with open(full_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+
+                    self.send_response(200)
+                    self.send_header('Content-type', 'application/json')
+                    self.send_cors_headers()
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        'content': content,
+                        'path': file_path
+                    }).encode())
+
+                except UnicodeDecodeError:
+                    self._send_error_response(400, "File is not valid UTF-8 text")
+                except IOError as e:
+                    self._send_error_response(500, f"Error reading file: {str(e)}")
+
+            except Exception as e:
+                logger.error(f"Error processing file content request: {str(e)}\n{traceback.format_exc()}")
+                self.wfile.write(json.dumps({'error': str(e)}).encode())
+            return
+
         if parsed_path.path == '/api/sync-data':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
