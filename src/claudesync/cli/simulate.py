@@ -266,8 +266,79 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
     def send_cors_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+
+    def do_OPTIONS(self):
+        """Handle preflight CORS requests"""
+        self.send_response(200)
+        self.send_cors_headers()
+        self.end_headers()
+
+    def do_POST(self):
+        """Handle POST requests"""
+        parsed_path = urlparse(self.path)
+        logger.debug(f"Handling POST request for path: {parsed_path.path}")
+
+        if parsed_path.path == '/api/set-active-project':
+            content_length = int(self.headers.get('Content-Length', 0))
+            request_body = self.rfile.read(content_length)
+
+            try:
+                data = json.loads(request_body)
+                project_path = data.get('path')
+
+                if not project_path:
+                    raise ValueError("Project path is required")
+
+                config = self.get_current_config()
+
+                # Verify the project exists
+                project_id = config.get_project_id(project_path)
+                if not project_id:
+                    raise ValueError(f"Project not found: {project_path}")
+
+                # Set the active project
+                config.set_active_project(project_path, project_id)
+                self.project = project_path  # Update handler's project reference
+
+                # Send success response
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'success': True,
+                    'message': f'Active project set to: {project_path}'
+                }).encode())
+
+                logger.debug(f"Successfully set active project to: {project_path}")
+
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON in request body: {e}")
+                self._send_error_response(400, "Invalid JSON in request body")
+            except ValueError as e:
+                logger.error(f"Invalid request: {str(e)}")
+                self._send_error_response(400, str(e))
+            except Exception as e:
+                logger.error(f"Error setting active project: {str(e)}\n{traceback.format_exc()}")
+                self._send_error_response(500, f"Internal server error: {str(e)}")
+
+            return
+
+        # Handle other POST requests (if any)
+        self._send_error_response(404, "Not Found")
+
+    def _send_error_response(self, status_code: int, message: str):
+        """Helper method to send error responses"""
+        self.send_response(status_code)
+        self.send_header('Content-type', 'application/json')
+        self.send_cors_headers()
+        self.end_headers()
+        self.wfile.write(json.dumps({
+            'success': False,
+            'error': message
+        }).encode())
 
     def do_GET(self):
         parsed_path = urlparse(self.path)
