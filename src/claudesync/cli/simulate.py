@@ -304,6 +304,23 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
             return
 
+        if parsed_path.path == '/api/projects':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_cors_headers()
+            self.end_headers()
+
+            try:
+                config = self.get_current_config()
+                projects = config.get_projects()
+                project_list = [{'id': project_id, 'path': project_path}
+                                for project_path, project_id in projects.items()]
+
+                self.wfile.write(json.dumps(project_list).encode())
+            except Exception as e:
+                self.wfile.write(json.dumps({'error': str(e)}).encode())
+            return
+
         # For all other paths, serve static files
         return super().do_GET()
 

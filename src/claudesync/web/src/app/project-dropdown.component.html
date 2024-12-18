@@ -1,0 +1,12 @@
+<div class="project-select">
+  <select
+    [ngModel]="selectedProject"
+    (ngModelChange)="onProjectChange($event)"
+    class="select-input"
+  >
+    <option value="">Select a project</option>
+    <option *ngFor="let project of projects" [value]="project.path">
+      {{project.path}}
+    </option>
+  </select>
+</div>

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
+import {Project} from './project-dropdown.component';
 
 export interface SyncStats {
   filesToSync: number;
@@ -94,5 +95,13 @@ export class FileDataService {
     return this.http.get<FileContentResponse>(`${this.baseUrl}/file-content`, {
       params: { path: filePath }
     });
+  }
+
+  getProjects(): Observable<Project[]> {
+    return this.http.get<Project[]>(`${this.baseUrl}/projects`);
+  }
+
+  setActiveProject(projectPath: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/set-active-project`, { path: projectPath });
   }
 }

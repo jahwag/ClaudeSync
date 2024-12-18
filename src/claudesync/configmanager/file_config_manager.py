@@ -31,6 +31,50 @@ class FileConfigManager(BaseConfigManager):
         self.global_config = self._load_global_config()
         self.config_dir = self._find_config_dir()
 
+    def get_projects(self):
+        """
+        Get all projects configured in the .claudesync directory.
+
+        Returns:
+            dict: A dictionary mapping project paths to their IDs
+            Example: {
+                'datamodel/typeconstraints': 'project-uuid-1',
+                'myproject': 'project-uuid-2'
+            }
+
+        Raises:
+            ConfigurationError: If no .claudesync directory is found
+        """
+        if not self.config_dir:
+            raise ConfigurationError("No .claudesync directory found")
+
+        projects = {}
+
+        # Walk through the .claudesync directory
+        for root, _, files in os.walk(self.config_dir):
+            for file in files:
+                if file.endswith('.project_id.json'):
+                    # Extract project path from filename
+                    project_path = file[:-len('.project_id.json')]
+
+                    # Handle nested projects by getting relative path from .claudesync dir
+                    rel_root = os.path.relpath(root, self.config_dir)
+                    if rel_root != '.':
+                        project_path = os.path.join(rel_root, project_path)
+
+                    try:
+                        # Load project ID from file
+                        with open(os.path.join(root, file)) as f:
+                            project_data = json.load(f)
+                            project_id = project_data.get('project_id')
+                            if project_id:
+                                projects[project_path] = project_id
+                    except (json.JSONDecodeError, IOError) as e:
+                        logging.warning(f"Failed to load project file {file}: {str(e)}")
+                        continue
+
+        return projects
+
     def get_active_project(self):
         """
         Get the currently active project.

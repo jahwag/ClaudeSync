@@ -5,11 +5,12 @@ import { HttpClientModule } from '@angular/common/http';
 import {FileDataService, SyncStats, FileConfig, SyncData} from './file-data.service';
 import {TreemapComponent} from './treemap.component';
 import {finalize} from 'rxjs/operators';
+import {Project, ProjectDropdownComponent} from './project-dropdown.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, HttpClientModule, TreemapComponent],
+  imports: [CommonModule, HttpClientModule, TreemapComponent, ProjectDropdownComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
   providers: [FileDataService]
@@ -26,12 +27,50 @@ export class AppComponent implements OnInit {
 
   syncData: SyncData | null = null;
 
+  projects: Project[] = [];
+  selectedProject: string = '';
+
   @ViewChild(TreemapComponent) treemapComponent!: TreemapComponent;
 
   constructor(private fileDataService: FileDataService) {}
 
   ngOnInit() {
     this.loadData();
+    this.loadProjects();
+  }
+
+  loadProjects() {
+    this.isLoading = true;
+    this.fileDataService.getProjects()
+      .pipe(finalize(() => this.isLoading = false))
+      .subscribe({
+        next: (projects) => {
+          this.projects = projects;
+          // Select the first project by default if none is selected
+          if (projects.length > 0 && !this.selectedProject) {
+            this.selectedProject = projects[0].path;
+            this.loadData();
+          }
+        },
+        error: (error) => {
+          console.error('Error loading projects:', error);
+        }
+      });
+  }
+
+  onProjectChange(projectPath: string) {
+    this.selectedProject = projectPath;
+    this.isLoading = true;
+    this.fileDataService.setActiveProject(projectPath)
+      .pipe(finalize(() => this.isLoading = false))
+      .subscribe({
+        next: () => {
+          this.loadData();
+        },
+        error: (error) => {
+          console.error('Error setting active project:', error);
+        }
+      });
   }
 
   loadData() {

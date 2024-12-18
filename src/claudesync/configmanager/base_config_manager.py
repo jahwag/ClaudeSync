@@ -23,6 +23,23 @@ class BaseConfigManager(ABC):
         self.global_config = {}
         self.local_config = {}
 
+    @abstractmethod
+    def get_projects(self):
+        """
+        Get all configured projects.
+
+        Returns:
+            dict: A dictionary mapping project paths to their IDs.
+                 Example: {
+                    'datamodel/typeconstraints': 'project-uuid-1',
+                    'myproject': 'project-uuid-2'
+                 }
+
+        Raises:
+            ConfigurationError: If no project configuration is found
+        """
+        pass
+
     def _get_default_config(self):
         """
         Returns the default configuration dictionary.
