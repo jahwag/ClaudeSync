@@ -184,6 +184,4 @@ claudesync push
 
 ## Support
 
-- GitHub Issues: [Report bugs](https://github.com/jahwag/claudesync/issues)
-- Discord: [Join community](https://discord.gg/pR4qeMH4u4)
-- Documentation: [Wiki](https://github.com/jahwag/claudesync/wiki)
+- GitHub Issues: [Report bugs](https://github.com/tbuechner/claudesync/issues)
