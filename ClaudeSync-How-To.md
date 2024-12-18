@@ -79,12 +79,24 @@ You'll be prompted for:
 
 2. The command will create:
     - A new project on Claude.ai
-    - A `.claudesync` directory in your project folder
-    - Local configuration files
+    - A `.claudesync` directory in your project folder - if it doesn't already exist
+    - Two local configuration files:
+        - `name_of_the_project.project.json` - contains the description of the project and the context
+        - `name_of_the_project.project_id.json` - contains the ID of the project on Claude.ai
+
+The `name_of_the_project.project.json` file is intended to be shared with other team members. It can (and should) be checked into version history. It contains the project description and the specification of the context.
+
+The `name_of_the_project.project_id.json` file is intended to be kept private. It contains the ID of the project on Claude.ai and should not be shared. It should be excluded from version history:
+
+```
+# .gitignore
+.claudesync/*.project_id.json
+.claudesync/active_project.json
+```
 
 ## Synchronization Configuration
 
-### Option 1: Using .claudeignore
+### Using .claudeignore
 
 Create a `.claudeignore` file in your project root to exclude files:
 
@@ -97,47 +109,36 @@ __pycache__/
 node_modules/
 ```
 
-### Option 2: Using File Categories
+### Using Project Configuration
 
-File categories are important if you have a large codebase and want to synchronize only specific files with Claude.ai.
+If you have a large codebase and want to synchronize only specific files with Claude.ai, you can configure one or multiple project contexts. A project context is a set of inclusion and exclusion patterns that define which files are synchronized with Claude.ai:
 
-File categories can be configured in two ways:
-
-1. Directly editing `.claudesync/config.local.json`:
+`xxx.project.json`:
 ```json
 {
-   "active_provider": "claude.ai",
-   "active_organization_id": "xxx",
-   "active_project_id": "xxx",
-   "active_project_name": "ClaudeSync - BE",
-   "local_path": "/Users/thomasbuechner/dev/tmp/ClaudeSync",
-   "file_categories": {
-      "main": {
-         "description": "Active Category",
-         "patterns": [
-            "*.py"
-         ]
-      }
-   },
-   "default_sync_category": "main"
+   "project_name": "main - Persistence",
+   "includes": [
+      "cf.cplace.platform/src/main/java/cf/cplace/platform/core/datamodel/persistence/*.java",
+      "cf.cplace.platform/src/main/java/cf/cplace/platform/core/datamodel/persistence/criteria/*.java",
+      "cf.cplace.platform/src/main/java/cf/cplace/platform/core/datamodel/persistence/customquery/*.java"
+   ],
+   "excludes": [
+      "BatchUpdatesLocalListeners.java",
+      "ToStringQueryVisitorWithoutValues.java",
+      "QueryUnaryOperator.java",
+      "QueryBinaryOperator.java",
+      "StatementProtocolWrapper.java",
+      "ConnectionsTracker.java",
+      "StatementWrapper.java",
+      "DateAttributeForMigration.java"
+   ],
+   "simulate_push_roots": [
+      "cf.cplace.platform/src/main/java/cf/cplace/platform/core/datamodel/persistence"
+   ]
 }
 ```
 
-2. Using CLI commands:
-```bash
-# List available categories
-claudesync config category ls
-
-# Create a custom category
-claudesync config category add mycategory \
-  --description "My custom file selection" \
-  --patterns "*.py" "*.md" "src/**/*.js"
-
-# Set as default category
-claudesync config category set_default mycategory
-```
-
-Recommendation regarding file categories is to have multiple claude projects for a single codebase. We recommend having multiple `config.local.json` files, each with one file category and one project. Switch between them by renaming the desired `xx-config.local.json` to `config.local.json` and running `claudesync push`.
+Recommendation regarding project files is to have multiple claude projects for a single codebase. Each project should have a different context. This way, the knowledge capacity of the project is not exceeded and the knowledge is more effective.
 
 Before pushing for the first time make use of the _simulate-push_ feature to see which files will be pushed to Claude.ai:
 ```bash
