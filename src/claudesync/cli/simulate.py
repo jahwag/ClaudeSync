@@ -255,10 +255,17 @@ def format_size(size):
     return f"{size:.1f} TB"
 
 class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, config=None, project=None, **kwargs):
+    def __init__(self, *args, config=None, **kwargs):
         self.config = config
-        self.project = project
         super().__init__(*args, **kwargs)
+
+    def get_active_project(self):
+        """Get the currently active project path"""
+        config = self.get_current_config()
+        active_project_path, active_project_id = config.get_active_project()
+        if not active_project_path:
+            raise ConfigurationError("No active project found")
+        return active_project_path
 
     def get_current_config(self):
         """Get a fresh config instance for each request"""
@@ -353,7 +360,8 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 config = self.get_current_config()
                 local_path = config.get_project_root()
-                files_config = config.get_files_config(self.project)
+                active_project = self.get_active_project()
+                files_config = config.get_files_config(active_project)
 
                 # Get files that would be synced based on project configuration
                 files_to_sync = get_local_files(config, local_path, files_config)
@@ -361,7 +369,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                 # Build response data
                 response_data = {
                     'claudeignore': load_claudeignore_as_string(),
-                    'project': files_config,  # This already contains name, description, includes, excludes
+                    'project': files_config,
                     'stats': self._get_stats(local_path, files_to_sync),
                     'treemap': self._get_treemap(local_path, files_to_sync, config)
                 }
@@ -415,30 +423,12 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
         return tree
 
 @click.command()
-@click.argument("project", required=False)
 @click.option('--port', default=4201, help='Port to run the server on')
 @click.option('--no-browser', is_flag=True, help='Do not open browser automatically')
 @click.pass_obj
-def simulate_push(config, project, port, no_browser):
+def simulate_push(config, port, no_browser):
     """Launch a visualization of files to be synchronized."""
     logger.debug("Starting simulate command")
-    logger.debug(f"Project: {project}")
-
-    if not project:
-        active_project_path, active_project_id = config.get_active_project()
-        if not active_project_path:
-            raise ConfigurationError("No active project found. Please specify a project or set an active one using 'project set'")
-        project = active_project_path
-
-    # Verify the project exists and get its configuration
-    try:
-        project_id = config.get_project_id(project)
-        files_config = config.get_files_config(project)
-        logger.debug(f"Using project: {project} (ID: {project_id})")
-    except ConfigurationError as e:
-        logger.error(f"Project configuration error: {e}")
-        click.echo(f"Error: {str(e)}")
-        return
 
     web_dir = os.path.join(os.path.dirname(__file__), '../web/dist/claudesync-simulate')
     logger.debug(f"Web directory path: {web_dir}")
@@ -455,13 +445,20 @@ def simulate_push(config, project, port, no_browser):
             self.socket.setsockopt(socketserver.socket.SOL_SOCKET, socketserver.socket.SO_REUSEADDR, 1)
             self.socket.bind(('127.0.0.1', self.server_address[1]))
 
-    handler = lambda *args: SyncDataHandler(*args, config=config, project=project)
+    handler = lambda *args: SyncDataHandler(*args, config=config)
 
     try:
         with LocalhostTCPServer(("127.0.0.1", port), handler) as httpd:
             url = f"http://localhost:{port}"
             click.echo(f"Server started at {url}")
-            click.echo(f"Simulating sync for project: {project}")
+
+            # Get active project for initial message
+            try:
+                active_project = config.get_active_project()[0]
+                click.echo(f"Simulating sync for active project: {active_project}")
+            except ConfigurationError:
+                click.echo("Warning: No active project set")
+
             logger.debug(f"Server started on port {port}, bound to localhost only")
 
             if not no_browser:
