@@ -123,8 +123,13 @@ class FileConfigManager(BaseConfigManager):
 
         if current_dir != root_dir:
             config_dir = current_dir / ".claudesync"
+
+            # Create the directory if it doesn't exist
+            config_dir.mkdir(exist_ok=True)
+
             if config_dir.is_dir():
                 return config_dir
+
 
         return None
 
@@ -355,39 +360,6 @@ class FileConfigManager(BaseConfigManager):
             logging.error(f"Failed to decrypt session key: {str(e)}")
             return None, None
 
-    def add_file_category(self, category_name, description, includes, excludes=None):
-        """
-        Adds a new file category to the global configuration.
-
-        Args:
-            category_name (str): The name of the category to add.
-            description (str): A description of the category.
-            includes (list): A list of file patterns for the category.
-            excludes (list, optional): A list of patterns to exclude.
-        """
-        if "file_categories" not in self.global_config:
-            self.global_config["file_categories"] = {}
-        self.global_config["file_categories"][category_name] = {
-            "description": description,
-            "includes": includes,
-            "excludes": excludes or []
-        }
-        self._save_global_config()
-
-    def remove_file_category(self, category_name):
-        """
-        Removes a file category from the global configuration.
-
-        Args:
-            category_name (str): The name of the category to remove.
-        """
-        if (
-            "file_categories" in self.global_config
-            and category_name in self.global_config["file_categories"]
-        ):
-            del self.global_config["file_categories"][category_name]
-            self._save_global_config()
-
     def clear_all_session_keys(self):
         """
         Removes all stored session keys.
@@ -397,7 +369,7 @@ class FileConfigManager(BaseConfigManager):
 
     def get_active_provider(self):
         """
-        Retrieves the active provider from the local configuration.
+        Retrieves the active provider from the global configuration.
 
         Returns:
             str: The name of the active provider, or None if not set.
