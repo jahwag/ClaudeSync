@@ -296,28 +296,22 @@ def validate_and_get_provider(config, require_org=True, require_project=False):
         require_project (bool): Whether to require an active project ID. Defaults to False.
 
     Returns:
-        BaseProvider: An instance of the configured provider.
+        ClaudeAIProvider: An instance of the Claude AI provider.
 
     Raises:
         ConfigurationError: If required configuration is missing or invalid
     """
     # Check global settings from ~/.claudesync/config.json
-    active_provider = config.get_active_provider()
-    if not active_provider:
-        raise ConfigurationError(
-            "No active provider set in global config. Please set one in ~/.claudesync/config.json"
-        )
-
     if require_org and not config.get("active_organization_id"):
         raise ConfigurationError(
             "No active organization set in global config. Please set one in ~/.claudesync/config.json"
         )
 
     # Verify session key
-    session_key, session_key_expiry = config.get_session_key(active_provider)
+    session_key, session_key_expiry = config.get_session_key("claude.ai")
     if not session_key:
         raise ConfigurationError(
-            f"No valid session key found for {active_provider}. Please log in again."
+            f"No valid session key found for claude.ai. Please log in again."
         )
 
     if require_project:
@@ -326,7 +320,7 @@ def validate_and_get_provider(config, require_org=True, require_project=False):
         # not part of the provider setup
         pass
 
-    return get_provider(config, active_provider)
+    return get_provider(config)
 
 def validate_and_store_local_path(config):
     """

@@ -13,13 +13,6 @@ def auth():
 
 @auth.command()
 @click.option(
-    "--provider",
-    prompt="Choose provider",
-    type=click.Choice(["claude.ai"], case_sensitive=False),
-    default="claude.ai",
-    help="The provider to use for this project",
-)
-@click.option(
     "--session-key",
     help="Directly provide the Claude.ai session key",
     envvar="CLAUDE_SESSION_KEY",
@@ -31,10 +24,10 @@ def auth():
 )
 @click.pass_context
 @handle_errors
-def login(ctx, provider, session_key, auto_approve):
-    """Authenticate with an AI provider."""
+def login(ctx, session_key, auto_approve):
+    """Authenticate with Claude AI."""
     config = ctx.obj
-    provider_instance = get_provider(config, provider)
+    provider_instance = get_provider(config)
 
     try:
         if session_key:
@@ -48,10 +41,10 @@ def login(ctx, provider, session_key, auto_approve):
             provider_instance._provided_session_key = session_key
 
         session_key, expiry = provider_instance.login()
-        config.set_session_key(provider, session_key, expiry)
+        config.set_session_key("claude.ai", session_key, expiry)
         config._save_global_config()
         click.echo(
-            f"Successfully authenticated with {provider}. Session key stored globally."
+            f"Successfully authenticated with Claude AI. Session key stored globally."
         )
     except ProviderError as e:
         click.echo(f"Authentication failed: {str(e)}")

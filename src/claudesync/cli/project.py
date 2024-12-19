@@ -40,13 +40,6 @@ def project():
     show_default=True,
 )
 @click.option(
-    "--provider",
-    prompt="Pick the provider to use for this project",
-    type=click.Choice(["claude.ai"], case_sensitive=False),
-    default="claude.ai",
-    help="The provider to use for this project",
-)
-@click.option(
     "--organization",
     default=None,
     help="The organization ID to use for this project",
@@ -58,10 +51,10 @@ def project():
 )
 @click.pass_context
 @handle_errors
-def create(ctx, name, internal_name, description, provider, organization, no_git_check):
+def create(ctx, name, internal_name, description, organization, no_git_check):
     """Creates a new project for the selected provider."""
     config = ctx.obj
-    provider_instance = get_provider(config, provider)
+    provider_instance = get_provider(config)
 
     if organization is None:
         organizations = provider_instance.get_organizations()
