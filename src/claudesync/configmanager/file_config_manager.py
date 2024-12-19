@@ -117,18 +117,14 @@ class FileConfigManager(BaseConfigManager):
         with open(active_project_file, "w") as f:
             json.dump(data, f, indent=2)
 
-    def _find_config_dir(self, max_depth=100):
-        """Find the nearest directory containing a .claudesync folder."""
+    def _find_config_dir(self):
         current_dir = Path.cwd()
         root_dir = Path(current_dir.root)
-        depth = 0
 
-        while current_dir != root_dir and depth < max_depth:
+        if current_dir != root_dir:
             config_dir = current_dir / ".claudesync"
             if config_dir.is_dir():
                 return config_dir
-            current_dir = current_dir.parent
-            depth += 1
 
         return None
 
