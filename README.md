@@ -1,5 +1,7 @@
 # ClaudeSync User Guide
 
+This is a fork of the original [ClaudeSync](https://github.com/jahwag/ClaudeSync) repository. The fork adds the _simulate-push_ feature, which allows you to see which files will be pushed to Claude.ai before actually pushing them. In addition, it enables sharing project contexts with other team members.
+
 ## Table of Contents
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
