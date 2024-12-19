@@ -50,8 +50,6 @@ class BaseConfigManager(ABC):
             dict: The default configuration settings.
         """
         return {
-            "active_provider": None,
-            "active_organization_id": None,
             "log_level": "INFO",
             "upload_delay": 0.5,
             "max_file_size": 32 * 1024,
