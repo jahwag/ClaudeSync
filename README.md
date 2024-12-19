@@ -94,7 +94,6 @@ The `name_of_the_project.project_id.json` file is intended to be kept private. I
 # .gitignore
 .claudesync/*.project_id.json
 .claudesync/active_project.json
-.venv/
 ```
 
 ## Synchronization Configuration
