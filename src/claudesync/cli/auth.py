@@ -49,6 +49,7 @@ def login(ctx, provider, session_key, auto_approve):
 
         session_key, expiry = provider_instance.login()
         config.set_session_key(provider, session_key, expiry)
+        config._save_global_config()
         click.echo(
             f"Successfully authenticated with {provider}. Session key stored globally."
         )
