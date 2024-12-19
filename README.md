@@ -1,95 +1,187 @@
-# ClaudeSync
+# ClaudeSync User Guide
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![PyPI](https://badge.fury.io/py/claudesync.svg)](https://pypi.org/project/claudesync/)
-[![Release](https://img.shields.io/github/release/jahwag/claudesync.svg)](https://github.com/jahwag/claudesync/releases)
-[![Build Status](https://github.com/jahwag/ClaudeSync/actions/workflows/python-package.yml/badge.svg)](https://github.com/jahwag/ClaudeSync/actions/workflows/python-package.yml)
-[![Issues](https://img.shields.io/github/issues/jahwag/claudesync)](https://github.com/jahwag/claudesync/issues)
-[![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Dependencies](https://img.shields.io/librariesio/github/jahwag/claudesync)](https://github.com/jahwag/claudesync/network/dependencies)
-[![Last Commit](https://img.shields.io/github/last-commit/jahwag/claudesync.svg)](https://github.com/jahwag/claudesync/commits/main)
-[![Sponsor jahwag](https://img.shields.io/badge/Sponsor-♥-red)](https://github.com/sponsors/jahwag)
+## Table of Contents
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Authentication](#authentication)
+- [Project Setup](#project-setup)
+- [Synchronization Configuration](#synchronization-configuration)
+- [Working with Claude.ai](#working-with-claudeai)
 
+## Prerequisites
 
-ClaudeSync bridges your local development environment with Claude.ai projects, enabling seamless synchronization to enhance your AI-powered workflow.
+Before installing ClaudeSync, ensure you have:
+- Python 3.10 or higher
+- A Claude.ai Pro or Team account
+- A terminal or command prompt
+- SSH key for secure credential storage. Follow [GitHub's guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) to generate and add your SSH key.
 
-![ClaudeSync in Action](claudesync.gif)
+## Installation
 
-## ⚠️ Disclaimer
+1. Create and activate a virtual environment:
 
-ClaudeSync is an independent, open-source project **not affiliated** with Anthropic or Claude.ai. By using ClaudeSync, you agree to:
+```bash
+# Create a new virtual environment
+python3 -m venv .venv
 
-1. Use it at your own risk.
-2. Acknowledge potential violation of Anthropic's Terms of Service.
-3. Assume responsibility for any consequences.
-4. Understand that Anthropic does not support this tool.
+# Activate the virtual environment
+# On Windows:
+.venv\Scripts\activate
+# On macOS/Linux:
+source .venv/bin/activate
+```
 
-Please review [Anthropic's Terms of Service](https://www.anthropic.com/legal/consumer-terms) before using ClaudeSync.
+Make sure, that the virtual environment is added to your .gitignore file:
+```
+# .gitignore
+.venv/
+```
 
-## 🌟 Features
+2. Install ClaudeSync fork with _simulate-push_ feature using pip:
 
-- **File sync**: Synchronize local files with [Claude.ai projects](https://www.anthropic.com/news/projects).
-- **Cross-Platform**: Compatible with [Windows, macOS, and Linux](https://github.com/jahwag/ClaudeSync/releases).
-- **Configurable**: Plenty of [configuration options](https://github.com/jahwag/ClaudeSync/wiki/Quick-reference).
-- **Integrate**: Designed to be easy to integrate into your pipelines.
-- **Secure**: Ensures data privacy and security.
+```bash
+pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync-0.6.6-py3-none-any.whl    
+```
 
-## ⚙️ Prerequisites
+## Authentication
 
-### 📄 Supported Claude.ai plans
+Authentication with Claude.ai needs to be done once:
 
-| [Plan](https://www.anthropic.com/pricing)   | Supported |
-|--------|-----------|
-| Pro    | ✅        |
-| Team   | ✅        |
-| Free   | ❌        |
+1. Run the authentication command:
+```bash
+claudesync auth login
+```
 
-### 🔑 SSH Key
+Note: The ssh key must sit at the default location `~/.ssh/id_ed25519`.
 
-Ensure you have an SSH key for secure credential storage. Follow [GitHub's guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) to generate and add your SSH key.
+2. Follow the on-screen instructions:
+   - Open Claude.ai in your browser
+   - Open Developer Tools (F12 or Ctrl+Shift+I)
+   - Go to Application/Storage tab
+   - Find the `sessionKey` cookie
+   - Copy its value (starts with `sk-ant`)
+   - Paste it into the terminal when prompted
+   - Enter or confirm the expiration date
 
-### 💻 Software
+## Project Setup
 
-- **Python**: ≥ [3.10](https://www.python.org/downloads/)
-- **pip**: [Python package installer](https://pip.pypa.io/en/stable/installation/)
+1. Create a new project:
+```bash
+claudesync project create
+```
 
-## 🚀 Quick Start
+You'll be prompted for:
+- Project name (defaults to current directory name)
+- Project description
+- Local path (defaults to current directory)
+- Provider (select claude.ai)
+- Organization (if you have multiple)
 
-1. **Install ClaudeSync**
-    ```shell
-    pip install claudesync
-    ```
+2. The command will create:
+   - A new project on Claude.ai
+   - A `.claudesync` directory in your project folder - if it doesn't already exist
+   - Two local configuration files:
+      - `name_of_the_project.project.json` - contains the description of the project and the context
+      - `name_of_the_project.project_id.json` - contains the ID of the project on Claude.ai
 
-2. **Authenticate**
-    ```shell
-    claudesync auth login
-    ```
+The `name_of_the_project.project.json` file is intended to be shared with other team members. It can (and should) be checked into version history. It contains the project description and the specification of the context.
 
-3. **Create a Project**
-    ```shell
-    claudesync project create
-    ```
+The `name_of_the_project.project_id.json` file is intended to be kept private. It contains the ID of the project on Claude.ai and should not be shared. It should be excluded from version history:
 
-4. **Start Syncing***
-    ```shell
-    claudesync push
-    ```
-    **This is a one-way sync. Files not present locally will be removed from the Claude.ai project unless pruning is [disabled](https://github.com/jahwag/ClaudeSync/wiki/Quick-reference#pruning-remote).*
+```
+# .gitignore
+.claudesync/*.project_id.json
+.claudesync/active_project.json
+```
 
-📚 [Detailed Guides & FAQs](https://github.com/jahwag/claudesync/wiki)
+## Synchronization Configuration
 
-## 🤝 Support & Contribute
+### Using .claudeignore
 
-Enjoying ClaudeSync? Support us by:
+Create a `.claudeignore` file in your project root to exclude files:
 
-- ⭐ [Starring the Repository](https://github.com/jahwag/claudesync)
-- 🐛 [Reporting Issues](https://github.com/jahwag/claudesync/issues)
-- 🌍 [Contributing](CONTRIBUTING.md)
-- 💬 [Join Our Discord](https://discord.gg/pR4qeMH4u4)
-- 💖 [Sponsor Us](https://github.com/sponsors/jahwag)
+```text
+# Example .claudeignore
+*.pyc
+__pycache__/
+.git/
+.env
+node_modules/
+```
 
-Your contributions help improve ClaudeSync!
+### Using Project Configuration
 
----
+If you have a large codebase and want to synchronize only specific files with Claude.ai, you can configure one or multiple project contexts. A project context is a set of inclusion and exclusion patterns that define which files are synchronized with Claude.ai:
 
-[Contributors](https://github.com/jahwag/claudesync/graphs/contributors) • [License](https://github.com/jahwag/claudesync/blob/master/LICENSE) • [Report Bug](https://github.com/jahwag/claudesync/issues) • [Request Feature](https://github.com/jahwag/claudesync/issues/new?labels=enhancement&template=feature_request.md)• [Sponsor](https://github.com/sponsors/jahwag)
+`xxx.project.json`:
+```json
+{
+   "project_name": "main - Persistence",
+   "includes": [
+      "cf.cplace.platform/src/main/java/cf/cplace/platform/core/datamodel/persistence/*.java",
+      "cf.cplace.platform/src/main/java/cf/cplace/platform/core/datamodel/persistence/criteria/*.java",
+      "cf.cplace.platform/src/main/java/cf/cplace/platform/core/datamodel/persistence/customquery/*.java"
+   ],
+   "excludes": [
+      "BatchUpdatesLocalListeners.java",
+      "ToStringQueryVisitorWithoutValues.java",
+      "QueryUnaryOperator.java",
+      "QueryBinaryOperator.java",
+      "StatementProtocolWrapper.java",
+      "ConnectionsTracker.java",
+      "StatementWrapper.java",
+      "DateAttributeForMigration.java"
+   ],
+   "simulate_push_roots": [
+      "cf.cplace.platform/src/main/java/cf/cplace/platform/core/datamodel/persistence"
+   ]
+}
+```
+
+Recommendation regarding project files is to have multiple claude projects for a single codebase. Each project should have a different context. This way, the knowledge capacity of the project is not exceeded and the knowledge is more effective.
+
+Before pushing for the first time make use of the _simulate-push_ feature to see which files will be pushed to Claude.ai:
+```bash
+claudesync simulate-push
+```
+
+## Working with Claude.ai
+
+### Initial Push
+
+Push your project files to Claude.ai:
+```bash
+claudesync push name-of-the-project
+```
+
+Visit the project on [Claude.ai](https://claude.ai) to see the synchronized files.
+
+After pushing the specified project, the project is set to be the _active project_. The active project is used for all subsequent commands. To change the active project, use the following command:
+
+```bash
+claudesync project set name-of-the-project
+```
+
+### Development Workflow Example
+
+1. Visit [Claude.ai](https://claude.ai), browse to your project and ask Claude about a feature you want to implement. For example:
+   "How can I implement error handling for network timeouts in my Python application?"
+
+2. Implement the suggested changes locally in your development environment.
+
+3. Push the updated files to Claude:
+```bash
+claudesync push
+```
+
+4. Return to your [Claude.ai](https://claude.ai) project in the browser to discuss the implementation and ask for improvements or additional features.
+
+### Tips for Effective Collaboration
+
+1. Keep conversations focused on specific features or issues
+2. Push changes frequently to maintain context
+3. If you have a large codebase, break it down into smaller pieces, try not to exceed 30% of the available knowledge capacity of the claude project. If you do, you increase the risk of running into the rate limit and the knowledge will be less effective. In file `.claudesync/example-file-categories.json` you can see an exemplary decomposition of this project into smaller subprojects.
+
+## Support
+
+- GitHub Issues: [Report bugs](https://github.com/tbuechner/claudesync/issues)
