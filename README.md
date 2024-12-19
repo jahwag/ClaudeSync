@@ -98,9 +98,9 @@ The `name_of_the_project.project_id.json` file is intended to be kept private. I
 
 ## Synchronization Configuration
 
-### Using .claudeignore
+### .claudeignore
 
-Create a `.claudeignore` file in your project root to exclude files:
+Create a `.claudeignore` file in your project root to exclude files from synchronization. The `.claudeignore` file uses the same syntax as `.gitignore`:
 
 ```text
 # Example .claudeignore
@@ -111,7 +111,9 @@ __pycache__/
 node_modules/
 ```
 
-### Using Project Configuration
+The `.claudeignore` file is intended to be shared with other team members. It can (and should) be checked into version history. There is one version of the `.claudeignore` file per folder in which ClaudeSync is applied.
+
+### Project Configuration
 
 If you have a large codebase and want to synchronize only specific files with Claude.ai, you can configure one or multiple project contexts. A project context is a set of inclusion and exclusion patterns that define which files are synchronized with Claude.ai:
 
@@ -147,7 +149,7 @@ Before pushing for the first time make use of the _simulate-push_ feature to see
 claudesync simulate-push
 ```
 
-## Working with Claude.ai
+## Working with ClaudeSync and Claude.ai
 
 ### Initial Push
 
