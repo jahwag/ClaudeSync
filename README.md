@@ -94,6 +94,7 @@ The `name_of_the_project.project_id.json` file is intended to be kept private. I
 # .gitignore
 .claudesync/*.project_id.json
 .claudesync/active_project.json
+.venv/
 ```
 
 ## Synchronization Configuration
@@ -109,6 +110,7 @@ __pycache__/
 .git/
 .env
 node_modules/
+.venv/
 ```
 
 The `.claudeignore` file is intended to be shared with other team members. It can (and should) be checked into version history. There is one version of the `.claudeignore` file per folder in which ClaudeSync is applied.
