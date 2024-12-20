@@ -308,7 +308,7 @@ def validate_and_get_provider(config, require_org=True, require_project=False):
         )
 
     # Verify session key
-    session_key, session_key_expiry = config.get_session_key("claude.ai")
+    session_key, session_key_expiry = config.get_session_key()
     if not session_key:
         raise ConfigurationError(
             f"No valid session key found for claude.ai. Please log in again."

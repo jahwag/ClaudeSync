@@ -9,7 +9,7 @@ import urllib.request
 from pkg_resources import get_distribution
 
 from claudesync.cli.chat import chat
-from claudesync.configmanager import FileConfigManager, InMemoryConfigManager
+from claudesync.configmanager import FileConfigManager
 from claudesync.exceptions import ConfigurationError
 from claudesync.syncmanager import SyncManager
 from claudesync.utils import (

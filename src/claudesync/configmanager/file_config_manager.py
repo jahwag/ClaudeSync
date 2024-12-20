@@ -292,23 +292,22 @@ class FileConfigManager(BaseConfigManager):
             with open(local_config_file, "w") as f:
                 json.dump(self.local_config, f, indent=2)
 
-    def set_session_key(self, provider, session_key, expiry):
+    def set_session_key(self, session_key, expiry):
         """
         Sets the session key and its expiry for a specific provider.
 
         Args:
-            provider (str): The name of the provider.
             session_key (str): The session key to set.
             expiry (datetime): The expiry datetime for the session key.
         """
         try:
             session_key_manager = SessionKeyManager()
             encrypted_session_key, encryption_method = (
-                session_key_manager.encrypt_session_key(provider, session_key)
+                session_key_manager.encrypt_session_key("claude.ai", session_key)
             )
 
             self.global_config_dir.mkdir(parents=True, exist_ok=True)
-            provider_key_file = self.global_config_dir / f"{provider}.key"
+            provider_key_file = self.global_config_dir / f"claude.ai.key"
             with open(provider_key_file, "w") as f:
                 json.dump(
                     {
@@ -322,17 +321,14 @@ class FileConfigManager(BaseConfigManager):
             logging.error(f"Failed to encrypt session key: {str(e)}")
             raise
 
-    def get_session_key(self, provider):
+    def get_session_key(self):
         """
-        Retrieves the session key for the specified provider if it's still valid.
-
-        Args:
-            provider (str): The name of the provider.
+        Retrieves the session key if it's still valid.
 
         Returns:
             tuple: A tuple containing the session key and expiry if valid, (None, None) otherwise.
         """
-        provider_key_file = self.global_config_dir / f"{provider}.key"
+        provider_key_file = self.global_config_dir / f"claude.ai.key"
         if not provider_key_file.exists():
             return None, None
 
@@ -353,7 +349,7 @@ class FileConfigManager(BaseConfigManager):
         try:
             session_key_manager = SessionKeyManager()
             session_key = session_key_manager.decrypt_session_key(
-                provider, encryption_method, encrypted_key
+                "claude.ai", encryption_method, encrypted_key
             )
             return session_key, expiry
         except RuntimeError as e:
@@ -367,15 +363,6 @@ class FileConfigManager(BaseConfigManager):
         for file in self.global_config_dir.glob("*.key"):
             os.remove(file)
 
-    def get_active_provider(self):
-        """
-        Retrieves the active provider from the global configuration.
-
-        Returns:
-            str: The name of the active provider, or None if not set.
-        """
-        return self.global_config.get("active_provider")
-
     def get_providers_with_session_keys(self):
         """
         Retrieves a list of providers that have valid session keys.
@@ -384,9 +371,9 @@ class FileConfigManager(BaseConfigManager):
             list: A list of provider names with valid session keys.
         """
         providers = []
-        for file in self.global_config_dir.glob("*.key"):
+        for file in self.global_config_dir.glob("claude.ai.key"):
             provider = file.stem
-            session_key, expiry = self.get_session_key(provider)
+            session_key, expiry = self.get_session_key()
             if session_key and expiry > datetime.now():
                 providers.append(provider)
         return providers
