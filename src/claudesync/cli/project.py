@@ -281,11 +281,12 @@ def ls(config, show_all):
 @click.option(
     "-a", "--include-archived", is_flag=True, help="Include archived projects"
 )
+@click.option("--all", "truncate_all", is_flag=True, help="Truncate all projects")
 @click.option("-y", "--yes", is_flag=True, help="Skip confirmation prompt")
 @click.pass_obj
 @handle_errors
-def truncate(config, include_archived, yes):
-    """Truncate all projects."""
+def truncate(config, include_archived, truncate_all, yes):
+    """Truncate one or all projects."""
     provider = validate_and_get_provider(config)
     active_organization_id = config.get("active_organization_id")
 
@@ -297,25 +298,50 @@ def truncate(config, include_archived, yes):
         click.echo("No projects found.")
         return
 
-    if not yes:
-        click.echo("This will delete ALL files from the following projects:")
-        for project in projects:
-            status = " (Archived)" if project.get("archived_at") else ""
-            click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
-        if not click.confirm(
-            "Are you sure you want to continue? This may take some time."
+    if truncate_all:
+        if not yes:
+            click.echo("This will delete ALL files from the following projects:")
+            for project in projects:
+                status = " (Archived)" if project.get("archived_at") else ""
+                click.echo(f"  - {project['name']} (ID: {project['id']}){status}")
+            if not click.confirm(
+                "Are you sure you want to continue? This may take some time."
+            ):
+                click.echo("Operation cancelled.")
+                return
+
+        with tqdm(total=len(projects), desc="Deleting files from projects") as pbar:
+            for project in projects:
+                delete_files_from_project(
+                    provider, active_organization_id, project["id"], project["name"]
+                )
+                pbar.update(1)
+
+        click.echo("All files have been deleted from all projects.")
+        return
+
+    click.echo("Available projects:")
+    for idx, project in enumerate(projects, 1):
+        status = " (Archived)" if project.get("archived_at") else ""
+        click.echo(f"  {idx}. {project['name']} (ID: {project['id']}){status}")
+
+    selection = click.prompt("Enter the number of the project to truncate", type=int)
+    if 1 <= selection <= len(projects):
+        selected_project = projects[selection - 1]
+        if yes or click.confirm(
+            f"Are you sure you want to delete ALL files from project '{selected_project['name']}'?"
         ):
-            click.echo("Operation cancelled.")
-            return
-
-    with tqdm(total=len(projects), desc="Deleting files from projects") as pbar:
-        for project in projects:
             delete_files_from_project(
-                provider, active_organization_id, project["id"], project["name"]
+                provider,
+                active_organization_id,
+                selected_project["id"],
+                selected_project["name"],
             )
-            pbar.update(1)
-
-    click.echo("All files have been deleted from all projects.")
+            click.echo(
+                f"All files have been deleted from project '{selected_project['name']}'."
+            )
+    else:
+        click.echo("Invalid selection. Please try again.")
 
 
 @retry_on_403()
