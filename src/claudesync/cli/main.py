@@ -21,6 +21,7 @@ from .organization import organization
 from .project import project
 from .sync import schedule
 from .config import config
+from .hooks import hooks
 import logging
 
 logging.basicConfig(
@@ -213,6 +214,7 @@ cli.add_command(project)
 cli.add_command(schedule)
 cli.add_command(config)
 cli.add_command(chat)
+cli.add_command(hooks)
 
 if __name__ == "__main__":
     cli()
