@@ -11,6 +11,39 @@ SUPPORTED_GIT_HOOKS = [
 ]
 
 
+@click.group()
+def hooks():
+    """Manage Git hooks for the project."""
+    pass
+
+
+@hooks.command()
+def install():
+    """Install Git hooks for automatic code formatting."""
+    project_root = find_git_root()
+    if not project_root:
+        click.echo("Error: Not a git repository (or any of the parent directories)")
+        return
+
+    hooks_dir = project_root / ".git" / "hooks"
+    if not hooks_dir.exists():
+        click.echo(f"Creating hooks directory: {hooks_dir}")
+        hooks_dir.mkdir(parents=True, exist_ok=True)
+
+    for hook in SUPPORTED_GIT_HOOKS:
+        copy_hook(hooks_dir, hook)
+
+    click.echo("\nHook installation complete!")
+
+
+@hooks.command()
+def list():
+    """List available Git hooks."""
+    click.echo("Available hooks:")
+    for hook in SUPPORTED_GIT_HOOKS:
+        click.echo(f"  - {hook}")
+
+
 def copy_hook(hooks_dir, hook_name):
     """
     Copy a specific hook from templates to git hooks directory.
@@ -39,24 +72,6 @@ def copy_hook(hooks_dir, hook_name):
         click.echo(f"Error installing {hook_name} hook: {e}")
 
 
-def install_hooks():
-    """Install all supported Git hooks for the project."""
-    project_root = find_git_root()
-    if not project_root:
-        click.echo("Error: Not a git repository (or any of the parent directories)")
-        return
-
-    hooks_dir = project_root / ".git" / "hooks"
-    if not hooks_dir.exists():
-        click.echo(f"Creating hooks directory: {hooks_dir}")
-        hooks_dir.mkdir(parents=True, exist_ok=True)
-
-    for hook in SUPPORTED_GIT_HOOKS:
-        copy_hook(hooks_dir, hook)
-
-    click.echo("\nHook installation complete!")
-
-
 def find_git_root():
     """Find the root directory of the Git repository"""
     try:
@@ -72,4 +87,4 @@ def find_git_root():
 
 
 if __name__ == "__main__":
-    install_hooks()
+    install()
