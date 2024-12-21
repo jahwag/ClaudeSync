@@ -62,7 +62,6 @@ format = [
 
 [project.scripts]
 claudesync = "claudesync.cli.main:cli"
-install-hooks = "claudesync.cli.hooks:install_hooks"
 
 [build-system]
 requires = ["setuptools>=42", "wheel"]
