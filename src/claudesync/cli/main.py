@@ -55,7 +55,6 @@ def install_completion(shell):
 @click.pass_context
 def upgrade(ctx):
     """Upgrade ClaudeSync to the latest version and reset configuration, preserving sessionKey."""
-    config = ctx.obj
     current_version = get_distribution("claudesync").version
 
     # Check for the latest version
@@ -75,9 +74,6 @@ def upgrade(ctx):
         click.echo(f"Unable to check for the latest version: {str(e)}")
         click.echo("Proceeding with the upgrade process.")
 
-    session_key = config.get_session_key()
-    session_key_expiry = config.get("session_key_expiry")
-
     # Upgrade ClaudeSync
     click.echo(f"Upgrading ClaudeSync from v{current_version} to v{latest_version}...")
     try:
@@ -87,13 +83,6 @@ def upgrade(ctx):
         click.echo(
             "Failed to upgrade ClaudeSync. Please try manually: pip install --upgrade claudesync"
         )
-
-    # Preserve the session key and its expiry
-    if session_key and session_key_expiry:
-        config.set_session_key(session_key, session_key_expiry)
-        click.echo("Session key preserved in the new configuration.")
-    else:
-        click.echo("No valid session key found in the old configuration.")
 
     # Inform user about the upgrade process
     click.echo("\nUpgrade process completed:")
