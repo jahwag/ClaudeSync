@@ -19,6 +19,11 @@ class TestAuthIntegration(unittest.TestCase):
         # Set HOME to our test directory so .claudesync is created there
         os.environ['HOME'] = self.test_dir
 
+        # Delete any existing .claudesync folder in current directory
+        claudesync_dir = Path(os.getcwd()) / '.claudesync'
+        if claudesync_dir.exists():
+            shutil.rmtree(claudesync_dir)
+
         # Create a CLI runner
         self.runner = CliRunner()
 
