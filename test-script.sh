@@ -12,5 +12,7 @@ fi
 # Export the session key
 export CLAUDE_SESSION_KEY=$1
 
+pip install -e .
+
 # Run the test
 python -m unittest -v tests/integration/test_auth.py
