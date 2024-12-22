@@ -149,5 +149,78 @@ class TestAuthIntegration(unittest.TestCase):
             self.assertEqual(active_data['project_path'], 'test-project')
             self.assertEqual(active_data['project_id'], id_data['project_id'])
 
+    @patch('claudesync.session_key_manager.SessionKeyManager._find_ssh_key')
+    def test_03_project_push(self, mock_find_ssh_key):
+        """Test pushing files to the project created in test_02_project_create"""
+        mock_find_ssh_key.return_value = "/Users/thomasbuechner/.ssh/id_ed25519"
+
+        # First ensure we're logged in
+        login_result = self.runner.invoke(
+            cli,
+            ['auth', 'login', '--session-key', self.session_key, '--auto-approve']
+        )
+        self.assertEqual(login_result.exit_code, 0)
+
+        # Create a test project first (reusing test_02_project_create logic)
+        project_result = self.runner.invoke(
+            cli,
+            ['project', 'create', '--name', 'Test Project', '--internal-name', 'test-project',
+             '--description', 'Test project created for push test', '--no-git-check'],
+            input='y\n'
+        )
+        self.assertEqual(project_result.exit_code, 0)
+
+        # Create some test files
+        test_files_dir = Path(os.getcwd()) / 'test_files'
+        test_files_dir.mkdir(exist_ok=True)
+
+        # Create a Python file
+        python_file = test_files_dir / 'test.py'
+        python_file.write_text('''
+    def hello():
+        print("Hello, World!")
+    
+    if __name__ == "__main__":
+        hello()
+    ''')
+
+        # Create a text file
+        text_file = test_files_dir / 'readme.txt'
+        text_file.write_text('This is a test file for claudesync push.')
+
+        # Update project configuration to include these files
+        claudesync_dir = Path(os.getcwd()) / '.claudesync'
+        project_config = claudesync_dir / 'test-project.project.json'
+
+        with open(project_config, 'r+') as f:
+            config = json.load(f)
+            config['includes'] = ['test_files/*.py', 'test_files/*.txt']
+            f.seek(0)
+            json.dump(config, f, indent=2)
+            f.truncate()
+
+        # Push files to the project
+        push_result = self.runner.invoke(cli, ['push', 'test-project'])
+
+        if push_result.exception:
+            import traceback
+            print(f"Exception during push: {push_result.exception}")
+            print("Full traceback:")
+            print(''.join(traceback.format_tb(push_result.exc_info[2])))
+        if push_result.output:
+            print(f"Command output: {push_result.output}")
+
+        # Check command succeeded
+        self.assertEqual(push_result.exit_code, 0)
+        self.assertIn("Project 'test-project' synced successfully", push_result.output)
+
+        # Verify files were pushed by listing them
+        list_result = self.runner.invoke(cli, ['file', 'ls', 'test-project'])
+        self.assertEqual(list_result.exit_code, 0)
+        self.assertIn('test.py', list_result.output)
+        self.assertIn('readme.txt', list_result.output)
+
+        # Clean up test files
+        shutil.rmtree(test_files_dir)
 if __name__ == '__main__':
     unittest.main()

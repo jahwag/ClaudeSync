@@ -43,7 +43,7 @@ def set(ctx, org_id):
     if org_id:
         selected_org = next((org for org in organizations if org["id"] == org_id), None)
         if selected_org:
-            config.set("active_organization_id", selected_org["id"], local=True)
+            config.set("active_organization_id", selected_org["id"], local=False)
             click.echo(
                 f"Selected organization: {selected_org['name']} (ID: {selected_org['id']})"
             )
@@ -60,7 +60,7 @@ def set(ctx, org_id):
         )
         if 1 <= selection <= len(organizations):
             selected_org = organizations[selection - 1]
-            config.set("active_organization_id", selected_org["id"], local=True)
+            config.set("active_organization_id", selected_org["id"], local=False)
             click.echo(
                 f"Selected organization: {selected_org['name']} (ID: {selected_org['id']})"
             )
