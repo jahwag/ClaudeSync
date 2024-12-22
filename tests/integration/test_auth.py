@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import tempfile
@@ -38,7 +39,7 @@ class TestAuthIntegration(unittest.TestCase):
         shutil.rmtree(self.test_dir)
 
     @patch('claudesync.session_key_manager.SessionKeyManager._find_ssh_key')
-    def test_login_with_session_key(self, mock_find_ssh_key):
+    def test_01_login_with_session_key(self, mock_find_ssh_key):
         """Test logging in with a session key provided via command line"""
 
         mock_find_ssh_key.return_value = "/Users/thomasbuechner/.ssh/id_ed25519"
@@ -79,6 +80,69 @@ class TestAuthIntegration(unittest.TestCase):
         result = self.runner.invoke(cli, ['organization', 'ls'])
         self.assertEqual(result.exit_code, 0)
         self.assertNotIn("No organizations", result.output)
+
+    @patch('claudesync.session_key_manager.SessionKeyManager._find_ssh_key')
+    def test_02_project_create(self, mock_find_ssh_key):
+        """Test creating a new project after successful login"""
+        mock_find_ssh_key.return_value = "/Users/thomasbuechner/.ssh/id_ed25519"
+
+        # First ensure we're logged in
+        login_result = self.runner.invoke(
+            cli,
+            ['auth', 'login', '--session-key', self.session_key, '--auto-approve']
+        )
+        self.assertEqual(login_result.exit_code, 0)
+
+        # Create a new project
+        project_result = self.runner.invoke(
+            cli,
+            ['project', 'create', '--name', 'Test Project', '--internal-name', 'test-project',
+             '--description', 'Test project created by integration test', '--no-git-check'],
+            input='y\n'  # Automatically confirm any prompts
+        )
+
+        if project_result.exception:
+            import traceback
+            print(f"Exception during project creation: {project_result.exception}")
+            print("Full traceback:")
+            print(''.join(traceback.format_tb(project_result.exc_info[2])))
+        if project_result.output:
+            print(f"Command output: {project_result.output}")
+
+        # Check command succeeded
+        self.assertEqual(project_result.exit_code, 0)
+        self.assertIn("Project", project_result.output)
+        self.assertIn("has been created successfully", project_result.output)
+
+        # Verify project files were created
+        claudesync_dir = Path(os.getcwd()) / '.claudesync'
+        project_config = claudesync_dir / 'test-project.project.json'
+        project_id_config = claudesync_dir / 'test-project.project_id.json'
+        active_project = claudesync_dir / 'active_project.json'
+
+        self.assertTrue(project_config.exists())
+        self.assertTrue(project_id_config.exists())
+        self.assertTrue(active_project.exists())
+
+        # Verify project configurations
+        with open(project_config) as f:
+            config_data = json.load(f)
+            self.assertEqual(config_data['project_name'], 'Test Project')
+            self.assertEqual(config_data['project_description'], 'Test project created by integration test')
+            self.assertIn('includes', config_data)
+            self.assertIn('excludes', config_data)
+
+        # Verify project ID was stored
+        with open(project_id_config) as f:
+            id_data = json.load(f)
+            self.assertIn('project_id', id_data)
+            self.assertTrue(id_data['project_id'].strip())
+
+        # Verify active project was set
+        with open(active_project) as f:
+            active_data = json.load(f)
+            self.assertEqual(active_data['project_path'], 'test-project')
+            self.assertEqual(active_data['project_id'], id_data['project_id'])
 
 if __name__ == '__main__':
     unittest.main()
