@@ -38,19 +38,10 @@ class TestAuthIntegration(unittest.TestCase):
         shutil.rmtree(self.test_dir)
 
     @patch('claudesync.session_key_manager.SessionKeyManager._find_ssh_key')
-    @patch('claudesync.session_key_manager.SessionKeyManager._get_key_type')
-    @patch('claudesync.session_key_manager.SessionKeyManager._derive_key_from_ssh_key')
-    @patch('claudesync.session_key_manager.SessionKeyManager._encrypt_symmetric')
-    @patch('claudesync.session_key_manager.SessionKeyManager._decrypt_symmetric')
-    def test_login_with_session_key(self, mock_decrypt_symmetric, mock_encrypt_symmetric, mock_derive_key_from_ssh_key,
-                                    mock_get_key_type, mock_find_ssh_key):
+    def test_login_with_session_key(self, mock_find_ssh_key):
         """Test logging in with a session key provided via command line"""
 
-        mock_find_ssh_key.return_value = "/dummy/path/to/id_ed25519"
-        mock_get_key_type.return_value = "ed25519"
-        mock_derive_key_from_ssh_key.return_value = "derived_key"
-        mock_encrypt_symmetric.return_value = ("encrypted_key", "symmetric")
-        mock_decrypt_symmetric.return_value = "decrypted_key"
+        mock_find_ssh_key.return_value = "/Users/thomasbuechner/.ssh/id_ed25519"
 
         # Run the login command with the session key
         result = self.runner.invoke(
