@@ -20,7 +20,7 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             "Accept-Encoding": "gzip",
         }
 
-        session_key, expiry = self.config.get_session_key("claude.ai")
+        session_key, expiry = self.config.get_session_key()
         cookies = {
             "sessionKey": session_key,
         }
@@ -118,7 +118,7 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
 
     def _make_request_stream(self, method, endpoint, data=None):
         url = f"{self.base_url}{endpoint}"
-        session_key, _ = self.config.get_session_key("claude.ai")
+        session_key, _ = self.config.get_session_key()
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
             "Content-Type": "application/json",
