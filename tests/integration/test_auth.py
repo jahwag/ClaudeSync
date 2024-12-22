@@ -35,7 +35,7 @@ class TestAuthIntegration(unittest.TestCase):
     @patch('claudesync.session_key_manager.SessionKeyManager._find_ssh_key')
     def tearDown(self, mock_find_ssh_key):
         """Clean up after each test"""
-        mock_find_ssh_key.return_value = "/Users/thomasbuechner/.ssh/id_ed25519"
+        mock_find_ssh_key.return_value = "~/.ssh/id_ed25519"
 
         archive_result = self.runner.invoke(cli, ['project', 'archive'])
         if archive_result.exit_code != 0:
