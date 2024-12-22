@@ -42,6 +42,12 @@ def login(ctx, session_key, auto_approve):
 
         session_key, expiry = provider_instance.login()
         config.set_session_key(session_key, expiry)
+
+        organizations = provider_instance.get_organizations()
+        organization_instance = organizations[0] if organizations else None
+        organization_id = organization_instance["id"]
+        config.set("active_organization_id", organization_id, local=False)
+
         config._save_global_config()
         click.echo(
             f"Successfully authenticated with Claude AI. Session key stored globally."

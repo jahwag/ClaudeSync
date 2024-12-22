@@ -149,6 +149,34 @@ def set(config, project_path):
         click.echo("Make sure the project exists and has been properly configured.")
         click.echo("You may need to create the project first using 'claudesync project create'")
 
+@project.command()
+@click.pass_obj
+@handle_errors
+def archive(config):
+    """Archive the active project."""
+    try:
+        # Get active project
+        active_project_path, active_project_id = config.get_active_project()
+        if not active_project_path:
+            raise ConfigurationError("No active project found. Please set an active project using 'project set'")
+
+        # Get project details
+        files_config = config.get_files_config(active_project_path)
+        project_name = files_config.get('project_name', 'Unknown Project')
+
+        # Get provider and archive the project
+        provider = validate_and_get_provider(config)
+        active_organization_id = config.get("active_organization_id")
+        provider.archive_project(active_organization_id, active_project_id)
+
+        click.echo(f"Successfully archived project '{project_name}'")
+        click.echo(f"  - Project path: {active_project_path}")
+        click.echo(f"  - Project ID: {active_project_id}")
+
+    except ConfigurationError as e:
+        click.echo(f"Error: {str(e)}")
+        click.echo("Make sure you have an active project set.")
+
 project.add_command(file)
 
 __all__ = ["project"]
