@@ -8,30 +8,6 @@ from unittest.mock import patch, MagicMock
 
 from claudesync.cli.main import cli
 from claudesync.configmanager import FileConfigManager
-from claudesync.session_key_manager import SessionKeyManager
-
-class MockSessionKeyManager(SessionKeyManager):
-    def _find_ssh_key(self):
-        # Always return a valid mock path
-        return "/mock/path/to/id_ed25519"
-
-    def _get_key_type(self):
-        # Mock successful key type check
-        return "ed25519"
-
-    def _derive_key_from_ssh_key(self):
-        # Return a consistent mock key for testing
-        return b"mock_derived_key_for_testing_purposes_only=="
-
-    def encrypt_session_key(self, session_key):
-        # Mock successful encryption
-        return f"encrypted_{session_key}", "symmetric"
-
-    def decrypt_session_key(self, encryption_method, encrypted_session_key):
-        # Mock successful decryption by removing the 'encrypted_' prefix
-        if encrypted_session_key.startswith("encrypted_"):
-            return encrypted_session_key[len("encrypted_"):]
-        return encrypted_session_key
 
 class TestAuthIntegration(unittest.TestCase):
     def setUp(self):
@@ -61,9 +37,19 @@ class TestAuthIntegration(unittest.TestCase):
         # Clean up the temporary directory
         shutil.rmtree(self.test_dir)
 
-    @patch('claudesync.session_key_manager.SessionKeyManager', MockSessionKeyManager)
-    def test_login_with_session_key(self):
+    @patch('claudesync.session_key_manager.SessionKeyManager._find_ssh_key')
+    @patch('claudesync.session_key_manager.SessionKeyManager._get_key_type')
+    @patch('claudesync.session_key_manager.SessionKeyManager._derive_key_from_ssh_key')
+    @patch('claudesync.session_key_manager.SessionKeyManager._encrypt_symmetric')
+    def test_login_with_session_key(self, mock_encrypt_symmetric, mock_derive_key_from_ssh_key,
+                                    mock_get_key_type, mock_find_ssh_key):
         """Test logging in with a session key provided via command line"""
+
+        mock_find_ssh_key.return_value = "/dummy/path/to/id_ed25519"
+        mock_get_key_type.return_value = "ed25519"
+        mock_derive_key_from_ssh_key.return_value = "derived_key"
+        mock_encrypt_symmetric.return_value = ("encrypted_key", "symmetric")
+
         # Run the login command with the session key
         result = self.runner.invoke(
             cli,
