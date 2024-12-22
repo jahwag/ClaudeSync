@@ -65,6 +65,10 @@ class TestAuthIntegration(unittest.TestCase):
         config_dir = Path(self.test_dir) / '.claudesync'
         self.assertTrue(config_dir.exists())
 
+        # assert that there is a file called config.json in the config_dir
+        config_file = config_dir / 'config.json'
+        self.assertTrue(config_file.exists())
+
         # Verify session key was stored
         config = FileConfigManager()
         stored_key, expiry = config.get_session_key()
