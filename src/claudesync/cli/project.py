@@ -23,7 +23,7 @@ def project():
 @click.option(
     "--name",
     default=lambda: os.path.basename(os.getcwd()),
-    prompt="Enter a title for your new project",
+    prompt="Enter a title for your project",
     help="The name of the project (defaults to current directory name)",
     show_default="current directory name",
 )
@@ -43,55 +43,90 @@ def project():
     show_default="current working directory",
 )
 @click.option(
+    "--new",
+    is_flag=True,
+    help="Create a new remote project on Claude.ai",
+)
+@click.option(
     "--provider",
-    prompt="Pick the provider to use for this project",
     type=click.Choice(["claude.ai"], case_sensitive=False),
     default="claude.ai",
     help="The provider to use for this project",
 )
-@click.option(
-    "--organization",
-    default=None,
-    help="The organization ID to use for this project",
-)
 @click.pass_context
 @handle_errors
-def create(ctx, name, description, local_path, provider, organization):
-    """Creates a new project for the selected provider."""
+def init(ctx, name, description, local_path, new, provider):
+    """Initialize a new project configuration.
+
+    If --new is specified, also creates a remote project on Claude.ai.
+    Otherwise, only creates the local configuration. Use 'claudesync organization set'
+    and 'claudesync project set' to link to an existing remote project."""
+
     config = ctx.obj
-    provider_instance = get_provider(config, provider)
 
-    if organization is None:
+    # Create .claudesync directory and save initial config
+    claudesync_dir = os.path.join(local_path, ".claudesync")
+    os.makedirs(claudesync_dir, exist_ok=True)
+
+    # Set basic configuration
+    config.set("active_provider", provider, local=True)
+    config.set("local_path", local_path, local=True)
+
+    if new:
+        # Create remote project if --new flag is specified
+        provider_instance = get_provider(config, provider)
+
+        # Get organization
         organizations = provider_instance.get_organizations()
-        organization_instance = organizations[0] if organizations else None
-        organization = organization_instance["id"]
+        if not organizations:
+            raise ConfigurationError(
+                "No organizations with required capabilities found."
+            )
+        organization = organizations[0]["id"]
 
-    try:
-        new_project = provider_instance.create_project(organization, name, description)
-        click.echo(
-            f"Project '{new_project['name']}' (uuid: {new_project['uuid']}) has been created successfully."
-        )
+        try:
+            new_project = provider_instance.create_project(
+                organization, name, description
+            )
+            click.echo(
+                f"Project '{new_project['name']}' (uuid: {new_project['uuid']}) has been created successfully."
+            )
 
-        # Update configuration
-        config.set("active_provider", provider, local=True)
-        config.set("active_organization_id", organization, local=True)
-        config.set("active_project_id", new_project["uuid"], local=True)
-        config.set("active_project_name", new_project["name"], local=True)
-        config.set("local_path", local_path, local=True)
+            # Update configuration with remote details
+            config.set("active_organization_id", organization, local=True)
+            config.set("active_project_id", new_project["uuid"], local=True)
+            config.set("active_project_name", new_project["name"], local=True)
 
-        # Create .claudesync directory and save config
-        claudesync_dir = os.path.join(local_path, ".claudesync")
-        os.makedirs(claudesync_dir, exist_ok=True)
-        config_file_path = os.path.join(claudesync_dir, "config.local.json")
+            click.echo("\nProject created:")
+            click.echo(f"  - Project location: {local_path}")
+            click.echo(
+                f"  - Project config location: {os.path.join(claudesync_dir, 'config.local.json')}"
+            )
+            click.echo(
+                f"  - Remote URL: https://claude.ai/project/{new_project['uuid']}"
+            )
+
+        except (ProviderError, ConfigurationError) as e:
+            click.echo(f"Failed to create remote project: {str(e)}")
+            raise click.Abort()
+    else:
         config._save_local_config()
-
-        click.echo("\nProject created:")
+        click.echo("\nLocal project configuration created:")
         click.echo(f"  - Project location: {local_path}")
-        click.echo(f"  - Project config location: {config_file_path}")
-        click.echo(f"  - Remote URL: https://claude.ai/project/{new_project['uuid']}")
+        click.echo(
+            f"  - Project config location: {os.path.join(claudesync_dir, 'config.local.json')}"
+        )
+        click.echo("\nTo link to a remote project:")
+        click.echo("1. Run 'claudesync organization set' to select an organization")
+        click.echo("2. Run 'claudesync project set' to select an existing project")
 
-    except (ProviderError, ConfigurationError) as e:
-        click.echo(f"Failed to create project: {str(e)}")
+
+@project.command()
+@click.pass_context
+def create(ctx, **kwargs):
+    """Create a new project (alias for 'init --new')."""
+    # Forward to init command with --new flag
+    ctx.forward(init, new=True)
 
 
 @project.command()

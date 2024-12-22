@@ -39,12 +39,13 @@ class TestChatHappyPath(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         self.assertIn("Selected organization: Test Org 1", result.output)
 
-        # Step 3: Create project
+        # Step 3: Create project using init --new
         result = self.runner.invoke(
             cli,
             [
                 "project",
-                "create",
+                "init",
+                "--new",
                 "--name",
                 "Test Project",
                 "--description",
@@ -56,7 +57,7 @@ class TestChatHappyPath(unittest.TestCase):
         )
         self.assertEqual(result.exit_code, 0)
         self.assertIn(
-            "Project 'New Project' (uuid: new_proj) has been created successfully.",
+            "Project 'New Project' (uuid: new_proj) has been created successfully",
             result.output,
         )
 

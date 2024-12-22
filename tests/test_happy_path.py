@@ -39,12 +39,13 @@ class TestClaudeSyncHappyPath(unittest.TestCase):
         self.assertEqual(0, result.exit_code)
         self.assertIn("Successfully authenticated with claude.ai", result.output)
 
-        # Create project
+        # Create project using init --new
         result = self.runner.invoke(
             cli,
             [
                 "project",
-                "create",
+                "init",
+                "--new",
                 "--name",
                 "New Project",
                 "--description",
@@ -57,7 +58,6 @@ class TestClaudeSyncHappyPath(unittest.TestCase):
             obj=self.config,
         )
         self.assertEqual(result.exit_code, 0)
-
         self.assertIn(
             "Project 'New Project' (uuid: new_proj) has been created successfully",
             result.output,
