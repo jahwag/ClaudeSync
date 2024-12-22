@@ -8,6 +8,7 @@ import subprocess
 import urllib.request
 from pkg_resources import get_distribution
 
+from claudesync.cli.file import file
 from claudesync.cli.chat import chat
 from claudesync.configmanager import FileConfigManager
 from claudesync.exceptions import ConfigurationError
@@ -94,6 +95,7 @@ cli.add_command(project)
 cli.add_command(config)
 cli.add_command(chat)
 cli.add_command(simulate_push)
+cli.add_command(file)
 
 if __name__ == "__main__":
     cli()

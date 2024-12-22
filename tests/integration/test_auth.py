@@ -32,8 +32,15 @@ class TestAuthIntegration(unittest.TestCase):
         if not self.session_key:
             raise ValueError("CLAUDE_SESSION_KEY environment variable must be set")
 
-    def tearDown(self):
+    @patch('claudesync.session_key_manager.SessionKeyManager._find_ssh_key')
+    def tearDown(self, mock_find_ssh_key):
         """Clean up after each test"""
+        mock_find_ssh_key.return_value = "/Users/thomasbuechner/.ssh/id_ed25519"
+
+        archive_result = self.runner.invoke(cli, ['project', 'archive'])
+        if archive_result.exit_code != 0:
+            print(f"Failed to archive active project: {archive_result.output}")
+
         # Restore the original HOME
         if self.old_home:
             os.environ['HOME'] = self.old_home
@@ -46,7 +53,6 @@ class TestAuthIntegration(unittest.TestCase):
     @patch('claudesync.session_key_manager.SessionKeyManager._find_ssh_key')
     def test_01_login_with_session_key(self, mock_find_ssh_key):
         """Test logging in with a session key provided via command line"""
-
         mock_find_ssh_key.return_value = "/Users/thomasbuechner/.ssh/id_ed25519"
 
         # Run the login command with the session key
@@ -222,5 +228,6 @@ class TestAuthIntegration(unittest.TestCase):
 
         # Clean up test files
         shutil.rmtree(test_files_dir)
+
 if __name__ == '__main__':
     unittest.main()
