@@ -41,7 +41,7 @@ def login(ctx, session_key, auto_approve):
             provider_instance._provided_session_key = session_key
 
         session_key, expiry = provider_instance.login()
-        config.set_session_key("claude.ai", session_key, expiry)
+        config.set_session_key(session_key, expiry)
         config._save_global_config()
         click.echo(
             f"Successfully authenticated with Claude AI. Session key stored globally."

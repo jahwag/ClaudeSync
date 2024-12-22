@@ -60,7 +60,7 @@ class SessionKeyManager:
         key = base64.urlsafe_b64encode(kdf.derive(ssh_key_data))
         return key
 
-    def encrypt_session_key(self, provider, session_key):
+    def encrypt_session_key(self, session_key):
         self._get_key_type()
         return self._encrypt_symmetric(session_key)
 
@@ -70,7 +70,7 @@ class SessionKeyManager:
         encrypted_session_key = f.encrypt(session_key.encode()).decode()
         return encrypted_session_key, "symmetric"
 
-    def decrypt_session_key(self, provider, encryption_method, encrypted_session_key):
+    def decrypt_session_key(self, encryption_method, encrypted_session_key):
         if not encrypted_session_key or not encryption_method:
             return None
 

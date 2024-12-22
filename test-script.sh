@@ -13,4 +13,4 @@ fi
 export CLAUDE_SESSION_KEY=$1
 
 # Run the test
-python -m unittest -v tests/integration/test-auth.py
+python -m unittest -v tests/integration/test_auth.py

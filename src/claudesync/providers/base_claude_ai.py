@@ -77,7 +77,7 @@ class BaseClaudeAIProvider(BaseProvider):
 
         # Validate the session key
         try:
-            self.config.set_session_key("claude.ai", session_key, expires)
+            self.config.set_session_key(session_key, expires)
             organizations = self.get_organizations()
             if organizations:
                 return session_key, expires
@@ -93,7 +93,7 @@ class BaseClaudeAIProvider(BaseProvider):
             expires = self._get_session_expiry()
 
             try:
-                self.config.set_session_key("claude.ai", session_key, expires)
+                self.config.set_session_key(session_key, expires)
                 organizations = self.get_organizations()
                 if organizations:
                     return session_key, expires

@@ -303,7 +303,7 @@ class FileConfigManager(BaseConfigManager):
         try:
             session_key_manager = SessionKeyManager()
             encrypted_session_key, encryption_method = (
-                session_key_manager.encrypt_session_key("claude.ai", session_key)
+                session_key_manager.encrypt_session_key(session_key)
             )
 
             self.global_config_dir.mkdir(parents=True, exist_ok=True)
@@ -349,7 +349,7 @@ class FileConfigManager(BaseConfigManager):
         try:
             session_key_manager = SessionKeyManager()
             session_key = session_key_manager.decrypt_session_key(
-                "claude.ai", encryption_method, encrypted_key
+                encryption_method, encrypted_key
             )
             return session_key, expiry
         except RuntimeError as e:
