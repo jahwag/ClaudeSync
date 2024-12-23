@@ -290,3 +290,38 @@
     justify-content: center;
   }
 }
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.project-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: #4f46e5;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.project-link:hover {
+  color: #4338ca;
+  text-decoration: underline;
+}
+
+.external-link-icon {
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}

@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 export interface Project {
   id: string;
   path: string;
+  url?: string;  // Optional URL to the project on claude.ai
 }
 
 @Component({

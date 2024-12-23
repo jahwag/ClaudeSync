@@ -28,6 +28,7 @@ export class AppComponent implements OnInit {
 
   projects: Project[] = [];
   selectedProject: string = '';
+  selectedProjectUrl: string = '';
   projectConfig: ProjectConfig | null = null;
 
   @ViewChild(TreemapComponent) treemapComponent!: TreemapComponent;
@@ -47,10 +48,12 @@ export class AppComponent implements OnInit {
           this.projects = response.projects;
           if (response.activeProject) {
             this.selectedProject = response.activeProject;
+            this.setSelectedProjectUrl();
             this.loadData();
           } else if (this.projects.length > 0) {
             // If no active project but projects exist, select the first one
             this.selectedProject = this.projects[0].path;
+            this.setSelectedProjectUrl();
             this.onProjectChange(this.projects[0].path);
           }
         },
@@ -63,6 +66,8 @@ export class AppComponent implements OnInit {
   onProjectChange(projectPath: string) {
     this.selectedProject = projectPath;
     this.isLoading = true;
+
+    this.setSelectedProjectUrl();
 
     // Clear the current data before loading new project
     this.fileDataService.clearCache();
@@ -78,6 +83,16 @@ export class AppComponent implements OnInit {
           this.isLoading = false;
         }
       });
+  }
+
+  private setSelectedProjectUrl() {
+    // Find the project ID from the projects array and set the URL
+    const project = this.projects.find(p => p.path === this.selectedProject);
+    if (project) {
+      this.selectedProjectUrl = `https://claude.ai/project/${project.id}`;
+    } else {
+      this.selectedProjectUrl = '';
+    }
   }
 
   loadData() {
