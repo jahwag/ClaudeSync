@@ -1,4 +1,7 @@
-<div class="project-select">
+<div class="project-selector">
+  <div class="project-path" *ngIf="selectedProject">
+    {{selectedProject}}
+  </div>
   <div class="select-wrapper">
     <select
       [ngModel]="selectedProject"
