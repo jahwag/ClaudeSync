@@ -151,9 +151,8 @@ def get_project_root():
     logger.debug(f"Project root directory: {project_root}")
     return project_root
 
-def load_claudeignore_as_string():
+def load_claudeignore_as_string(config):
     """Load .claudeignore content from local project directory."""
-    config = FileConfigManager()
     local_path = config.get_local_path()
     logger.debug(f"Loading .claudeignore from local path: {local_path}")
 
@@ -376,7 +375,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
                 # Build response data
                 response_data = {
-                    'claudeignore': load_claudeignore_as_string(),
+                    'claudeignore': load_claudeignore_as_string(self.config),
                     'project': files_config,
                     'stats': self._get_stats(local_path, files_to_sync),
                     'treemap': self._get_treemap(local_path, files_to_sync, self.config)
