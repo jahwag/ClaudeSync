@@ -177,6 +177,47 @@ def archive(config):
         click.echo(f"Error: {str(e)}")
         click.echo("Make sure you have an active project set.")
 
+@project.command()
+@click.pass_obj
+@handle_errors
+def ls(config):
+    """List all configured projects."""
+    try:
+        # Get all projects from config
+        projects = config.get_projects()
+        if not projects:
+            click.echo("No projects found.")
+            return
+
+        # Get active project for comparison
+        active_project_path, active_project_id = config.get_active_project()
+
+        click.echo("\nConfigured projects:")
+        for project_path, project_id in projects.items():
+            # Get project details from project configuration
+            try:
+                files_config = config.get_files_config(project_path)
+                project_name = files_config.get('project_name', 'Unknown Project')
+
+                # Mark active project with an asterisk
+                active_marker = "*" if project_path == active_project_path else " "
+
+                click.echo(f"{active_marker} {project_name}")
+                click.echo(f"  - Path: {project_path}")
+                click.echo(f"  - ID: {project_id}")
+                click.echo(f"  - URL: https://claude.ai/project/{project_id}")
+                click.echo()
+
+            except ConfigurationError:
+                # Skip projects with missing or invalid configuration
+                continue
+
+        if active_project_path:
+            click.echo("Note: Projects marked with * are currently active")
+
+    except ConfigurationError as e:
+        click.echo(f"Error: {str(e)}")
+
 project.add_command(file)
 
 __all__ = ["project"]
