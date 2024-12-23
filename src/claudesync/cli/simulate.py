@@ -144,38 +144,6 @@ def process_root(root_dir: str, rel_root_base: str, node: dict, sync_files: set,
                 'included': rel_path in sync_files
             })
 
-def convert_to_plotly_format(node: TreeNode) -> tuple[List[str], List[str], List[int], List[str], List[bool]]:
-    """
-    Convert the tree structure to Plotly treemap format.
-
-    Args:
-        node: Root node of the tree
-
-    Returns:
-        tuple: (labels, parents, values, ids, included) for Plotly treemap
-    """
-    labels: List[str] = []
-    parents: List[str] = []
-    values: List[int] = []
-    ids: List[str] = []
-    included: List[bool] = []
-
-    def traverse(node: TreeNode, parent: str = ""):
-        node_id = os.path.join(parent, node['name']) if parent else node['name']
-
-        labels.append(node['name'])
-        parents.append(parent)
-        values.append(node['size'] or 0)
-        ids.append(node_id)
-        included.append(node.get('included', False))
-
-        if node['children']:
-            for child in node['children']:
-                traverse(child, node_id)
-
-    traverse(node)
-    return labels, parents, values, ids, included
-
 def get_project_root():
     """Get the project root directory."""
     current_dir = Path(__file__).resolve().parent
@@ -261,15 +229,10 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
     def get_active_project(self):
         """Get the currently active project path"""
-        config = self.get_current_config()
-        active_project_path, active_project_id = config.get_active_project()
+        active_project_path, active_project_id = self.config.get_active_project()
         if not active_project_path:
             raise ConfigurationError("No active project found")
         return active_project_path
-
-    def get_current_config(self):
-        """Get a fresh config instance for each request"""
-        return FileConfigManager()  # Always create new instance with fresh data
 
     def send_cors_headers(self):
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -298,15 +261,13 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                 if not project_path:
                     raise ValueError("Project path is required")
 
-                config = self.get_current_config()
-
                 # Verify the project exists
-                project_id = config.get_project_id(project_path)
+                project_id = self.config.get_project_id(project_path)
                 if not project_id:
                     raise ValueError(f"Project not found: {project_path}")
 
                 # Set the active project
-                config.set_active_project(project_path, project_id)
+                self.config.set_active_project(project_path, project_id)
                 self.project = project_path  # Update handler's project reference
 
                 # Send success response
@@ -362,8 +323,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                     return
 
                 # Get current config and project root
-                config = self.get_current_config()
-                project_root = config.get_project_root()
+                project_root = self.config.get_project_root()
 
                 # Validate the requested path is within project root for security
                 full_path = os.path.join(project_root, file_path)
@@ -407,20 +367,19 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
             try:
-                config = self.get_current_config()
-                local_path = config.get_project_root()
+                local_path = self.config.get_project_root()
                 active_project = self.get_active_project()
-                files_config = config.get_files_config(active_project)
+                files_config = self.config.get_files_config(active_project)
 
                 # Get files that would be synced based on project configuration
-                files_to_sync = get_local_files(config, local_path, files_config)
+                files_to_sync = get_local_files(self.config, local_path, files_config)
 
                 # Build response data
                 response_data = {
                     'claudeignore': load_claudeignore_as_string(),
                     'project': files_config,
                     'stats': self._get_stats(local_path, files_to_sync),
-                    'treemap': self._get_treemap(local_path, files_to_sync, config)
+                    'treemap': self._get_treemap(local_path, files_to_sync, self.config)
                 }
 
                 self.wfile.write(json.dumps(response_data).encode())
@@ -436,9 +395,8 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
             try:
-                config = self.get_current_config()
-                projects = config.get_projects()
-                active_project_path, active_project_id = config.get_active_project()
+                projects = self.config.get_projects()
+                active_project_path, active_project_id = self.config.get_active_project()
 
                 response = {
                     'projects': [

@@ -19,7 +19,7 @@ class FileConfigManager(BaseConfigManager):
     in provider-specific files.
     """
 
-    def __init__(self):
+    def __init__(self, config_dir=None):
         """
         Initialize the ConfigManager.
 
@@ -29,7 +29,10 @@ class FileConfigManager(BaseConfigManager):
         self.global_config_dir = Path.home() / ".claudesync"
         self.global_config_file = self.global_config_dir / "config.json"
         self.global_config = self._load_global_config()
-        self.config_dir = self._find_config_dir()
+        if config_dir:
+            self.config_dir = Path(config_dir)
+        else:
+            self.config_dir = self._find_config_dir()
 
     def get_projects(self):
         """
@@ -120,10 +123,6 @@ class FileConfigManager(BaseConfigManager):
     def _find_config_dir(self):
         current_dir = Path.cwd()
         root_dir = Path(current_dir.root)
-
-        # If we're in the web dist directory, traverse up to the project root
-        if str(current_dir).endswith("web/dist/claudesync-simulate"):
-            current_dir = current_dir.parents[3]
 
         if current_dir != root_dir:
             config_dir = current_dir / ".claudesync"

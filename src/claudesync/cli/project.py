@@ -20,16 +20,31 @@ def project():
     """Manage AI projects within the active organization."""
     pass
 
+def get_default_internal_name():
+    """
+    Determine default internal name based on existing projects.
+    Returns 'all' if no projects exist, None otherwise.
+    """
+    from claudesync.configmanager import FileConfigManager
+
+    config = FileConfigManager()
+    try:
+        projects = config.get_projects()
+        return 'all' if not projects else None
+    except ConfigurationError:
+        return 'all'  # Return 'all' if no .claudesync directory exists yet
 
 @project.command()
 @click.option(
     "--name",
     prompt="Enter a title for your new project",
+    default=lambda: Path.cwd().name,  # Default to current directory name
     help="The name of the project",
 )
 @click.option(
     "--internal-name",
     prompt="Enter the internal name for your project (used for config files)",
+    default=get_default_internal_name,
     help="The internal name used for configuration files",
 )
 @click.option(
