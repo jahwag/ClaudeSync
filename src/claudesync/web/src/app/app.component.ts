@@ -45,7 +45,7 @@ export class AppComponent implements OnInit {
       .pipe(finalize(() => this.isLoading = false))
       .subscribe({
         next: (response:any) => {
-          this.projects = response.projects;
+          this.projects = response.projects.sort((a: any, b: any) => a.path.localeCompare(b.path));
           if (response.activeProject) {
             this.selectedProject = response.activeProject;
             this.setSelectedProjectUrl();
