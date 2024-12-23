@@ -87,6 +87,7 @@ def push(config, project):
     sync_manager.sync(local_files, remote_files)
 
     click.echo(f"Project '{project}' synced successfully")
+    click.echo(f"Remote URL: https://claude.ai/project/{project_id}")
 
 
 cli.add_command(auth)
