@@ -124,7 +124,7 @@ def create(ctx, name, internal_name, description, organization, no_git_check):
 @click.pass_obj
 @handle_errors
 def set(config, project_path):
-    """Set the active project for the current directory.
+    """Set the active project.
 
     PROJECT_PATH: The project path like 'datamodel/typeconstraints' or 'myproject'"""
     try:
