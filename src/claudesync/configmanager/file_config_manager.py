@@ -121,6 +121,10 @@ class FileConfigManager(BaseConfigManager):
         current_dir = Path.cwd()
         root_dir = Path(current_dir.root)
 
+        # If we're in the web dist directory, traverse up to the project root
+        if str(current_dir).endswith("web/dist/claudesync-simulate"):
+            current_dir = current_dir.parents[3]
+
         if current_dir != root_dir:
             config_dir = current_dir / ".claudesync"
 
@@ -129,7 +133,6 @@ class FileConfigManager(BaseConfigManager):
 
             if config_dir.is_dir():
                 return config_dir
-
 
         return None
 
