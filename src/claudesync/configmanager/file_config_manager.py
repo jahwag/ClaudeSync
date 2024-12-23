@@ -193,34 +193,6 @@ class FileConfigManager(BaseConfigManager):
                     config[key] = value
             return config
 
-    def _find_local_config_dir(self, max_depth=100):
-        """
-        Finds the nearest directory containing a .claudesync folder.
-
-        Searches from the current working directory upwards until it finds a .claudesync folder
-        or reaches the root directory. Excludes the ~/.claudesync directory.
-
-        Returns:
-            Path: The path containing the .claudesync folder, or None if not found.
-        """
-        current_dir = Path.cwd()
-        root_dir = Path(current_dir.root)
-        home_dir = Path.home()
-        depth = 0
-
-        while current_dir != root_dir:
-            claudesync_dir = current_dir / ".claudesync"
-            if claudesync_dir.is_dir() and claudesync_dir != home_dir / ".claudesync":
-                return current_dir
-
-            current_dir = current_dir.parent
-            depth += 1
-
-            if depth > max_depth:
-                return None
-
-        return None
-
     def get_local_path(self):
         """
         Retrieves the path of the directory containing the .claudesync folder.

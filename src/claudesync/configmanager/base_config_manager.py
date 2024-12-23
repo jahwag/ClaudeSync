@@ -176,20 +176,6 @@ class BaseConfigManager(ABC):
         """
         pass
 
-    @abstractmethod
-    def _find_local_config_dir(self):
-        """
-        Finds the local configuration directory.
-
-        Returns:
-            Path: The path to the local configuration directory, or None if no
-            directory is found.
-
-        This method should be implemented by subclasses to locate the directory where
-        local configuration files are stored.
-        """
-        pass
-
     # Common methods that are shared between implementations
     def get_default_category(self):
         """
