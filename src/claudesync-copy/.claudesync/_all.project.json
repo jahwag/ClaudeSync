@@ -1,0 +1,16 @@
+{
+  "project_name": "ClaudeSync - Dev - all",
+  "project_description": "Project created with ClaudeSync",
+  "includes": [
+    "src/claudesync/cli/simulate.py",
+    "src/claudesync/web/package.json",
+    "src/claudesync/web/angular.json",
+    "src/claudesync/web/tsconfig.json",
+    "src/claudesync/web/src/**",
+    "*.py",
+    "*.md"
+  ],
+  "excludes": [
+    "*.package-lock.json"
+  ]
+}

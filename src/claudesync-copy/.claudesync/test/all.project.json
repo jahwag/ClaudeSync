@@ -1,0 +1,12 @@
+{
+  "project_name": "Claudesync - Dev - All - Test",
+  "project_description": "Project created with ClaudeSync",
+  "includes": [
+    "*.json",
+    "*.py"
+  ],
+  "excludes": [
+    "package-lock.json",
+    "claudesync/web/.vscode/**/*"
+  ]
+}

@@ -1,12 +1,25 @@
 <div class="project-select">
-  <select
-    [ngModel]="selectedProject"
-    (ngModelChange)="onProjectChange($event)"
-    class="select-input"
-  >
-    <option value="">Select a project</option>
-    <option *ngFor="let project of projects" [value]="project.path">
-      {{project.path}}
-    </option>
-  </select>
+  <div class="select-wrapper">
+    <select
+      [ngModel]="selectedProject"
+      (ngModelChange)="onProjectChange($event)"
+      class="select-input"
+    >
+      <option value="">Select a project</option>
+      <option *ngFor="let project of projects" [value]="project.path">
+        {{project.path}}
+      </option>
+    </select>
+    <a *ngIf="selectedProjectUrl"
+       [href]="selectedProjectUrl"
+       target="_blank"
+       class="project-link"
+       title="Open project on Claude.ai">
+      <svg class="external-link-icon" viewBox="0 0 24 24" width="16" height="16">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+        <polyline points="15 3 21 3 21 9"></polyline>
+        <line x1="10" y1="14" x2="21" y2="3"></line>
+      </svg>
+    </a>
+  </div>
 </div>

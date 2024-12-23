@@ -18,6 +18,7 @@ export interface Project {
 export class ProjectDropdownComponent {
   @Input() projects: Project[] = [];
   @Input() selectedProject: string = '';
+  @Input() selectedProjectUrl: string = '';
   @Output() projectChange = new EventEmitter<string>();
 
   onProjectChange(path: string) {

@@ -1,0 +1,15 @@
+{
+  "project_name": "ClaudeSync - Dev - all",
+  "project_description": "Project created with ClaudeSync",
+  "includes": [
+    "*.json",
+    "*.py",
+    "*.md"
+  ],
+  "excludes": [
+    "*.package-lock.json"
+  ],
+  "simulate_push_roots": [
+    "claudesync/cli"
+  ]
+}

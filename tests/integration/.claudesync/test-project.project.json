@@ -1,0 +1,10 @@
+{
+  "project_name": "Test Project",
+  "project_description": "Test project created for push test",
+  "includes": [
+    "test_files/*.py",
+    "test_files/*.txt"
+  ],
+  "excludes": [],
+  "simulate_push_roots": []
+}
