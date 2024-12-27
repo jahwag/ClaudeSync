@@ -180,4 +180,4 @@ myenv/
 
 src/.claudesync
 
-src/web-src-copy/**
+src/web-src-copy
