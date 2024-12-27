@@ -2,7 +2,8 @@ claudesync/web/node_modules
 __pycache__/
 .angular/
 dist/
-package-lock.json
+# package-lock.json
 public/
 *.egg-info/
 __init__.py
+web-src-copy/
