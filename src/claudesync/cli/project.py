@@ -101,6 +101,7 @@ def create(ctx, name, internal_name, description, organization, no_git_check):
             "project_description": description,
             "includes": [],
             "excludes": [],
+            "use_ignore_files": True,
             "simulate_push_roots": []
         }
 
