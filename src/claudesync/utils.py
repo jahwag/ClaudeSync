@@ -96,54 +96,50 @@ def compute_md5_hash(content):
 
 
 def should_process_file(
-    config_manager, file_path, filename, gitignore, base_path, claudeignore, category_excludes=None
+        config_manager, file_path, filename, gitignore, base_path, claudeignore, category_excludes=None
 ):
     """
     Determines whether a file should be processed based on various criteria.
-
-    This function checks if a file should be included in the synchronization process by applying
-    several filters:
-    - Checks if the file size is within the configured maximum limit.
-    - Skips temporary editor files (ending with '~').
-    - Applies .gitignore rules if a gitignore PathSpec is provided.
-    - Verifies if the file is a text file.
-
-    Args:
-        file_path (str): The full path to the file.
-        filename (str): The name of the file.
-        gitignore (pathspec.PathSpec or None): A PathSpec object containing .gitignore patterns, if available.
-        base_path (str): The base directory path of the project.
-        claudeignore (pathspec.PathSpec or None): A PathSpec object containing .claudeignore patterns, if available.
-
-    Returns:
-        bool: True if the file should be processed, False otherwise.
     """
+    # Check if ignore files should be used
+    use_ignore_files = config_manager.get("use_ignore_files", True)
+
+    # Get relative path for pattern matching
+    rel_path = os.path.relpath(file_path, base_path)
+
     # Check file size
     max_file_size = config_manager.get("max_file_size", 32 * 1024)
     if os.path.getsize(file_path) > max_file_size:
+        logger.debug(f"File {rel_path} exceeds max size of {max_file_size} bytes")
         return False
 
     # Skip temporary editor files
     if filename.endswith("~"):
+        logger.debug(f"Skipping temporary file {rel_path}")
         return False
 
-    rel_path = os.path.relpath(file_path, base_path)
+    # Apply ignore patterns if enabled
+    if use_ignore_files:
+        # Use gitignore rules if available
+        if gitignore and gitignore.match_file(rel_path):
+            logger.debug(f"File {rel_path} matches gitignore pattern")
+            return False
 
-    # Use gitignore rules if available
-    if gitignore and gitignore.match_file(rel_path):
-        return False
-
-    # Use .claudeignore rules if available
-    if claudeignore and claudeignore.match_file(rel_path):
-        return False
+        # Use .claudeignore rules if available
+        if claudeignore and claudeignore.match_file(rel_path):
+            logger.debug(f"File {rel_path} matches claudeignore pattern")
+            return False
 
     # Check category-specific exclusions
     if category_excludes and category_excludes.match_file(rel_path):
         logger.debug(f"File {rel_path} excluded by category exclusion patterns")
         return False
 
-    # Check if it's a text file
-    return is_text_file(file_path)
+    # Finally check if it's a text file
+    is_text = is_text_file(file_path)
+    if not is_text:
+        logger.debug(f"File {rel_path} is not a text file")
+    return is_text
 
 
 def process_file(file_path):
@@ -207,17 +203,15 @@ def get_local_files(config, root_path, files_config):
     """
     Get local files matching the patterns in files configuration with optimized directory traversal.
     """
-    # Check if ignore files should be used
-    use_ignore_files = files_config.get("use_ignore_files", True)  # Default to True for backward compatibility
-
-    # Only load ignore files if they should be used
+    use_ignore_files = files_config.get("use_ignore_files", True)
     gitignore = load_gitignore(root_path) if use_ignore_files else None
     claudeignore = load_claudeignore(root_path) if use_ignore_files else None
 
     files = {}
     exclude_dirs = {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS", "claude_chats", ".claudesync"}
 
-    # Use patterns from files configuration
+    # Get push_roots from configuration
+    push_roots = files_config.get("push_roots", [])
     includes = files_config.get("includes", ["*"])
     excludes = files_config.get("excludes", [])
 
@@ -229,44 +223,50 @@ def get_local_files(config, root_path, files_config):
 
     logger.debug(f"Starting file system traversal at {root_path}")
     logger.debug(f"Using ignore files: {use_ignore_files}")
+    logger.debug(f"Using push roots: {push_roots}")
     traversal_start = time_module.time()
 
-    for root, dirs, filenames in os.walk(root_path, topdown=True):
-        # Filter out excluded directories first
-        dirs[:] = [d for d in dirs if d not in exclude_dirs]
+    # If push_roots is specified, only traverse those directories
+    roots_to_traverse = [os.path.join(root_path, root) for root in push_roots] if push_roots else [root_path]
 
-        # Filter directories based on ignore patterns - if ignore files are being used
-        if use_ignore_files:
-            dirs[:] = [
-                d for d in dirs
-                if not should_skip_directory(
-                    os.path.join(root, d),
-                    root_path,
-                    gitignore,
-                    claudeignore,
-                    category_excludes
-                )
-            ]
+    for base_root in roots_to_traverse:
+        if not os.path.exists(base_root):
+            logger.warning(f"Specified root path does not exist: {base_root}")
+            continue
 
-        # Process files in non-ignored directories
-        for filename in filenames:
-            rel_path = os.path.relpath(os.path.join(root, filename), root_path)
+        for root, dirs, filenames in os.walk(base_root, topdown=True):
+            # Filter out excluded directories first
+            dirs[:] = [d for d in dirs if d not in exclude_dirs]
 
-            if spec.match_file(rel_path):
-                full_path = os.path.join(root, filename)
-                # Only check ignore files if they should be used
-                if should_process_file(
-                        config,
-                        full_path,
-                        filename,
-                        gitignore if use_ignore_files else None,
-                        root_path,
-                        claudeignore if use_ignore_files else None,
+            if use_ignore_files:
+                dirs[:] = [
+                    d for d in dirs
+                    if not should_skip_directory(
+                        os.path.join(root, d),
+                        root_path,  # Keep using root_path as base for relative paths
+                        gitignore,
+                        claudeignore,
                         category_excludes
-                ):
-                    file_hash = process_file(full_path)
-                    if file_hash:
-                        files[rel_path] = file_hash
+                    )
+                ]
+
+            for filename in filenames:
+                rel_path = os.path.relpath(os.path.join(root, filename), root_path)
+
+                if spec.match_file(rel_path):
+                    full_path = os.path.join(root, filename)
+                    if should_process_file(
+                            config,
+                            full_path,
+                            filename,
+                            gitignore if use_ignore_files else None,
+                            root_path,
+                            claudeignore if use_ignore_files else None,
+                            category_excludes
+                    ):
+                        file_hash = process_file(full_path)
+                        if file_hash:
+                            files[rel_path] = file_hash
 
     traversal_time = time_module.time() - traversal_start
     logger.debug(f"File system traversal completed in {traversal_time:.2f} seconds")

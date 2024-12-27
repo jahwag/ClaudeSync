@@ -28,7 +28,7 @@ class TreeNode(TypedDict):
     children: Optional[List['TreeNode']]
     included: Optional[bool]
 
-def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> dict:
+def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config, files_config) -> dict:
     """
     Build a hierarchical tree structure from the list of files with support for multiple roots.
 
@@ -42,9 +42,11 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> di
     """
     logger = logging.getLogger(__name__)
 
+    use_ignore_files = files_config.get("use_ignore_files", True)
+
     # Get sync filters
-    gitignore = load_gitignore(base_path)
-    claudeignore = load_claudeignore(base_path)
+    gitignore = load_gitignore(base_path) if use_ignore_files else None
+    claudeignore = load_claudeignore(base_path) if use_ignore_files else None
 
     # Create root node
     root = {
@@ -52,19 +54,19 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config) -> di
         'children': []
     }
 
-    # Get simulate_push_roots from project config
+    # Get push_roots from project config
     project_config = config.get_files_config(config.get_active_project()[0])
-    simulate_push_roots = project_config.get('simulate_push_roots', [])
+    push_roots = project_config.get('push_roots', [])
 
     # Create a set of files that will be synced for quick lookup
     sync_files = set(files_to_sync.keys())
 
-    if not simulate_push_roots:
+    if not push_roots:
         # Original behavior - use base_path as single root
         process_root(base_path, '', root, sync_files, gitignore, claudeignore)
     else:
         # Process each specified root directory
-        for root_dir in simulate_push_roots:
+        for root_dir in push_roots:
             full_root_path = os.path.join(base_path, root_dir)
             if not os.path.exists(full_root_path):
                 logger.warning(f"Specified root path does not exist: {full_root_path}")
@@ -378,7 +380,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                     'claudeignore': load_claudeignore_as_string(self.config),
                     'project': files_config,
                     'stats': self._get_stats(local_path, files_to_sync),
-                    'treemap': self._get_treemap(local_path, files_to_sync, self.config)
+                    'treemap': self._get_treemap(local_path, files_to_sync, self.config, files_config)
                 }
 
                 self.wfile.write(json.dumps(response_data).encode())
@@ -430,9 +432,9 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             "totalSize": format_size(total_size)
         }
 
-    def _get_treemap(self, local_path, files_to_sync, config):
+    def _get_treemap(self, local_path, files_to_sync, config, files_config):
         """Generate treemap data"""
-        tree = build_file_tree(local_path, files_to_sync, config)
+        tree = build_file_tree(local_path, files_to_sync, config, files_config)
         return tree
 
 @click.command()

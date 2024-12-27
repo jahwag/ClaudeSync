@@ -102,7 +102,7 @@ def create(ctx, name, internal_name, description, organization, no_git_check):
             "includes": [],
             "excludes": [],
             "use_ignore_files": True,
-            "simulate_push_roots": []
+            "push_roots": []
         }
 
         # Determine if internal_name contains a path
