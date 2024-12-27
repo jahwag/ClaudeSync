@@ -72,15 +72,8 @@ def build_file_tree(base_path: str, files_to_sync: Dict[str, str], config, files
                 logger.warning(f"Specified root path does not exist: {full_root_path}")
                 continue
 
-            # Create node for this root directory
-            root_node = {
-                'name': root_dir,
-                'children': []
-            }
-            root['children'].append(root_node)
-
             # Process files under this root
-            process_root(full_root_path, root_dir, root_node, sync_files, gitignore, claudeignore)
+            process_root(full_root_path, root_dir, root, sync_files, gitignore, claudeignore)
 
     return root
 
