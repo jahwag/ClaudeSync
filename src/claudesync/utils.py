@@ -207,8 +207,12 @@ def get_local_files(config, root_path, files_config):
     """
     Get local files matching the patterns in files configuration with optimized directory traversal.
     """
-    gitignore = load_gitignore(root_path)
-    claudeignore = load_claudeignore(root_path)
+    # Check if ignore files should be used
+    use_ignore_files = files_config.get("use_ignore_files", True)  # Default to True for backward compatibility
+
+    # Only load ignore files if they should be used
+    gitignore = load_gitignore(root_path) if use_ignore_files else None
+    claudeignore = load_claudeignore(root_path) if use_ignore_files else None
 
     files = {}
     exclude_dirs = {".git", ".svn", ".hg", ".bzr", "_darcs", "CVS", "claude_chats", ".claudesync"}
@@ -224,23 +228,25 @@ def get_local_files(config, root_path, files_config):
     spec = pathspec.PathSpec.from_lines("gitwildmatch", includes)
 
     logger.debug(f"Starting file system traversal at {root_path}")
-    traversal_start = time_module.time()  # Use renamed import
+    logger.debug(f"Using ignore files: {use_ignore_files}")
+    traversal_start = time_module.time()
 
     for root, dirs, filenames in os.walk(root_path, topdown=True):
         # Filter out excluded directories first
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
 
-        # Filter directories based on ignore patterns - this is the key optimization
-        dirs[:] = [
-            d for d in dirs
-            if not should_skip_directory(
-                os.path.join(root, d),
-                root_path,
-                gitignore,
-                claudeignore,
-                category_excludes
-            )
-        ]
+        # Filter directories based on ignore patterns - if ignore files are being used
+        if use_ignore_files:
+            dirs[:] = [
+                d for d in dirs
+                if not should_skip_directory(
+                    os.path.join(root, d),
+                    root_path,
+                    gitignore,
+                    claudeignore,
+                    category_excludes
+                )
+            ]
 
         # Process files in non-ignored directories
         for filename in filenames:
@@ -248,12 +254,21 @@ def get_local_files(config, root_path, files_config):
 
             if spec.match_file(rel_path):
                 full_path = os.path.join(root, filename)
-                if should_process_file(config, full_path, filename, gitignore, root_path, claudeignore, category_excludes):
+                # Only check ignore files if they should be used
+                if should_process_file(
+                        config,
+                        full_path,
+                        filename,
+                        gitignore if use_ignore_files else None,
+                        root_path,
+                        claudeignore if use_ignore_files else None,
+                        category_excludes
+                ):
                     file_hash = process_file(full_path)
                     if file_hash:
                         files[rel_path] = file_hash
 
-    traversal_time = time_module.time() - traversal_start  # Use renamed import
+    traversal_time = time_module.time() - traversal_start
     logger.debug(f"File system traversal completed in {traversal_time:.2f} seconds")
     logger.debug(f"Found {len(files)} files to sync")
 
