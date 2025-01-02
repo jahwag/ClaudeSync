@@ -17,7 +17,7 @@ jobs:
           stale-pr-message: 'This pull request has been marked as stale due to 7 days of inactivity. Please remove the stale label or comment to keep it open, otherwise, it will be closed in 3 days.'
           close-issue-message: 'This issue was closed due to 3 additional days of inactivity after being marked as stale.'
           close-pr-message: 'This pull request was closed due to 3 additional days of inactivity after being marked as stale.'
-          days-before-issue-stale: 14
-          days-before-pr-stale: 7
-          days-before-issue-close: 3
-          days-before-pr-close: 3
+          days-before-issue-stale: 21
+          days-before-pr-stale: 21
+          days-before-issue-close: 7
+          days-before-pr-close: 7
