@@ -20,6 +20,8 @@ Before installing ClaudeSync, ensure you have:
 
 ## Installation
 
+The recommendation is to install ClaudeSync in a virtual python environment in the folder you want to synchronize with Claude.ai.
+
 1. Create and activate a virtual environment:
 
 ```bash
