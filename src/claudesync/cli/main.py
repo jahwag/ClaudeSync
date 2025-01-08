@@ -23,6 +23,7 @@ from .organization import organization
 from .project import project
 from .simulate import simulate_push
 from .config import config
+from .zip import zip
 import logging
 
 logging.basicConfig(
@@ -97,6 +98,7 @@ cli.add_command(config)
 cli.add_command(chat)
 cli.add_command(simulate_push)
 cli.add_command(file)
+cli.add_command(zip)
 
 if __name__ == "__main__":
     cli()
