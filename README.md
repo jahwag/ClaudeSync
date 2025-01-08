@@ -73,22 +73,35 @@ claudesync project create
 ```
 
 You'll be prompted for:
-- Project name (defaults to current directory name)
-- Project description
-- Local path (defaults to current directory)
-- Provider (select claude.ai)
-- Organization (if you have multiple)
+- Title of the project (defaults to current directory name)
+- Internal name of the project - used for config files (defaults to `all`)
+- Description of the project - (defaults to "Project created with ClaudeSync")
+
+```
+❯ claudesync project create
+Enter a title for your new project [cplace-paw]: cplace-paw - Draggable Page List
+Enter the internal name for your project (used for config files) [all]: draggable-page-list
+Enter the project description [Project created with ClaudeSync]: 
+Project 'cplace-paw - Draggable Page List' (uuid: 1dfc27c5-971a-4046-b922-a833db7ef7cc) has been created successfully.
+
+Project created and set as active:
+  - Project location: /Users/thomasbuechner/dev/repos/cplace-paw
+  - Project ID config: /Users/thomasbuechner/dev/repos/cplace-paw/.claudesync/draggable-page-list.project_id.json
+  - Project config: /Users/thomasbuechner/dev/repos/cplace-paw/.claudesync/draggable-page-list.project.json
+  - Remote URL: https://claude.ai/project/1dfc27c5-971a-4046-b922-a833db7ef7cc
+```
+
 
 2. The command will create:
    - A new project on Claude.ai
    - A `.claudesync` directory in your project folder - if it doesn't already exist
    - Two local configuration files:
-      - `name_of_the_project.project.json` - contains the description of the project and the context
-      - `name_of_the_project.project_id.json` - contains the ID of the project on Claude.ai
+      - `internal_name.project.json` - contains the description of the project and the context
+      - `internal_name.project_id.json` - contains the ID of the project on Claude.ai
 
-The `name_of_the_project.project.json` file is intended to be shared with other team members. It can (and should) be checked into version history. It contains the project description and the specification of the context.
+The `internal_name.project.json` file is intended to be shared with other team members. It can (and should) be checked into version history. It contains the project description and the specification of the context.
 
-The `name_of_the_project.project_id.json` file is intended to be kept private. It contains the ID of the project on Claude.ai and should not be shared. It should be excluded from version history:
+The `internal_name_of_the_project.project_id.json` file is intended to be kept private. It contains the ID of the project on Claude.ai and should not be shared. It should be excluded from version history:
 
 ```
 # .gitignore
@@ -121,24 +134,17 @@ If you have a large codebase and want to synchronize only specific files with Cl
 `xxx.project.json`:
 ```json
 {
-   "project_name": "main - Persistence",
+   "project_name": "cplace-paw - Draggable Page List",
+   "project_description": "Project created with ClaudeSync",
    "includes": [
-      "cf.cplace.platform/src/main/java/cf/cplace/platform/core/datamodel/persistence/*.java",
-      "cf.cplace.platform/src/main/java/cf/cplace/platform/core/datamodel/persistence/criteria/*.java",
-      "cf.cplace.platform/src/main/java/cf/cplace/platform/core/datamodel/persistence/customquery/*.java"
+      "*"
    ],
-   "excludes": [
-      "BatchUpdatesLocalListeners.java",
-      "ToStringQueryVisitorWithoutValues.java",
-      "QueryUnaryOperator.java",
-      "QueryBinaryOperator.java",
-      "StatementProtocolWrapper.java",
-      "ConnectionsTracker.java",
-      "StatementWrapper.java",
-      "DateAttributeForMigration.java"
-   ],
-   "simulate_push_roots": [
-      "cf.cplace.platform/src/main/java/cf/cplace/platform/core/datamodel/persistence"
+   "excludes": [],
+   "use_ignore_files": false,
+   "push_roots": [
+      "cf.cplace.draggablePageList/src",
+      "cf.cplace.draggablePageList/assets/ts",
+      "cf.cplace.draggablePageList/assets/less"
    ]
 }
 ```
