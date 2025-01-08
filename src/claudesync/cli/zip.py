@@ -43,10 +43,15 @@ def zip(config, project, output):
     # Generate default output filename if not provided
     if not output:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output = f"claudesync_{project}_{timestamp}.zip"
+        # Replace slashes with underscores in project name
+        safe_project_name = project.replace('/', '_')
+        output = f"claudesync_{safe_project_name}_{timestamp}.zip"
 
-    # Ensure the output path is absolute
-    output = os.path.abspath(output)
+    # Ensure the output path is absolute and in current directory if no path specified
+    if os.path.dirname(output) == '':
+        output = os.path.join(os.getcwd(), output)
+    else:
+        output = os.path.abspath(output)
 
     # Create parent directories if they don't exist
     os.makedirs(os.path.dirname(output), exist_ok=True)
