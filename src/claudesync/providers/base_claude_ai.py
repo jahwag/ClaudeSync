@@ -267,26 +267,15 @@ class BaseClaudeAIProvider(BaseProvider):
     def _make_request(self, method, endpoint, data=None):
         raise NotImplementedError("This method should be implemented by subclasses")
 
-    def create_chat(self, organization_id, chat_name="", project_uuid=None):
-        """
-        Create a new chat conversation in the specified organization.
-
-        Args:
-            organization_id (str): The UUID of the organization.
-            chat_name (str, optional): The name of the chat. Defaults to an empty string.
-            project_uuid (str, optional): The UUID of the project to associate the chat with. Defaults to None.
-
-        Returns:
-            dict: The created chat conversation data.
-
-        Raises:
-            ProviderError: If the chat creation fails.
-        """
+    def create_chat(self, organization_id, chat_name="", project_uuid=None, model=None):
         data = {
             "uuid": self._generate_uuid(),
             "name": chat_name,
             "project_uuid": project_uuid,
         }
+        if model is not None:
+            data["model"] = model
+
         return self._make_request(
             "POST", f"/organizations/{organization_id}/chat_conversations", data
         )
@@ -302,7 +291,9 @@ class BaseClaudeAIProvider(BaseProvider):
         # that can be used with sseclient
         raise NotImplementedError("This method should be implemented by subclasses")
 
-    def send_message(self, organization_id, chat_id, prompt, timezone="UTC"):
+    def send_message(
+        self, organization_id, chat_id, prompt, timezone="UTC", model=None
+    ):
         endpoint = (
             f"/organizations/{organization_id}/chat_conversations/{chat_id}/completion"
         )
@@ -312,6 +303,9 @@ class BaseClaudeAIProvider(BaseProvider):
             "attachments": [],
             "files": [],
         }
+        if model is not None:
+            data["model"] = model
+
         response = self._make_request_stream("POST", endpoint, data)
         client = sseclient.SSEClient(response)
         for event in client.events():

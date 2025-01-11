@@ -74,16 +74,16 @@ def delete_all_chats(provider, organization_id):
     """Delete all chats for the given organization."""
     if click.confirm("Are you sure you want to delete all chats?"):
         total_deleted = 0
-    with click.progressbar(length=100, label="Deleting chats") as bar:
-        while True:
-            chats = provider.get_chat_conversations(organization_id)
-            if not chats:
-                break
-            uuids_to_delete = [chat["uuid"] for chat in chats[:50]]
-            deleted, _ = delete_chats(provider, organization_id, uuids_to_delete)
-            total_deleted += deleted
-            bar.update(len(uuids_to_delete))
-    click.echo(f"Chat deletion complete. Total chats deleted: {total_deleted}")
+        with click.progressbar(length=100, label="Deleting chats") as bar:
+            while True:
+                chats = provider.get_chat_conversations(organization_id)
+                if not chats:
+                    break
+                uuids_to_delete = [chat["uuid"] for chat in chats[:50]]
+                deleted, _ = delete_chats(provider, organization_id, uuids_to_delete)
+                total_deleted += deleted
+                bar.update(len(uuids_to_delete))
+        click.echo(f"Chat deletion complete. Total chats deleted: {total_deleted}")
 
 
 def delete_single_chat(provider, organization_id):
@@ -184,9 +184,16 @@ def init(config, name, project):
 @click.argument("message", nargs=-1, required=True)
 @click.option("--chat", help="UUID of the chat to send the message to")
 @click.option("--timezone", default="UTC", help="Timezone for the message")
+@click.option(
+    "--model",
+    help="Model to use for the conversation. Available options:\n"
+    + "- claude-3-5-haiku-20241022\n"
+    + "- claude-3-opus-20240229\n"
+    + "Or any custom model string. If not specified, uses the default model.",
+)
 @click.pass_obj
 @handle_errors
-def message(config, message, chat, timezone):
+def message(config, message, chat, timezone, model):
     """Send a message to a specified chat or create a new chat and send the message."""
     provider = validate_and_get_provider(config, require_project=True)
     active_organization_id = config.get("active_organization_id")
@@ -203,13 +210,14 @@ def message(config, message, chat, timezone):
             chat,
             active_organization_id,
             provider,
+            model,
         )
         if chat is None:
             return
 
         # Send message and process the streaming response
         for event in provider.send_message(
-            active_organization_id, chat, message, timezone
+            active_organization_id, chat, message, timezone, model
         ):
             if "completion" in event:
                 click.echo(event["completion"], nl=False)
@@ -235,6 +243,7 @@ def create_chat(
     chat,
     active_organization_id,
     provider,
+    model,
 ):
     if not chat:
         if not active_project_name:
@@ -250,7 +259,7 @@ def create_chat(
 
         # Create a new chat with the selected project
         new_chat = provider.create_chat(
-            active_organization_id, project_uuid=active_project_id
+            active_organization_id, project_uuid=active_project_id, model=model
         )
         chat = new_chat["uuid"]
         click.echo(f"New chat created with ID: {chat}")
