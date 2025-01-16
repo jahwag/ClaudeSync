@@ -81,9 +81,9 @@ def create(ctx, config_file, name, internal_name, description, organization, no_
     The config file should be a JSON file with the following structure:
     {
         "project_name": "Project Name",
-        "internal_name": "project-name",  // Optional, defaults to 'all' for first project
-        "project_description": "Project description",
-        "includes": ["*"],  // Optional
+        "internal_name": "project-name",
+        "project_description": "Project description",  // Optional
+        "includes": [],  // Optional
         "excludes": [],     // Optional
         "use_ignore_files": true,  // Optional
         "push_roots": []    // Optional
@@ -100,13 +100,12 @@ def create(ctx, config_file, name, internal_name, description, organization, no_
 
             # Extract required fields
             name = file_config.get('project_name')
-            description = file_config.get('project_description')
+            internal_name = file_config.get('internal_name')
+            # Description is optional, default to standard description if not provided
+            description = file_config.get('project_description', "Project created with ClaudeSync")
 
-            if not all([name, description]):
-                raise ConfigurationError("Config file must contain 'project_name' and 'project_description' fields")
-
-            # Use provided internal_name or get default
-            internal_name = file_config.get('internal_name') or get_default_internal_name()
+            if not all([name, internal_name]):
+                raise ConfigurationError("Config file must contain 'project_name' and 'internal_name' fields")
 
         except json.JSONDecodeError as e:
             raise ConfigurationError(f"Invalid JSON in config file: {str(e)}")
