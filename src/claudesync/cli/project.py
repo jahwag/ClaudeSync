@@ -77,17 +77,6 @@ def create(ctx, config_file, name, internal_name, description, organization, no_
 
     2. Using a config file:
        claudesync project create --config-file project-config.json
-
-    The config file should be a JSON file with the following structure:
-    {
-        "project_name": "Project Name",
-        "internal_name": "project-name",
-        "project_description": "Project description",  // Optional
-        "includes": [],  // Optional
-        "excludes": [],     // Optional
-        "use_ignore_files": true,  // Optional
-        "push_roots": []    // Optional
-    }
     """
     config = ctx.obj
     provider_instance = get_provider(config)
