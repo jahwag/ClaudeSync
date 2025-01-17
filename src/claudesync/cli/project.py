@@ -36,28 +36,28 @@ def get_default_internal_name():
 
 @project.command()
 @click.option(
+    "--template",
+    help="Name of an existing project to use as a template (e.g. 'myproject' will use .claudesync/myproject.project.json)",
+)
+@click.option(
     "--name",
-    prompt="Enter a title for your new project",
-    default=lambda: Path.cwd().name,  # Default to current directory name
     help="The name of the project",
+    required=False,
 )
 @click.option(
     "--internal-name",
-    prompt="Enter the internal name for your project (used for config files)",
-    default=get_default_internal_name,
     help="The internal name used for configuration files",
+    required=False,
 )
 @click.option(
     "--description",
-    default="Project created with ClaudeSync",
-    prompt="Enter the project description",
     help="The project description",
-    show_default=True,
+    required=False,
 )
 @click.option(
     "--organization",
-    default=None,
     help="The organization ID to use for this project",
+    required=False,
 )
 @click.option(
     "--no-git-check",
@@ -66,15 +66,64 @@ def get_default_internal_name():
 )
 @click.pass_context
 @handle_errors
-def create(ctx, name, internal_name, description, organization, no_git_check):
-    """Creates a new project for the selected provider."""
+def create(ctx, template, name, internal_name, description, organization, no_git_check):
+    """Creates a new project for the selected provider.
+
+    There are two ways to create a project:
+
+    1. Interactive mode (default):
+       claudesync project create
+
+    2. Using an existing project as template:
+       claudesync project create --template existing-project
+    """
     config = ctx.obj
     provider_instance = get_provider(config)
 
-    if organization is None:
-        organizations = provider_instance.get_organizations()
-        organization_instance = organizations[0] if organizations else None
-        organization = organization_instance["id"]
+    # Handle configuration from template if provided
+    if template:
+        try:
+            # Look for template in .claudesync directory
+            claudesync_dir = Path.cwd() / ".claudesync"
+            template_file = claudesync_dir / f"{template}.project.json"
+
+            if not template_file.exists():
+                raise ConfigurationError(f"Template project configuration not found: {template_file}")
+
+            with open(template_file, 'r') as f:
+                template_config = json.load(f)
+
+            # Extract required fields
+            name = name or template_config.get('project_name')
+            internal_name = internal_name or get_default_internal_name()
+            # Description is optional, default to standard description if not provided
+            description = description or template_config.get('project_description', "Project created with ClaudeSync")
+
+            if not all([name, internal_name]):
+                raise ConfigurationError("Template must contain 'project_name' and 'internal_name' fields")
+
+        except json.JSONDecodeError as e:
+            raise ConfigurationError(f"Invalid JSON in template file: {str(e)}")
+        except IOError as e:
+            raise ConfigurationError(f"Error reading template file: {str(e)}")
+    else:
+        # Interactive mode - prompt for required values if not provided
+        if not name:
+            name = click.prompt("Enter a title for your new project", default=Path.cwd().name)
+
+        if not internal_name:
+            default_internal = get_default_internal_name()
+            internal_name = click.prompt("Enter the internal name for your project (used for config files)",
+                                         default=default_internal)
+
+        if not description:
+            description = click.prompt("Enter the project description",
+                                       default="Project created with ClaudeSync")
+
+    # Get organization from available organizations
+    organizations = provider_instance.get_organizations()
+    organization_instance = organizations[0] if organizations else None
+    organization_id = organization or organization_instance["id"]
 
     # Get the current directory
     current_dir = Path.cwd()
@@ -85,7 +134,7 @@ def create(ctx, name, internal_name, description, organization, no_git_check):
 
     try:
         # Create the project remotely
-        new_project = provider_instance.create_project(organization, name, description)
+        new_project = provider_instance.create_project(organization_id, name, description)
         click.echo(
             f"Project '{new_project['name']}' (uuid: {new_project['uuid']}) has been created successfully."
         )
@@ -96,14 +145,26 @@ def create(ctx, name, internal_name, description, organization, no_git_check):
         }
 
         # Create project configuration file
-        project_config = {
-            "project_name": new_project["name"],
-            "project_description": description,
-            "includes": [],
-            "excludes": [],
-            "use_ignore_files": True,
-            "push_roots": []
-        }
+        if template:
+            # Use configuration from template
+            project_config = {
+                "project_name": new_project["name"],
+                "project_description": description,
+                "includes": template_config.get('includes', []),
+                "excludes": template_config.get('excludes', []),
+                "use_ignore_files": template_config.get('use_ignore_files', True),
+                "push_roots": template_config.get('push_roots', [])
+            }
+        else:
+            # Use default configuration
+            project_config = {
+                "project_name": new_project["name"],
+                "project_description": description,
+                "includes": [],
+                "excludes": [],
+                "use_ignore_files": True,
+                "push_roots": []
+            }
 
         # Determine if internal_name contains a path
         config_path = Path(internal_name)
