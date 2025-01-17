@@ -1,6 +1,6 @@
 [project]
 name = "claudesync-fork"
-version = "0.1.1"
+version = "0.1.2"
 # include_package_data = true
 authors = [
     {name = "Thomas Buechner", email = "thomas.buechner@cplace.com"},
