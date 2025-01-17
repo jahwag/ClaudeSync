@@ -36,9 +36,8 @@ def get_default_internal_name():
 
 @project.command()
 @click.option(
-    "--config-file",
-    type=click.Path(exists=True, file_okay=True, dir_okay=False),
-    help="Path to a JSON configuration file containing project settings",
+    "--template",
+    help="Name of an existing project to use as a template (e.g. 'myproject' will use .claudesync/myproject.project.json)",
 )
 @click.option(
     "--name",
@@ -67,7 +66,7 @@ def get_default_internal_name():
 )
 @click.pass_context
 @handle_errors
-def create(ctx, config_file, name, internal_name, description, organization, no_git_check):
+def create(ctx, template, name, internal_name, description, organization, no_git_check):
     """Creates a new project for the selected provider.
 
     There are two ways to create a project:
@@ -75,31 +74,38 @@ def create(ctx, config_file, name, internal_name, description, organization, no_
     1. Interactive mode (default):
        claudesync project create
 
-    2. Using a config file:
-       claudesync project create --config-file project-config.json
+    2. Using an existing project as template:
+       claudesync project create --template existing-project
     """
     config = ctx.obj
     provider_instance = get_provider(config)
 
-    # Handle configuration from file if provided
-    if config_file:
+    # Handle configuration from template if provided
+    if template:
         try:
-            with open(config_file, 'r') as f:
-                file_config = json.load(f)
+            # Look for template in .claudesync directory
+            claudesync_dir = Path.cwd() / ".claudesync"
+            template_file = claudesync_dir / f"{template}.project.json"
+
+            if not template_file.exists():
+                raise ConfigurationError(f"Template project configuration not found: {template_file}")
+
+            with open(template_file, 'r') as f:
+                template_config = json.load(f)
 
             # Extract required fields
-            name = file_config.get('project_name')
-            internal_name = file_config.get('internal_name')
+            name = name or template_config.get('project_name')
+            internal_name = internal_name or get_default_internal_name()
             # Description is optional, default to standard description if not provided
-            description = file_config.get('project_description', "Project created with ClaudeSync")
+            description = description or template_config.get('project_description', "Project created with ClaudeSync")
 
             if not all([name, internal_name]):
-                raise ConfigurationError("Config file must contain 'project_name' and 'internal_name' fields")
+                raise ConfigurationError("Template must contain 'project_name' and 'internal_name' fields")
 
         except json.JSONDecodeError as e:
-            raise ConfigurationError(f"Invalid JSON in config file: {str(e)}")
+            raise ConfigurationError(f"Invalid JSON in template file: {str(e)}")
         except IOError as e:
-            raise ConfigurationError(f"Error reading config file: {str(e)}")
+            raise ConfigurationError(f"Error reading template file: {str(e)}")
     else:
         # Interactive mode - prompt for required values if not provided
         if not name:
@@ -108,11 +114,11 @@ def create(ctx, config_file, name, internal_name, description, organization, no_
         if not internal_name:
             default_internal = get_default_internal_name()
             internal_name = click.prompt("Enter the internal name for your project (used for config files)",
-                                       default=default_internal)
+                                         default=default_internal)
 
         if not description:
             description = click.prompt("Enter the project description",
-                                     default="Project created with ClaudeSync")
+                                       default="Project created with ClaudeSync")
 
     # Get organization from available organizations
     organizations = provider_instance.get_organizations()
@@ -139,15 +145,15 @@ def create(ctx, config_file, name, internal_name, description, organization, no_
         }
 
         # Create project configuration file
-        if config_file:
-            # Use configuration from file
+        if template:
+            # Use configuration from template
             project_config = {
                 "project_name": new_project["name"],
                 "project_description": description,
-                "includes": file_config.get('includes', []),
-                "excludes": file_config.get('excludes', []),
-                "use_ignore_files": file_config.get('use_ignore_files', True),
-                "push_roots": file_config.get('push_roots', [])
+                "includes": template_config.get('includes', []),
+                "excludes": template_config.get('excludes', []),
+                "use_ignore_files": template_config.get('use_ignore_files', True),
+                "push_roots": template_config.get('push_roots', [])
             }
         else:
             # Use default configuration
