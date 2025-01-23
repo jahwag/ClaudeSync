@@ -20,6 +20,20 @@
       </div>
     </div>
 
+    <!-- Selected Node Information -->
+    <div class="selected-node-info" *ngIf="selectedNode">
+      <div class="info-content">
+        <span class="info-label">Selected: </span>
+        <span class="info-value">{{selectedNode.path}}   </span>
+        <button class="selection-btn" (click)="copySelection()" title="Copy path">
+          <span class="btn-text">Copy 📋</span>
+        </button>
+        <button class="selection-btn" (click)="clearSelection()" title="Clear selection">
+          <span class="btn-text">Clear ❌</span>
+        </button>
+      </div>
+    </div>
+
     <div id="file-treemap" class="treemap-visualization"></div>
 
     <!-- File List Section -->
