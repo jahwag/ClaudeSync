@@ -467,6 +467,19 @@ Status: %{customdata.included}<br>
     this.selectedNode = null;
   }
 
+  copySelection() {
+    if (this.selectedNode) {
+      // Remove the "root/" prefix if it exists
+      const path = this.selectedNode.path.replace(/^root\//, '');
+      navigator.clipboard.writeText(path).then(() => {
+        // Optional: You could add a temporary visual feedback here
+        console.log('Path copied to clipboard:', path);
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
+    }
+  }
+
   formatSize(bytes: number): string {
     if (bytes === 0) return '0 B';
     const k = 1024;
