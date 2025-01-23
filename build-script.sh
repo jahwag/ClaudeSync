@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/bin/sh
 
 # Set error handling
 set -e
@@ -23,21 +23,33 @@ log_error() {
     echo "${RED}[ERROR]${NC} $1"
 }
 
+
+# Function to activate virtual environment based on platform
+activate_venv() {
+    if [ -f ".venv/Scripts/activate" ]; then
+        . ".venv/Scripts/activate"
+    elif [ -f ".venv/bin/activate" ]; then
+        . ".venv/bin/activate"
+    else
+        log_error "Could not find virtual environment activation script"
+        exit 1
+    fi
+}
+
 # Check required tools
 check_requirements() {
     log_info "Checking build requirements..."
-    
+
     # Check Node.js
     if ! command -v node >/dev/null 2>&1; then
         log_error "Node.js is required but not installed. Please install Node.js first."
         exit 1
     fi
-    
+
     # Check npm
     if ! command -v npm >/dev/null 2>&1; then
         log_error "npm is required but not installed. Please install npm first."
         exit 1
-
     fi
 
     # Check Python
@@ -111,37 +123,54 @@ build_frontend() {
 build_python() {
     log_info "Building Python package..."
 
+
+    #setting utf-8 needed for windows
+    export PYTHONUTF8=1
+    export PYTHONIOENCODING=utf8
+
     # Create virtual environment if it doesn't exist
     if [ ! -d ".venv" ]; then
         log_info "Creating virtual environment..."
-        python3 -m venv .venv || {
+        python -m venv .venv || {
             log_error "Failed to create virtual environment"
             exit 1
         }
     fi
 
     # Activate virtual environment
-    source .venv/bin/activate || {
+    log_info "Activating virtual environment..."
+    activate_venv || {
         log_error "Failed to activate virtual environment"
         exit 1
     }
 
     # Install build dependencies
     log_info "Installing build dependencies..."
-    pip install --upgrade pip build wheel || {
+    $PIP_CMD install --upgrade pip || {
+        log_error "Failed to upgrade pip"
+        exit 1
+    }
+    $PIP_CMD install build wheel || {
         log_error "Failed to install build dependencies"
         exit 1
     }
 
     # Build package
     log_info "Building Python package..."
-    python -m build || {
+    python -m build . || {
         log_error "Python build failed"
         exit 1
     }
 
-    # Deactivate virtual environment
-    deactivate
+    # Deactivate virtual environment (if we're in one)
+    if [ -n "$VIRTUAL_ENV" ]; then
+        # Some shells might not have deactivate function
+        if command -v deactivate >/dev/null 2>&1; then
+            deactivate
+        else
+            log_warn "Could not deactivate virtual environment automatically"
+        fi
+    fi
 
     log_info "Python build completed successfully"
 }
