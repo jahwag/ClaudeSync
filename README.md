@@ -198,3 +198,36 @@ claudesync push
 ## Support
 
 - GitHub Issues: [Report bugs](https://github.com/tbuechner/claudesync/issues)
+- Slack [#claude-ai-poc](https://collaborationfactory.slack.com/archives/C083AVA11KP)
+
+### Developing claudesync
+
+#### Preparation: Run once
+
+```bash
+./build-script.sh
+```
+
+#### Only Backend changed
+
+```bash
+rm -rf dist; \
+export PYTHONUTF8=1; \
+export PYTHONIOENCODING=utf8; \
+python -m build .; \
+pip install -e . ; \
+claudesync simulate-push
+```
+
+
+#### At least Frontend touched
+
+Setting the encoding is needed on Windows. Also, you might need to clear you browser cache.
+
+```bash
+./build-script.sh; \
+export PYTHONUTF8=1; \
+export PYTHONIOENCODING=utf8; \
+pip install -e . ; \
+claudesync simulate-push
+```
