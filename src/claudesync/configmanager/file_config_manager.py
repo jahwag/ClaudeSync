@@ -34,7 +34,7 @@ class FileConfigManager(BaseConfigManager):
         else:
             self.config_dir = self._find_config_dir()
 
-    def get_projects(self):
+    def get_projects(self, include_unlinked=False):
         """
         Get all projects configured in the .claudesync directory.
 
@@ -56,26 +56,29 @@ class FileConfigManager(BaseConfigManager):
         # Walk through the .claudesync directory
         for root, _, files in os.walk(self.config_dir):
             for file in files:
-                if file.endswith('.project_id.json'):
+                if file.endswith('.project.json'):
                     # Extract project path from filename
-                    project_path = file[:-len('.project_id.json')]
+                    project_path = file[:-len('.project.json')]
+
+                    project_id_file = os.path.join(root, project_path + '.project_id.json')
+                    project_id = ''
 
                     # Handle nested projects by getting relative path from .claudesync dir
                     rel_root = os.path.relpath(root, self.config_dir)
                     if rel_root != '.':
                         project_path = os.path.join(rel_root, project_path)
 
-                    try:
+                    if os.path.exists(project_id_file):
                         # Load project ID from file
-                        with open(os.path.join(root, file)) as f:
-                            project_data = json.load(f)
-                            project_id = project_data.get('project_id')
-                            if project_id:
-                                projects[project_path] = project_id
-                    except (json.JSONDecodeError, IOError) as e:
-                        logging.warning(f"Failed to load project file {file}: {str(e)}")
-                        continue
+                        try:
+                            with open(project_id_file) as f:
+                                project_data = json.load(f)
+                                project_id = project_data.get('project_id')
+                        except (json.JSONDecodeError, IOError) as e:
+                            logging.warning(f"Failed to load project file {file}: {str(e)}")
+                            continue
 
+                    projects[project_path] = project_id
         return projects
 
     def get_active_project(self):

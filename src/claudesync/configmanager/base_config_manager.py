@@ -24,7 +24,7 @@ class BaseConfigManager(ABC):
         self.local_config = {}
 
     @abstractmethod
-    def get_projects(self):
+    def get_projects(self, include_unlinked=False):
         """
         Get all configured projects.
 

@@ -389,14 +389,16 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
             try:
-                projects = self.config.get_projects()
+                # Get all projects, including unlinked ones
+                projects = self.config.get_projects(include_unlinked=True)
                 active_project_path, active_project_id = self.config.get_active_project()
 
                 response = {
                     'projects': [
                         {
-                            'id': project_id,
-                            'path': project_path
+                            'id': project_id if project_id else '',  # Empty string for unlinked projects
+                            'path': project_path,
+                            'linked': bool(project_id)  # True if project has an ID
                         }
                         for project_path, project_id in projects.items()
                     ],
@@ -405,6 +407,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
                 self.wfile.write(json.dumps(response).encode())
             except Exception as e:
+                logger.error(f"Error getting projects: {str(e)}\n{traceback.format_exc()}")
                 self.wfile.write(json.dumps({'error': str(e)}).encode())
             return
 
