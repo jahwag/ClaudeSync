@@ -27,6 +27,7 @@ setup(
         "anthropic",
         "sseclient-py",
         "brotli",
+        "tiktoken",
     ],
     entry_points={
         "console_scripts": [
