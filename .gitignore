@@ -11,7 +11,7 @@ __pycache__/
 build/
 develop-eggs/
 downloads/
-eggs/
+eggs/d
 .eggs/
 lib/
 lib64/
@@ -182,3 +182,6 @@ myenv/
 src/.claudesync
 
 src/web-src-copy
+
+.DS_Store
+**/.DS_Store
