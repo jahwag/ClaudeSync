@@ -146,11 +146,11 @@ build_python() {
 
     # Install build dependencies
     log_info "Installing build dependencies..."
-    $PIP_CMD install --upgrade pip || {
+    pip3 install --upgrade pip || {
         log_error "Failed to upgrade pip"
         exit 1
     }
-    $PIP_CMD install build wheel || {
+    pip3 install build wheel || {
         log_error "Failed to install build dependencies"
         exit 1
     }
