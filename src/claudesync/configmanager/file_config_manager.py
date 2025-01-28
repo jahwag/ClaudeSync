@@ -120,29 +120,6 @@ class FileConfigManager(BaseConfigManager):
         with open(active_project_file, "w") as f:
             json.dump(data, f, indent=2)
 
-    def get_all_projects(self):
-        """Get all projects with valid project.json files, including those without project_id.json."""
-        projects = {}
-        config_dir = Path(self.config_dir)
-
-        # List all project.json files
-        for project_file in config_dir.glob("*.project.json"):
-            project_name = project_file.stem.replace('.project', '')
-            project_id_file = config_dir / f"{project_name}.project_id.json"
-
-            # Read project ID if available
-            project_id = None
-            if project_id_file.exists():
-                try:
-                    with open(project_id_file, 'r') as f:
-                        project_id = json.load(f).get('project_id')
-                except (json.JSONDecodeError, KeyError):
-                    pass
-
-            projects[project_name] = project_id
-
-        return projects
-
     def _find_config_dir(self):
         current_dir = Path.cwd()
         root_dir = Path(current_dir.root)
