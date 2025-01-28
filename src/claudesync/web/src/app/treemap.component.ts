@@ -480,6 +480,14 @@ Status: %{customdata.included}<br>
     }
   }
 
+  getSelection(): string {
+    if (this.selectedNode) {
+      // Remove the "root/" prefix if it exists
+      return this.selectedNode.path.replace(/^root\//, '');
+    }
+    return '';
+  }
+
   formatSize(bytes: number): string {
     if (bytes === 0) return '0 B';
     const k = 1024;

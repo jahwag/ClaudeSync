@@ -24,7 +24,7 @@
     <div class="selected-node-info" *ngIf="selectedNode">
       <div class="info-content">
         <span class="info-label">Selected: </span>
-        <span class="info-value">{{selectedNode.path}}   </span>
+        <span class="info-value">{{getSelection()}}   </span>
         <button class="selection-btn" (click)="copySelection()" title="Copy path">
           <span class="btn-text">Copy 📋</span>
         </button>
