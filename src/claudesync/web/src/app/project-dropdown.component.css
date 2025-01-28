@@ -61,3 +61,13 @@
   stroke-linejoin: round;
   fill: none;
 }
+
+.unlinked-project {
+  color: #64748b;
+font-style: italic;
+}
+
+.select-input option.unlinked-project {
+  color: #64748b;
+  font-style: italic;
+}

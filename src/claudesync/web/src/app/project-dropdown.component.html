@@ -9,11 +9,13 @@
       class="select-input"
     >
       <option value="">Select a project</option>
-      <option *ngFor="let project of projects" [value]="project.path">
-        {{project.path}}
+      <option *ngFor="let project of projects"
+              [value]="project.path"
+              [class.unlinked-project]="!project.linked">
+        {{getProjectDisplayText(project)}}
       </option>
     </select>
-    <a *ngIf="selectedProjectUrl"
+    <a *ngIf="selectedProjectUrl && selectedProjectIsLinked()"
        [href]="selectedProjectUrl"
        target="_blank"
        class="project-link"

@@ -6,6 +6,7 @@ export interface Project {
   id: string;
   path: string;
   url?: string;
+  linked: boolean;
 }
 
 @Component({
@@ -23,5 +24,14 @@ export class ProjectDropdownComponent {
 
   onProjectChange(path: string) {
     this.projectChange.emit(path);
+  }
+
+  // Helper method to get display text for project
+  getProjectDisplayText(project: Project): string {
+    return `${project.path}${!project.linked ? ' (Unlinked)' : ''}`;
+  }
+
+  selectedProjectIsLinked(): boolean {
+    return this.projects.find(p => p.path === this.selectedProject)?.linked ?? false
   }
 }

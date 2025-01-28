@@ -389,12 +389,17 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
 
             try:
-                projects = self.config.get_projects()
-                active_project_path, active_project_id = self.config.get_active_project()
+                # Get all projects, including those without IDs
+                projects = self.config.get_all_projects()
+                active_project_path, _ = self.config.get_active_project()
 
                 response = {
                     'projects': [
-                        {'id': project_id, 'path': project_path}
+                        {
+                            'id': project_id,  # Will be null for unlinked projects
+                            'path': project_path,
+                            'linked': project_id is not None
+                        }
                         for project_path, project_id in projects.items()
                     ],
                     'activeProject': active_project_path
