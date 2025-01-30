@@ -7,6 +7,8 @@ import json
 import subprocess
 import urllib.request
 from pkg_resources import get_distribution
+
+from claudesync.cli.export import export
 from claudesync.cli.file import file
 from claudesync.cli.chat import chat
 from claudesync.configmanager import FileConfigManager
@@ -100,6 +102,7 @@ cli.add_command(simulate_push)
 cli.add_command(file)
 cli.add_command(zip)
 cli.add_command(tokens)
+cli.add_command(export)
 
 if __name__ == "__main__":
     cli()
