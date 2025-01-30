@@ -9,6 +9,7 @@ This is a fork of the original [ClaudeSync](https://github.com/jahwag/ClaudeSync
 - [Project Setup](#project-setup)
 - [Synchronization Configuration](#synchronization-configuration)
 - [Working with Claude.ai](#working-with-claudeai)
+- [Developing claudesync](#developing-claudesync)
 
 ## Prerequisites
 
