@@ -47,6 +47,27 @@ Make sure, that the virtual environment is added to your .gitignore file:
 pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.4-py3-none-any.whl   
 ```
 
+### Upgrade
+
+#### Unix based
+
+```bash
+rm -rf .venv
+python3 -m venv .venv
+source .venv/bin/activate
+pip install <link>
+```
+
+#### Windows git bash
+
+```bash
+rm -rf .venv
+python3 -m venv .venv
+source .venv/Scripts/activate
+pip install <link>
+```
+
+
 ## Authentication
 
 Authentication with Claude.ai needs to be done once:
