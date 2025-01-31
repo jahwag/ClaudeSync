@@ -1,0 +1,31 @@
+<div class="actions-menu relative inline-block">
+  <button
+    (click)="toggleMenu()"
+    class="actions-button"
+  >
+    Actions ▼
+  </button>
+
+  <div *ngIf="isOpen" class="menu-container">
+    <div class="menu-content">
+      <button
+        *ngFor="let action of actions"
+        (click)="handleAction(action.id)"
+        class="menu-item"
+      >
+        <span class="icon">{{action.icon}}</span>
+        <div class="action-info">
+          <div class="action-label">{{action.label}}</div>
+          <div class="action-description">{{action.description}}</div>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Overlay to handle clicks outside the menu -->
+  <div
+    *ngIf="isOpen"
+    class="overlay"
+    (click)="closeMenu($event)"
+  ></div>
+</div>

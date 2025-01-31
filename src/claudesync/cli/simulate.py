@@ -288,8 +288,128 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
             return
 
+        if parsed_path.path == '/api/update-config':
+            try:
+                content_length = int(self.headers.get('Content-Length', 0))
+                if content_length == 0:
+                    return self._send_error_response(400, "Request body is required")
+
+                request_body = self.rfile.read(content_length)
+                try:
+                    data = json.loads(request_body)
+                except json.JSONDecodeError as e:
+                    return self._send_error_response(400, f"Invalid JSON in request body: {str(e)}")
+
+                return self._handle_update_config(data)
+            except Exception as e:
+                logger.error(f"Error processing update config request: {str(e)}\n{traceback.format_exc()}")
+                return self._send_error_response(500, f"Internal server error: {str(e)}")
+
         # Handle other POST requests (if any)
         self._send_error_response(404, "Not Found")
+
+    def _handle_update_config(self, data):
+        """Handle POST request to update project configuration.
+
+        Supports operations:
+        - addInclude: Add a pattern to includes
+        - removeInclude: Remove a pattern from includes
+        - addExclude: Add a pattern to excludes
+        - removeExclude: Remove a pattern from excludes
+        """
+        try:
+            # Validate request data
+            if not isinstance(data, dict):
+                return self._send_error_response(400, "Invalid request format")
+
+            # Get required fields
+            action = data.get('action')
+            pattern = data.get('pattern')
+
+            # Validate fields
+            if not action:
+                return self._send_error_response(400, "No action specified")
+            if not pattern:
+                return self._send_error_response(400, "No pattern provided")
+            if not isinstance(pattern, str):
+                return self._send_error_response(400, "Pattern must be a string")
+            if len(pattern.strip()) == 0:
+                return self._send_error_response(400, "Pattern cannot be empty")
+
+            # Get active project and configuration
+            active_project = self.config.get_active_project()[0]
+            if not active_project:
+                return self._send_error_response(400, "No active project found")
+
+            try:
+                files_config = self.config.get_files_config(active_project)
+            except ConfigurationError as e:
+                logger.error(f"Failed to load project configuration: {str(e)}")
+                return self._send_error_response(500, f"Failed to load project configuration: {str(e)}")
+
+            # Initialize includes/excludes if they don't exist
+            if 'includes' not in files_config:
+                files_config['includes'] = []
+            if 'excludes' not in files_config:
+                files_config['excludes'] = []
+
+            # Validate lists
+            if not isinstance(files_config['includes'], list):
+                return self._send_error_response(500, "Invalid project configuration: 'includes' must be a list")
+            if not isinstance(files_config['excludes'], list):
+                return self._send_error_response(500, "Invalid project configuration: 'excludes' must be a list")
+
+            # Handle different actions
+            if action == 'addInclude':
+                if pattern in files_config['includes']:
+                    return self._send_error_response(409, f"Pattern '{pattern}' already exists in includes")
+                files_config['includes'].append(pattern)
+                message = f"Added pattern to includes: {pattern}"
+
+            elif action == 'removeInclude':
+                if pattern not in files_config['includes']:
+                    return self._send_error_response(404, f"Pattern '{pattern}' not found in includes")
+                files_config['includes'].remove(pattern)
+                message = f"Removed pattern from includes: {pattern}"
+
+            elif action == 'addExclude':
+                if pattern in files_config['excludes']:
+                    return self._send_error_response(409, f"Pattern '{pattern}' already exists in excludes")
+                files_config['excludes'].append(pattern)
+                message = f"Added pattern to excludes: {pattern}"
+
+            elif action == 'removeExclude':
+                if pattern not in files_config['excludes']:
+                    return self._send_error_response(404, f"Pattern '{pattern}' not found in excludes")
+                files_config['excludes'].remove(pattern)
+                message = f"Removed pattern from excludes: {pattern}"
+
+            else:
+                return self._send_error_response(400, f"Unknown action: {action}")
+
+            # Save updated config
+            try:
+                project_config_path = self.config.config_dir / f"{active_project}.project.json"
+                with open(project_config_path, 'w') as f:
+                    json.dump(files_config, f, indent=2)
+            except IOError as e:
+                logger.error(f"Failed to save project configuration: {str(e)}")
+                return self._send_error_response(500, f"Failed to save configuration: {str(e)}")
+
+            # Send success response with updated config
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_cors_headers()
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                'success': True,
+                'message': message,
+                'config': files_config
+            }).encode())
+
+        except Exception as e:
+            logger.error(f"Error updating config: {str(e)}\n{traceback.format_exc()}")
+            return self._send_error_response(500, f"Internal server error: {str(e)}")
 
     def _send_error_response(self, status_code: int, message: str):
         """Helper method to send error responses"""
@@ -493,3 +613,4 @@ def simulate_push(config, port, no_browser):
         else:
             logger.error(f"Failed to start server: {e}")
             click.echo(f"Error: Failed to start server: {e}")
+

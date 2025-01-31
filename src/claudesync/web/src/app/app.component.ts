@@ -126,9 +126,6 @@ export class AppComponent implements OnInit {
           this.projectConfig = data.project;
           this.claudeignore = data.claudeignore;
           this.stats = data.stats;
-          if (this.treemapComponent) {
-            this.treemapComponent.reload();
-          }
           this.isLoading = false;
         },
         error: (error) => {

@@ -23,14 +23,16 @@
     <!-- Selected Node Information -->
     <div class="selected-node-info" *ngIf="selectedNode">
       <div class="info-content">
-        <span class="info-label">Selected: </span>
-        <span class="info-value">{{getSelection()}}   </span>
-        <button class="selection-btn" (click)="copySelection()" title="Copy path">
-          <span class="btn-text">Copy 📋</span>
-        </button>
-        <button class="selection-btn" (click)="clearSelection()" title="Clear selection">
-          <span class="btn-text">Clear ❌</span>
-        </button>
+        <div class="flex items-center gap-4">
+          <div>
+            <span class="info-label">Selected: </span>
+            <span class="info-value">{{getSelection()}}</span>
+          </div>
+          <app-node-actions-menu
+            [node]="selectedNode"
+            (actionTriggered)="handleNodeAction($event)"
+          ></app-node-actions-menu>
+        </div>
       </div>
     </div>
 

@@ -56,7 +56,9 @@
       </div>
 
       <section class="visualization-panel blur-section">
-        <app-treemap [syncData]="syncData"></app-treemap>
+        <app-treemap [syncData]="syncData"
+                     (reloadRequired)="reload()">
+        </app-treemap>
       </section>
     </main>
   </div>
