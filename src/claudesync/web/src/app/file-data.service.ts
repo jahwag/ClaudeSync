@@ -114,4 +114,8 @@ export class FileDataService {
   updateConfig(config: { action: string, pattern: string }): Observable<any> {
     return this.http.post(`${this.baseUrl}/update-config`, config);
   }
+
+  push(): Observable<any> {
+    return this.http.post(`${this.baseUrl}/push`, {});
+  }
 }

@@ -17,6 +17,8 @@ from ..exceptions import ConfigurationError
 from ..utils import get_local_files, load_gitignore, load_claudeignore
 from ..configmanager import FileConfigManager
 from typing import Dict, List, Optional, TypedDict
+from .sync_logic import push_files
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -305,6 +307,9 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                 logger.error(f"Error processing update config request: {str(e)}\n{traceback.format_exc()}")
                 return self._send_error_response(500, f"Internal server error: {str(e)}")
 
+        if parsed_path.path == '/api/push':
+            return self._handle_push()
+
         # Handle other POST requests (if any)
         self._send_error_response(404, "Not Found")
 
@@ -555,6 +560,20 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
         """Generate treemap data"""
         tree = build_file_tree(local_path, files_to_sync, config, files_config)
         return tree
+
+    def _handle_push(self):
+        try:
+            push_files(self.config)
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_cors_headers()
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                'success': True,
+                'message': 'Files successfully pushed to Claude.ai'
+            }).encode())
+        except Exception as e:
+            self._send_error_response(500, str(e))
 
 @click.command()
 @click.option('--port', default=4201, help='Port to run the server on')
