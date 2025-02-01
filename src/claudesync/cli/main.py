@@ -196,6 +196,47 @@ def sync_submodule(provider, config, submodule, category):
     )
 
 
+@cli.command()
+@click.option("--category", help="Specify the file category to sync")
+@click.option(
+    "--uberproject", is_flag=True, help="Include submodules in the parent project sync"
+)
+@click.pass_obj
+@handle_errors
+def embedding(config, category, uberproject):
+    """Generate a text embedding from the project. Does not require"""
+    if not category:
+        category = config.get_default_category()
+        if category:
+            click.echo(f"Using default category: {category}")
+
+    local_path = config.get_local_path()
+
+    if not local_path:
+        click.echo(
+            "No .claudesync directory found in this directory or any parent directories. "
+            "Please run 'claudesync project create' or 'claudesync project set' first."
+        )
+        return
+
+    # Sync main project
+    sync_manager = SyncManager(None, config, config.get_local_path())
+
+    if uberproject:
+        # Include submodule files in the parent project
+        local_files = get_local_files(
+            config, local_path, category, include_submodules=True
+        )
+    else:
+        # Exclude submodule files from the parent project
+        local_files = get_local_files(
+            config, local_path, category, include_submodules=False
+        )
+
+    output = sync_manager.embedding(local_files)
+    click.echo(f"{output}")
+
+
 cli.add_command(auth)
 cli.add_command(organization)
 cli.add_command(project)

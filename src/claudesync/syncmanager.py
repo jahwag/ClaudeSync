@@ -321,3 +321,10 @@ class SyncManager:
             )
             pbar.update(1)
         time.sleep(self.upload_delay)
+
+    def embedding(self, local_files):
+        packed_content = self._pack_files(local_files)
+        compressed_content = compress_content(
+            packed_content, self.compression_algorithm
+        )
+        return compressed_content
