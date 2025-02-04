@@ -1,4 +1,5 @@
 <div class="app-container">
+  <app-toast-notifications></app-toast-notifications>
   <!-- Main content -->
   <div [class.content-blur]="isLoading">
     <!-- Header section with blur -->
@@ -39,6 +40,13 @@
           </svg>
           Reload
         </button>
+        <button class="btn btn-primary" (click)="push()">
+          <svg class="icon" viewBox="0 0 24 24">
+            <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+            <path d="M22 2L11 13"/>
+          </svg>
+          Push
+        </button>
       </div>
     </header>
 
@@ -56,7 +64,9 @@
       </div>
 
       <section class="visualization-panel blur-section">
-        <app-treemap [syncData]="syncData"></app-treemap>
+        <app-treemap [syncData]="syncData"
+                     (reloadRequired)="reload()">
+        </app-treemap>
       </section>
     </main>
   </div>

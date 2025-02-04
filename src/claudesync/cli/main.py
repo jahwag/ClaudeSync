@@ -13,12 +13,7 @@ from claudesync.cli.file import file
 from claudesync.cli.chat import chat
 from claudesync.configmanager import FileConfigManager
 from claudesync.exceptions import ConfigurationError
-from claudesync.syncmanager import SyncManager
-from claudesync.utils import (
-    handle_errors,
-    validate_and_get_provider,
-    get_local_files,
-)
+from claudesync.utils import handle_errors
 from .auth import auth
 from .organization import organization
 from .project import project
@@ -26,6 +21,7 @@ from .simulate import simulate_push
 from .config import config
 from .zip import zip
 from .tokens import tokens
+from .sync_logic import push_files
 import logging
 
 logging.basicConfig(
@@ -62,35 +58,7 @@ def install_completion(shell):
 @handle_errors
 def push(config, project):
     """Synchronize the project files."""
-    if not project:
-        # Use the active project if no project specified
-        active_project_path, active_project_id = config.get_active_project()
-        if not active_project_path:
-            raise ConfigurationError("No active project found. Please specify a project or set an active one using 'project set'")
-        project = active_project_path
-
-    # Get configurations
-    files_config = config.get_files_config(project)
-
-    provider = validate_and_get_provider(config)
-
-    # Use project configuration
-    active_organization_id = config.get("active_organization_id")
-    project_id = config.get_project_id(project)
-
-    # Get files to sync using patterns from files configuration
-    local_files = get_local_files(config, config.get_project_root(), files_config)
-
-    # Set as active project
-    config.set_active_project(project, project_id)
-
-    # Sync files
-    remote_files = provider.list_files(active_organization_id, project_id)
-    sync_manager = SyncManager(provider, config, project_id, config.get_project_root())
-    sync_manager.sync(local_files, remote_files)
-
-    click.echo(f"Project '{project}' synced successfully")
-    click.echo(f"Remote URL: https://claude.ai/project/{project_id}")
+    push_files(config, project)
 
 
 cli.add_command(auth)

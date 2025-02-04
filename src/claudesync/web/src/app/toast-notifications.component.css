@@ -1,0 +1,40 @@
+/* Animation for notification entry */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Animation for notification exit */
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-fade-out {
+  animation: fadeOut 0.3s ease-in;
+}
+
+/* Optional: If you need to ensure notifications are clickable and don't interfere with content behind */
+.notification-container {
+  pointer-events: none;
+}
+
+.notification-container > * {
+  pointer-events: auto;
+}

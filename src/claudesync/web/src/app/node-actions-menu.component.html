@@ -1,0 +1,24 @@
+<div class="actions-menu">
+  <button
+    (click)="toggleMenu($event)"
+    class="actions-button"
+  >
+    Actions ▼
+  </button>
+
+  <div *ngIf="isOpen" class="menu-container">
+    <div class="menu-content">
+      <button
+        *ngFor="let action of actions"
+        (click)="handleAction(action.id, $event)"
+        class="menu-item"
+      >
+        <span class="icon">{{action.icon}}</span>
+        <div class="action-info">
+          <div class="action-label">{{action.label}}</div>
+          <div class="action-description">{{action.description}}</div>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>

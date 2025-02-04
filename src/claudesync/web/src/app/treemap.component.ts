@@ -1,4 +1,4 @@
-import {Component, OnInit, OnDestroy, Input} from '@angular/core';
+import {Component, OnInit, OnDestroy, Input, EventEmitter, Output} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {FileContentResponse, FileDataService, SyncData} from './file-data.service';
 import { HttpClient } from '@angular/common/http';
@@ -9,17 +9,30 @@ import {FormsModule} from '@angular/forms';
 import {FilePreviewComponent} from './file-preview.component';
 import {ModalComponent} from './modal.component';
 import {Subject, Subscription} from 'rxjs';
+import { NodeActionsMenuComponent } from './node-actions-menu.component';
 
 declare const Plotly: any;
 
 @Component({
   selector: 'app-treemap',
   standalone: true,
-  imports: [CommonModule, FormsModule, FilePreviewComponent, ModalComponent],
+  imports: [CommonModule, FormsModule, FilePreviewComponent, ModalComponent, NodeActionsMenuComponent],
   templateUrl: './treemap.component.html',
   styleUrls: ['./treemap.component.css']
 })
 export class TreemapComponent implements OnDestroy {
+  @Input() set syncData(data: SyncData | null) {
+    if (data) {
+      this.originalTreeData = data.treemap;
+      this.updateTreemap();
+      const plotlyData = this.flattenTree(data.treemap);
+      this.renderTreemap(plotlyData);
+      this.updateFilesList(data.treemap);
+    }
+  }
+
+  @Output() reloadRequired = new EventEmitter<void>();
+
   selectedNode: SelectedNode | null = null;
   showOnlyIncluded = false;
   isLoading = false;
@@ -40,16 +53,6 @@ export class TreemapComponent implements OnDestroy {
   filterText = '';
 
   private currentSubscription?: Subscription;
-
-  @Input() set syncData(data: SyncData | null) {
-    if (data) {
-      this.originalTreeData = data.treemap;
-      this.updateTreemap();
-      const plotlyData = this.flattenTree(data.treemap);
-      this.renderTreemap(plotlyData);
-      this.updateFilesList(data.treemap);
-    }
-  }
 
   constructor(private http: HttpClient, private fileDataService: FileDataService) {}
 
@@ -304,36 +307,6 @@ export class TreemapComponent implements OnDestroy {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
   }
 
-  public loadTreemapData() {
-    // Unsubscribe from any existing subscription
-    this.currentSubscription?.unsubscribe();
-
-    this.isLoading = true;
-    console.log('Loading treemap data');
-
-    // Store the new subscription
-    this.currentSubscription = this.fileDataService.getSyncData()
-      .subscribe({
-        next: (data) => {
-          this.originalTreeData = data.treemap;
-          this.updateTreemap();
-          const plotlyData = this.flattenTree(data.treemap);
-          this.renderTreemap(plotlyData);
-          this.updateFilesList(data.treemap);
-          this.isLoading = false;
-          console.log('Finished loading treemap data');
-        },
-        error: (error) => {
-          console.error('Error loading treemap data:', error);
-          this.isLoading = false;
-        }
-      });
-  }
-
-  public reload() {
-    this.loadTreemapData();
-  }
-
   private renderTreemap(data: TreemapData) {
     this.updateFilesList(data);
     const chartContainer = document.getElementById('file-treemap');
@@ -530,5 +503,63 @@ Status: %{customdata.included}<br>
 
   onShowOnlyIncludedChange() {
     this.updateTreemap();
+  }
+
+  handleNodeAction(action: string) {
+    if (!this.selectedNode) return;
+
+    // Remove the "root/" prefix if it exists
+    const path = this.selectedNode.path.replace(/^root\//, '');
+
+    switch (action) {
+      case 'copy':
+        this.copySelection();
+        break;
+
+      case 'addToIncludes':
+        this.updateConfig({
+          action: 'addInclude',
+          pattern: path
+        });
+        break;
+
+      case 'removeFromIncludes':
+        this.updateConfig({
+          action: 'removeInclude',
+          pattern: path
+        });
+        break;
+
+      case 'addToExcludes':
+        this.updateConfig({
+          action: 'addExclude',
+          pattern: path
+        });
+        break;
+
+      case 'removeFromExcludes':
+        this.updateConfig({
+          action: 'removeExclude',
+          pattern: path
+        });
+        break;
+
+      case 'clear':
+        this.clearSelection();
+        break;
+    }
+  }
+
+  private updateConfig(config: { action: string, pattern: string }) {
+    this.fileDataService.updateConfig(config)
+      .subscribe({
+        next: (response) => {
+          // Instead of refreshing cache here, emit up to parent
+          this.reloadRequired.emit();
+        },
+        error: (error) => {
+          console.error('Error updating configuration:', error);
+        }
+      });
   }
 }

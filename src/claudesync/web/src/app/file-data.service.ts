@@ -85,12 +85,13 @@ export class FileDataService {
   }
 
   refreshCache(): Observable<SyncData> {
-    this.cachedData = null;
+    this.clearCache();
     return this.getSyncData();
   }
 
   clearCache(): void {
     this.cachedData = null;
+    console.debug('Cache cleared');
   }
 
   // File content is not cached as it's requested on-demand
@@ -105,6 +106,16 @@ export class FileDataService {
   }
 
   setActiveProject(projectPath: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/set-active-project`, { path: projectPath });
+    return this.http.post(`${this.baseUrl}/set-active-project`, { path: projectPath }).pipe(
+      tap(() => this.clearCache()) // Clear cache when project changes
+    );
+  }
+
+  updateConfig(config: { action: string, pattern: string }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/update-config`, config);
+  }
+
+  push(): Observable<any> {
+    return this.http.post(`${this.baseUrl}/push`, {});
   }
 }

@@ -1,16 +1,18 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
-import { HttpClientModule } from '@angular/common/http';
-import {FileDataService, SyncStats, SyncData, ProjectConfig} from './file-data.service';
+import {CommonModule} from '@angular/common';
+import {HttpClientModule} from '@angular/common/http';
+import {FileDataService, ProjectConfig, SyncData, SyncStats} from './file-data.service';
 import {TreemapComponent} from './treemap.component';
 import {finalize} from 'rxjs/operators';
 import {Project, ProjectDropdownComponent} from './project-dropdown.component';
+import {NotificationService} from './notification.service'
+import {ToastNotificationsComponent} from './toast-notifications.component';
+
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, HttpClientModule, TreemapComponent, ProjectDropdownComponent],
+  imports: [CommonModule, HttpClientModule, TreemapComponent, ProjectDropdownComponent, ToastNotificationsComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
   providers: [FileDataService]
@@ -33,7 +35,9 @@ export class AppComponent implements OnInit {
 
   @ViewChild(TreemapComponent) treemapComponent!: TreemapComponent;
 
-  constructor(private fileDataService: FileDataService) {}
+  constructor(private fileDataService: FileDataService,
+              private notificationService: NotificationService) {
+  }
 
   ngOnInit() {
     this.loadProjects();
@@ -44,7 +48,7 @@ export class AppComponent implements OnInit {
     this.fileDataService.getProjects()
       .pipe(finalize(() => this.isLoading = false))
       .subscribe({
-        next: (response:any) => {
+        next: (response: any) => {
           this.projects = response.projects.sort((a: any, b: any) => a.path.localeCompare(b.path));
           if (response.activeProject) {
             this.selectedProject = response.activeProject;
@@ -126,9 +130,6 @@ export class AppComponent implements OnInit {
           this.projectConfig = data.project;
           this.claudeignore = data.claudeignore;
           this.stats = data.stats;
-          if (this.treemapComponent) {
-            this.treemapComponent.reload();
-          }
           this.isLoading = false;
         },
         error: (error) => {
@@ -139,6 +140,29 @@ export class AppComponent implements OnInit {
   }
 
   getProjectConfigAsJson() {
-      return this.projectConfig ? JSON.stringify(this.projectConfig, null, 2) : '';
+    return this.projectConfig ? JSON.stringify(this.projectConfig, null, 2) : '';
+  }
+
+  push() {
+    this.isLoading = true;
+    this.fileDataService.push()
+      .pipe(finalize(() => this.isLoading = false))
+      .subscribe({
+        next: (response) => {
+          // Show success notification with the response message
+          if (response && response.message) {
+            this.notificationService.success(response.message);
+          } else {
+            this.notificationService.success('Files pushed successfully!');
+          }
+          this.reload();
+        },
+        error: (error) => {
+          // Show error notification with the error message
+          const errorMessage = error.error?.message || 'Failed to push files. Please try again.';
+          this.notificationService.error(errorMessage);
+          console.error('Error pushing to backend:', error);
+        }
+      });
   }
 }
