@@ -140,14 +140,14 @@ If you have a large codebase and want to synchronize only specific files with Cl
    "project_name": "cplace-paw - Draggable Page List",
    "project_description": "Project created with ClaudeSync",
    "includes": [
-      "*"
+      "cf.cplace.draggablePageList/src",
+      "cf.cplace.draggablePageList/assets/ts",
+      "cf.cplace.draggablePageList/assets/less"
    ],
    "excludes": [],
    "use_ignore_files": false,
    "push_roots": [
-      "cf.cplace.draggablePageList/src",
-      "cf.cplace.draggablePageList/assets/ts",
-      "cf.cplace.draggablePageList/assets/less"
+      "cf.cplace.draggablePageList"
    ]
 }
 ```
