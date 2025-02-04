@@ -48,27 +48,6 @@ Make sure, that the virtual environment is added to your .gitignore file:
 pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.4-py3-none-any.whl   
 ```
 
-### Upgrade
-
-#### Unix based
-
-```bash
-rm -rf .venv
-python3 -m venv .venv
-source .venv/bin/activate
-pip install <link>
-```
-
-#### Windows git bash
-
-```bash
-rm -rf .venv
-python3 -m venv .venv
-source .venv/Scripts/activate
-pip install <link>
-```
-
-
 ## Authentication
 
 Authentication with Claude.ai needs to be done once:
@@ -216,6 +195,26 @@ claudesync push
 1. Keep conversations focused on specific features or issues
 2. Push changes frequently to maintain context
 3. If you have a large codebase, break it down into smaller pieces, try not to exceed 30% of the available knowledge capacity of the claude project. If you do, you increase the risk of running into the rate limit and the knowledge will be less effective. In file `.claudesync/example-file-categories.json` you can see an exemplary decomposition of this project into smaller subprojects.
+
+### Upgrade
+
+#### Unix based
+
+```bash
+rm -rf .venv
+python3 -m venv .venv
+source .venv/bin/activate
+pip install <link>
+```
+
+#### Windows git bash
+
+```bash
+rm -rf .venv
+python3 -m venv .venv
+source .venv/Scripts/activate
+pip install <link>
+```
 
 ## Support
 
