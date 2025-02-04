@@ -93,9 +93,17 @@ def create(ctx, template, name, internal_name, description, organization, no_git
             with open(template_file, 'r') as f:
                 template_config = json.load(f)
 
-            # Extract required fields
+            # Extract project name from template if not provided via CLI
             name = name or template_config.get('project_name')
-            internal_name = internal_name or get_default_internal_name()
+            if not name:
+                raise ConfigurationError("Template must contain 'project_name' field")
+
+            # For internal_name: use CLI argument, or generate from template name if not provided
+            if not internal_name:
+                # If not provided via CLI, try to generate a safe internal name from the template path
+                template_base = os.path.basename(template)  # Get last part of path
+                internal_name = template_base.replace('.project.json', '')
+
             # Description is optional, default to standard description if not provided
             description = description or template_config.get('project_description', "Project created with ClaudeSync")
 
