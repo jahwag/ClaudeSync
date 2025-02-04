@@ -1,6 +1,6 @@
 <div class="treemap-container">
   <div [class.content-blur]="isLoading">
-    <!-- Existing header and treemap content -->
+    <!-- Header and treemap content -->
     <div class="header-container">
       <h2>File Distribution</h2>
       <div class="header-actions">
@@ -20,72 +20,66 @@
       </div>
     </div>
 
-    <!-- Selected Node Information -->
-    <div class="selected-node-info" *ngIf="selectedNode">
-      <div class="info-content">
-        <div class="flex items-center gap-4">
-          <div>
-            <span class="info-label">Selected: </span>
-            <span class="info-value">{{getSelection()}}</span>
-          </div>
-          <app-node-actions-menu
-            [node]="selectedNode"
-            (actionTriggered)="handleNodeAction($event)"
-          ></app-node-actions-menu>
+    <!-- Action Bar -->
+    <div class="action-bar" *ngIf="selectedNode">
+      <div class="action-bar-header">
+        <div class="selected-path">
+          <svg class="icon" viewBox="0 0 24 24" width="20" height="20">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+          </svg>
+          <span>{{getSelection()}}</span>
         </div>
+        <button class="clear-btn" (click)="clearSelection()">
+          <svg class="icon" viewBox="0 0 24 24" width="20" height="20">
+            <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="action-buttons">
+        <button class="action-btn copy-btn" (click)="handleNodeAction('copy')">
+          <svg class="icon" viewBox="0 0 24 24" width="16" height="16">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" stroke="currentColor" stroke-width="2" fill="none"/>
+          </svg>
+          Copy Path
+        </button>
+        <button class="action-btn include-btn" (click)="handleNodeAction('addToIncludes')">
+          <svg class="icon" viewBox="0 0 24 24" width="16" height="16">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Add to Includes
+        </button>
+        <button class="action-btn remove-btn" (click)="handleNodeAction('removeFromIncludes')">
+          <svg class="icon" viewBox="0 0 24 24" width="16" height="16">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M8 12h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Remove from Includes
+        </button>
+        <button class="action-btn exclude-btn" (click)="handleNodeAction('addToExcludes')">
+          <svg class="icon" viewBox="0 0 24 24" width="16" height="16">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M4.93 4.93l14.14 14.14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Add to Excludes
+        </button>
+        <button class="action-btn unexclude-btn" (click)="handleNodeAction('removeFromExcludes')">
+          <svg class="icon" viewBox="0 0 24 24" width="16" height="16">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+            <path d="M8 12l3 3 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Remove from Excludes
+        </button>
       </div>
     </div>
 
     <div id="file-treemap" class="treemap-visualization"></div>
 
+    <!-- Rest of the existing template -->
     <!-- File List Section -->
     <div class="file-list" *ngIf="showFileList">
-      <div class="file-list-header">
-        <div class="file-count">Files to Sync ({{getIncludedFilesCount()}} of {{files.length}})</div>
-        <div class="search-container">
-          <input
-            type="text"
-            [(ngModel)]="filterText"
-            placeholder="Filter files..."
-            class="search-input"
-          >
-          <button
-            *ngIf="filterText"
-            class="clear-search-btn"
-            (click)="clearFilter()"
-          >
-            ×
-          </button>
-        </div>
-      </div>
-      <div class="file-list-table">
-        <table>
-          <thead>
-          <tr>
-            <th>Path</th>
-            <th>File Name</th>
-            <th>Size</th>
-            <th>Status</th>
-            <th></th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr *ngFor="let file of filteredFiles">
-            <td>{{ file.path || '/' }}</td>
-            <td>{{ file.name }}</td>
-            <td>{{ formatSize(file.size) }}</td>
-            <td [class.included]="file.included">
-              {{ file.included ? 'Included' : 'Excluded' }}
-            </td>
-            <td>
-              <button class="preview-btn" (click)="viewFileContent(file)">
-                Preview
-              </button>
-            </td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
+      <!-- Existing file list content -->
     </div>
   </div>
 

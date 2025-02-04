@@ -1,4 +1,109 @@
-/* Layout */
+.action-bar {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.action-bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.selected-path {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #374151;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.clear-btn {
+  color: #6b7280;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.clear-btn:hover {
+  color: #374151;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: white;
+}
+
+.copy-btn {
+  border-color: #e5e7eb;
+  color: #374151;
+}
+
+.copy-btn:hover {
+  background-color: #f3f4f6;
+}
+
+.include-btn {
+  border-color: #d1fae5;
+  color: #059669;
+}
+
+.include-btn:hover {
+  background-color: #ecfdf5;
+}
+
+.remove-btn {
+  border-color: #fee2e2;
+  color: #dc2626;
+}
+
+.remove-btn:hover {
+  background-color: #fef2f2;
+}
+
+.exclude-btn {
+  border-color: #ffedd5;
+  color: #ea580c;
+}
+
+.exclude-btn:hover {
+  background-color: #fff7ed;
+}
+
+.unexclude-btn {
+  border-color: #dbeafe;
+  color: #2563eb;
+}
+
+.unexclude-btn:hover {
+  background-color: #eff6ff;
+}
+
+
 .treemap-container {
   background-color: white;
   padding: 1.5rem;
