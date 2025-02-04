@@ -1,6 +1,6 @@
-<div class="actions-menu relative inline-block">
+<div class="actions-menu">
   <button
-    (click)="toggleMenu()"
+    (click)="toggleMenu($event)"
     class="actions-button"
   >
     Actions ▼
@@ -10,7 +10,7 @@
     <div class="menu-content">
       <button
         *ngFor="let action of actions"
-        (click)="handleAction(action.id)"
+        (click)="handleAction(action.id, $event)"
         class="menu-item"
       >
         <span class="icon">{{action.icon}}</span>
@@ -21,11 +21,4 @@
       </button>
     </div>
   </div>
-
-  <!-- Overlay to handle clicks outside the menu -->
-  <div
-    *ngIf="isOpen"
-    class="overlay"
-    (click)="closeMenu($event)"
-  ></div>
 </div>

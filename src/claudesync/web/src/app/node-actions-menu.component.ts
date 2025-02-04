@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SelectedNode } from './treemap.types';
 
@@ -61,18 +61,25 @@ export class NodeActionsMenuComponent {
     }
   ];
 
-  toggleMenu(): void {
+  toggleMenu(event: Event): void {
+    event.stopPropagation(); // Stop event from bubbling up
     this.isOpen = !this.isOpen;
   }
 
-  handleAction(actionId: string): void {
+  handleAction(actionId: string, event: Event): void {
+    event.stopPropagation(); // Stop event from bubbling up
     this.actionTriggered.emit(actionId);
     this.isOpen = false;
   }
 
-  closeMenu(event: MouseEvent): void {
-    // Close menu if clicking outside
-    if (!(event.target as HTMLElement).closest('.actions-menu')) {
+  // Listen for clicks on the document
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    // Check if click is outside the menu
+    const target = event.target as HTMLElement;
+    const menuElement = target.closest('.actions-menu');
+
+    if (!menuElement && this.isOpen) {
       this.isOpen = false;
     }
   }
