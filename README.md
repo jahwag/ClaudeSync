@@ -45,7 +45,7 @@ Make sure, that the virtual environment is added to your .gitignore file:
 2. Install ClaudeSync fork with _simulate-push_ feature using pip:
 
 ```bash
-pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.5-py3-none-any.whl   
+pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.6-py3-none-any.whl   
 ```
 
 ## Authentication
