@@ -196,9 +196,20 @@ claudesync push
 2. Push changes frequently to maintain context
 3. If you have a large codebase, break it down into smaller pieces, try not to exceed 30% of the available knowledge capacity of the claude project. If you do, you increase the risk of running into the rate limit and the knowledge will be less effective. In file `.claudesync/example-file-categories.json` you can see an exemplary decomposition of this project into smaller subprojects.
 
-### Upgrade
+### Prompt Templates
 
-#### Unix based
+For effective communication with Claude AI, check out the [Useful Prompts](useful-prompts.md) document. It contains a collection of tested prompt templates for:
+- Assessing context quality
+- Planning implementations
+- Creating documentation
+- Validating changes
+- Summarizing conversations
+
+These templates can significantly improve your productivity when working with Claude AI projects.
+
+## Upgrade to a newer version of ClaudeSync
+
+### Unix based
 
 ```bash
 rm -rf .venv
@@ -207,7 +218,7 @@ source .venv/bin/activate
 pip install <link>
 ```
 
-#### Windows git bash
+### Windows git bash
 
 ```bash
 rm -rf .venv
@@ -223,32 +234,5 @@ pip install <link>
 
 ### Developing claudesync
 
-#### Preparation: Run once
+- Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
 
-```bash
-./build-script.sh
-```
-
-#### Only Backend changed
-
-```bash
-rm -rf dist; \
-export PYTHONUTF8=1; \
-export PYTHONIOENCODING=utf8; \
-python -m build .; \
-pip install -e . ; \
-claudesync simulate-push
-```
-
-
-#### At least Frontend touched
-
-Setting the encoding is needed on Windows. Also, you might need to clear you browser cache.
-
-```bash
-./build-script.sh; \
-export PYTHONUTF8=1; \
-export PYTHONIOENCODING=utf8; \
-pip install -e . ; \
-claudesync simulate-push
-```

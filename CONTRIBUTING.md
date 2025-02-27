@@ -26,6 +26,36 @@ We're excited that you're interested in contributing to ClaudeSync! This documen
    pip install -e .
    ```
 
+## Preparation: Run once
+
+```bash
+./build-script.sh
+```
+
+## Only Backend changed
+
+```bash
+rm -rf dist; \
+export PYTHONUTF8=1; \
+export PYTHONIOENCODING=utf8; \
+python -m build .; \
+pip install -e . ; \
+claudesync simulate-push
+```
+
+
+## At least Frontend touched
+
+Setting the encoding is needed on Windows. Also, you might need to clear you browser cache.
+
+```bash
+./build-script.sh; \
+export PYTHONUTF8=1; \
+export PYTHONIOENCODING=utf8; \
+pip install -e . ; \
+claudesync simulate-push
+```
+
 ## Making Changes
 
 1. Make your changes in your feature branch.
