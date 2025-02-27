@@ -6,11 +6,17 @@ This document provides a collection of effective prompts for working with Claude
 
 These prompts assume, you have a project set up with good context in Claude AI.
 
+## Context Assessment
+
+Use these prompts to evaluate and refine the context that Claude has available:
+
 ### Explain what is in the Context
 ```
 Explain what the code in the context does.
 ```
-Good starting point to figure out if the AI understands what is provided in the project
+**Purpose**: Verifies Claude's understanding of your codebase. Use this as a first step to confirm Claude correctly interprets the code structure and purpose.
+
+**Expected output**: A high-level overview of the main components in the context, their relationships, and primary functionality.
 
 ### Missing Context
 ```
@@ -18,7 +24,11 @@ If you are missing a class that you think is necessary, please tell me.
 
 If you make assumptions about the behavior of code that you don't see, please mention that as well.
 ```
-Let the AI tell you what might be missing in the context.
+**Purpose**: Identifies gaps in the provided context that might impact Claude's ability to give accurate responses.
+
+**Expected output**: A list of classes, functions, or files that Claude believes are referenced but not included in the context, along with any assumptions it's making about their behavior.
+
+**Tip**: Run this prompt before starting complex implementation tasks to avoid building on incomplete information.
 
 ---
 
