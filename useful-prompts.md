@@ -80,24 +80,26 @@ I applied your proposals into the context. Did I apply it correctly?
 
 ---
 
+## Documentation and Summarization
+
+These prompts help with documentation and managing long conversations:
+
 ### Summarize Chat
 ```
 Generate a new prompt, that summarizes the conversation so far, and can be used as a new starting point.
 ```
-This might work if you end up in a long-winded chat and want to start fresh. Not always applicable.
+**Purpose**: Condenses long conversations into a compact form for fresh starts or sharing.
+
+**Expected output**: A comprehensive prompt that captures key points from your conversation, ready to use as a new conversation starter.
+
+**Tip**: This might work if you end up in a long-winded chat and want to start fresh. Not always applicable.
 
 ### Architectural Description
 ```
 Create an architectural description of the `xxx` package in a separate markdown file.
 I am not interested in Key Design Patterns - unless there is a design pattern which play a major role.
 ```
+**Purpose**: Generates documentation that explains the architecture of a specific component.
 
-### Text Continuation
-```
-Continue this text:
-...
-
-It should go in this direction:
-...
-```
+**Expected output**: A structured markdown document describing the architecture, components, interactions, and important design considerations.
 
