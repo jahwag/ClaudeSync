@@ -32,31 +32,51 @@ If you make assumptions about the behavior of code that you don't see, please me
 
 ---
 
+## Implementation Planning
+
+These prompts help with planning and structuring implementation work:
+
 ### Masterplan
 ```
 Problem/Feature description...
 
 Ask me questions that need to be answered before coming up with a master plan of how to implement this.
 ```
-Let the AI ask you questions about how to implement a particular feature. Then the AI generates a specification. Check the generated specification thoroughly, probably you have to do some manual fixes. Then, check-in the specification and put it into the context
+**Purpose**: Facilitates requirements gathering and elicitation through guided questioning.
+
+**Expected output**: A series of clarifying questions about requirements, constraints, and implementation details, followed by a comprehensive implementation plan once you've provided answers.
+
+**Tip**: Be thorough in your answers to Claude's questions, as the quality of the masterplan directly correlates to the completeness of the information provided. Check the generated specification thoroughly, probably you have to do some manual fixes. Then, check-in the specification and put it into the context
 
 ### Implement Masterplan
 ```
 I want to implement what is described in `master-plan.md`. What are next steps in implementing the master plan? Give me a high-level overview first.
 ```
-Ideally, this works idempotently.
+**Purpose**: Breaks down a comprehensive plan into actionable steps, and implement them step-by-step.
+
+**Expected output**: A high-level summary of implementation stages followed by more detailed next steps to begin the implementation process.
+
+**Tip**: This only works if `master-plan.md` is included in your project context.
 
 ### Incremental Changes
 ```
 Keep the existing code intact as much as possible, and only generate modified code.
 ```
-General advice.
+**Purpose**: Ensures Claude recommends targeted changes rather than complete rewrites.
+
+**Expected output**: Code suggestions that respect the existing codebase structure and only modify what's necessary.
+
+**Tip**: Use this as a qualifier alongside other prompts when working with established codebases where minimizing changes is important.
 
 ### Check
 ```
 I applied your proposals into the context. Did I apply it correctly?
 ```
-Run this after applying an increment proposed by the AI and after you push it into the context.
+**Purpose**: Validates that your implementation of Claude's suggestions matches its intent.
+
+**Expected output**: Confirmation of correct application or identification of discrepancies or misunderstandings.
+
+**Tip**: Run this after applying an increment proposed by the AI and after you push it into the context.
 
 ---
 
