@@ -59,6 +59,8 @@ claudesync auth login
 
 Note: The ssh key must sit at the default location `~/.ssh/id_ed25519`.
 
+If you see this error message: `Failed to retrieve organizations. Please enter a valid sessionKey.` have a look here: [ssl-error](known-issue-ssl-error.md)
+
 2. Follow the on-screen instructions:
    - Open Claude.ai in your browser
    - Open Developer Tools (F12 or Ctrl+Shift+I)
