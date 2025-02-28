@@ -160,6 +160,50 @@ Before pushing for the first time make use of the _simulate-push_ feature to see
 ```bash
 claudesync simulate-push
 ```
+### Project Configuration Properties
+
+The `xxx.project.json` file contains several properties that control how files are synchronized with Claude.ai:
+
+- `project_name`: The display name of the project shown in Claude.ai.
+- `project_description`: A brief description of what the project is about.
+- `includes`: An array of file path patterns to include in the synchronization. These can use glob patterns like `*.js` or specify directories like `src/components`.
+- `excludes`: An array of file path patterns to exclude from synchronization. These patterns override matching patterns in the `includes` array.
+- `use_ignore_files`: Boolean value (true/false) that determines whether to use `.gitignore` and `.claudeignore` files for additional exclusion rules.
+- `push_roots`: An array of root directories to start the file search from. This is useful for large repositories where you only want to focus on specific subdirectories. Only files within these directories will be considered for synchronization, regardless of include patterns.
+
+Example configuration:
+```json
+{
+   "project_name": "My API Service",
+   "project_description": "Backend service for user authentication and data management",
+   "includes": [
+      "src/**/*.ts",
+      "config/*.json",
+      "docs/README.md"
+   ],
+   "excludes": [
+      "src/**/*.test.ts",
+      "src/deprecated/**"
+   ],
+   "use_ignore_files": true,
+   "push_roots": [
+      "src",
+      "config",
+      "docs"
+   ]
+}
+```
+
+This configuration will:
+1. Include all TypeScript files in the `src` directory and its subdirectories
+2. Include all JSON files in the `config` directory
+3. Include the README.md file from the `docs` directory
+4. Exclude all test files (ending with `.test.ts`)
+5. Exclude all files in the `src/deprecated` directory
+6. Respect patterns in `.gitignore` and `.claudeignore` files
+7. Only search for files within the `src`, `config`, and `docs` directories
+
+**Important Note**: When using `push_roots`, only files in the specified root directories will be considered for synchronization, even if they match patterns in the `includes` array. Each file must both match an include pattern AND be in one of the push_roots directories to be synchronized.
 
 ## Working with ClaudeSync and Claude.ai
 
