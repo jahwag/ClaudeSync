@@ -1,4 +1,6 @@
-# AI-First Development Guide: Leveraging Claude AI for Efficient Software Development
+# [DEPRECATED] AI-First Development Guide: Leveraging Claude AI for Efficient Software Development
+
+> ⚠️ **DEPRECATED**: This document is no longer maintained and may contain outdated information. Please refer to `useful-prompts.md` and `ai-adoption-masterplan.md` for current guidance on AI-assisted development.
 
 ## Introduction
 
