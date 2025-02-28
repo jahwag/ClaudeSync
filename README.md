@@ -236,6 +236,46 @@ claudesync push
 
 4. Return to your [Claude.ai](https://claude.ai) project in the browser to discuss the implementation and ask for improvements or additional features.
 
+### Creating Projects from Templates
+
+ClaudeSync allows you to create new projects using existing project configurations as templates. This is useful for:
+- Sharing standardized project setups with team members
+- Creating multiple projects with similar synchronization settings
+- Ensuring consistent configurations across related projects
+
+To create a project from a template:
+
+```bash
+claudesync project create --template existing-project-name
+```
+
+Where `existing-project-name` is the internal name of an existing project (without the `.project.json` extension).
+
+This command will:
+1. Copy the synchronization settings (includes/excludes patterns) from the template
+2. Prompt you for a new project name (or use the template's name if not provided)
+3. Create a new project on Claude.ai with these settings
+4. Keep the existing file patterns and configuration
+
+**Example workflow for team collaboration:**
+
+1. Developer A creates an initial project with the right context configuration:
+   ```bash
+   claudesync project create
+   # Configure includes/excludes for the project
+   ```
+
+2. Developer A commits the `.claudesync/project-name.project.json` file to version control
+
+3. Developer B clones the repository and creates their own linked project:
+   ```bash
+   claudesync project create --template project-name
+   ```
+
+4. Developer B now has an identical project configuration but with their own Claude.ai project ID
+
+This allows team members to share the same context definition while maintaining separate Claude.ai projects.
+
 ### Tips for Effective Collaboration
 
 1. Keep conversations focused on specific features or issues
