@@ -1,5 +1,6 @@
 import os
 import hashlib
+import stat
 from functools import wraps
 from pathlib import Path
 
@@ -229,6 +230,11 @@ def get_local_files(config, local_path, category=None, include_submodules=False)
         for filename in filenames:
             rel_path = os.path.join(rel_root, filename)
             full_path = os.path.join(root, filename)
+
+            st = os.lstat(full_path)
+            if not stat.S_ISREG(st.st_mode):
+                logger.debug(f"Skipping special file: {full_path}")
+                continue
 
             if spec.match_file(rel_path) and should_process_file(
                 config, full_path, filename, gitignore, local_path, claudeignore
