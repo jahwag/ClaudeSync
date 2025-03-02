@@ -203,34 +203,39 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             raise ProviderError(error_msg)
 
     def send_message_with_attachment(
-        self, organization_id: str, chat_id: str, prompt: str, file_path: str, timezone: str = "UTC"
+        self, organization_id: str, chat_id: str, prompt: str, file_paths: str | list[str], timezone: str = "UTC"
     ):
         """
-        Upload a file and send a message with the attachment
+        Upload files and send a message with the attachments
         Args:
             organization_id: Organization ID
             chat_id: Chat ID to send message to
             prompt: Message text
-            file_path: Path to file to attach
+            file_paths: Path to file(s) to attach. Can be a single string or list of strings.
             timezone: Optional timezone (default UTC)
         Returns:
             Generator yielding message events
         """
-        # First upload the file
-        attachment = self.upload_attachment(organization_id, file_path)
-        
-        # Get the file UUID
-        file_uuid = attachment.get('file_uuid')
-        if not file_uuid:
-            raise ProviderError("Failed to get file UUID from upload response")
+        # Convert single file path to list
+        if isinstance(file_paths, str):
+            file_paths = [file_paths]
 
-        # Send message with attachment
+        # Upload all files and collect UUIDs
+        file_uuids = []
+        for file_path in file_paths:
+            attachment = self.upload_attachment(organization_id, file_path)
+            file_uuid = attachment.get('file_uuid')
+            if not file_uuid:
+                raise ProviderError(f"Failed to get file UUID from upload response for {file_path}")
+            file_uuids.append(file_uuid)
+
+        # Send message with attachments
         endpoint = f"/organizations/{organization_id}/chat_conversations/{chat_id}/completion"
         data = {
             "prompt": prompt,
             "timezone": timezone,
             "attachments": [],
-            "files": [file_uuid]
+            "files": file_uuids
         }
 
         response = self._make_request_stream("POST", endpoint, data)
