@@ -143,9 +143,11 @@ def confirm_and_delete_chat(provider, organization_id, chat):
 @chat.command()
 @click.option("--name", default="", help="Name of the chat conversation")
 @click.option("--project", help="UUID of the project to associate the chat with")
+@click.option("--thinking/--no-thinking", default=False,
+              help="Enable/disable thinking mode (extended processing for more thorough responses)")
 @click.pass_obj
 @handle_errors
-def init(config, name, project):
+def init(config, name, project, thinking):
     """Initializes a new chat conversation on the active provider."""
     provider = validate_and_get_provider(config)
     organization_id = config.get("active_organization_id")
@@ -170,7 +172,7 @@ def init(config, name, project):
 
     try:
         new_chat = provider.create_chat(
-            organization_id, chat_name=name, project_uuid=project
+            organization_id, chat_name=name, project_uuid=project, is_thinking=thinking
         )
         click.echo(f"Created new chat conversation: {new_chat['uuid']}")
         if name:
@@ -191,9 +193,11 @@ def init(config, name, project):
     + "- claude-3-opus-20240229\n"
     + "Or any custom model string. If not specified, uses the default model.",
 )
+@click.option("--thinking/--no-thinking", default=False,
+              help="Enable/disable thinking mode (extended processing for more thorough responses)")
 @click.pass_obj
 @handle_errors
-def message(config, message, chat, timezone, model):
+def message(config, message, chat, timezone, model, thinking):
     """Send a message to a specified chat or create a new chat and send the message."""
     provider = validate_and_get_provider(config, require_project=True)
     active_organization_id = config.get("active_organization_id")
@@ -211,6 +215,7 @@ def message(config, message, chat, timezone, model):
             active_organization_id,
             provider,
             model,
+            thinking,
         )
         if chat is None:
             return
@@ -244,6 +249,7 @@ def create_chat(
     active_organization_id,
     provider,
     model,
+    thinking=False,
 ):
     if not chat:
         if not active_project_name:
@@ -259,7 +265,8 @@ def create_chat(
 
         # Create a new chat with the selected project
         new_chat = provider.create_chat(
-            active_organization_id, project_uuid=active_project_id, model=model
+            active_organization_id, project_uuid=active_project_id, model=model,
+            is_thinking=thinking
         )
         chat = new_chat["uuid"]
         click.echo(f"New chat created with ID: {chat}")
