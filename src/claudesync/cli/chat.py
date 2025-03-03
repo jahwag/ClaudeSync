@@ -1,12 +1,63 @@
 import os
-
 import click
 import logging
 from ..exceptions import ProviderError
 from ..utils import handle_errors, validate_and_get_provider
 from ..chat_sync import sync_chats
 
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB per file
+MAX_TOTAL_SIZE = 25 * 1024 * 1024  # 25MB total
+from ..chat_sync import sync_chats
+
 logger = logging.getLogger(__name__)
+
+
+def validate_attachments(attachments):
+    """Validate attachment files before upload.
+    
+    Args:
+        attachments: Tuple of file paths to validate
+        
+    Raises:
+        click.BadParameter: If any validation checks fail
+    """
+    if not attachments:
+        return
+
+    total_size = 0
+    for file_path in attachments:
+        if not os.path.exists(file_path):
+            raise click.BadParameter(f"File not found: {file_path}")
+            
+        size = os.path.getsize(file_path)
+        if size > MAX_FILE_SIZE:
+            raise click.BadParameter(
+                f"File too large: {file_path} ({size/1024/1024:.1f}MB > {MAX_FILE_SIZE/1024/1024:.0f}MB)"
+            )
+            
+        total_size += size
+        if total_size > MAX_TOTAL_SIZE:
+            raise click.BadParameter(
+                f"Total attachment size exceeds {MAX_TOTAL_SIZE/1024/1024:.0f}MB limit"
+            )
+
+
+def handle_message_event(event):
+    """Handle events from both regular and attachment messages.
+    
+    Args:
+        event: Event dictionary from provider
+    """
+    if "completion" in event:
+        click.echo(event["completion"], nl=False)
+    elif "content" in event:
+        click.echo(event["content"], nl=False)
+    elif "error" in event:
+        click.echo(f"\nError: {event['error']}")
+    elif "message_limit" in event:
+        click.echo(
+            f"\nRemaining messages: {event['message_limit']['remaining']}"
+        )
 
 
 @click.group()
@@ -187,6 +238,12 @@ def init(config, name, project, thinking):
 @click.option("--chat", help="UUID of the chat to send the message to")
 @click.option("--timezone", default="UTC", help="Timezone for the message")
 @click.option(
+    "--attachments", "-a",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    multiple=True,
+    help="File attachments to include with the message (can be specified multiple times)"
+)
+@click.option(
     "--model",
     help="Model to use for the conversation. Available options:\n"
     + "- claude-3-5-haiku-20241022\n"
@@ -194,19 +251,37 @@ def init(config, name, project, thinking):
     + "Or any custom model string. If not specified, uses the default model.",
 )
 @click.option("--thinking/--no-thinking", default=False,
-              help="Enable/disable thinking mode (extended processing for more thorough responses)")
+               help="Enable/disable thinking mode (extended processing for more thorough responses)")
 @click.pass_obj
 @handle_errors
-def message(config, message, chat, timezone, model, thinking):
-    """Send a message to a specified chat or create a new chat and send the message."""
-    provider = validate_and_get_provider(config, require_project=True)
-    active_organization_id = config.get("active_organization_id")
-    active_project_id = config.get("active_project_id")
-    active_project_name = config.get("active_project_name")
-
-    message = " ".join(message)  # Join all message parts into a single string
-
+def message(config, message, chat, timezone, model, thinking, attachments):
+    """Send a message with optional file attachments to a chat.
+    
+    MESSAGE is the text to send. Use --attachments/-a to include files.
+    
+    Examples:
+        claudesync message "Check this out" -a document.pdf
+        claudesync message "Multiple files" -a file1.txt -a file2.jpg
+        claudesync message "With model" -a data.csv --model claude-3-opus
+    
+    File Limitations:
+        - Maximum file size: 10MB per file
+        - Maximum total size: 25MB
+        - Supported formats: Most common document, image, and data formats
+    """
     try:
+        # Validate attachments if present
+        if attachments:
+            validate_attachments(attachments)
+            
+        provider = validate_and_get_provider(config, require_project=True)
+        active_organization_id = config.get("active_organization_id")
+        active_project_id = config.get("active_project_id")
+        active_project_name = config.get("active_project_name")
+
+        message = " ".join(message)  # Join all message parts into a single string
+
+        # Create or get chat
         chat = create_chat(
             config,
             active_project_id,
@@ -220,23 +295,40 @@ def message(config, message, chat, timezone, model, thinking):
         if chat is None:
             return
 
-        # Send message and process the streaming response
-        for event in provider.send_message(
-            active_organization_id, chat, message, timezone, model
-        ):
-            if "completion" in event:
-                click.echo(event["completion"], nl=False)
-            elif "content" in event:
-                click.echo(event["content"], nl=False)
-            elif "error" in event:
-                click.echo(f"\nError: {event['error']}")
-            elif "message_limit" in event:
-                click.echo(
-                    f"\nRemaining messages: {event['message_limit']['remaining']}"
-                )
+        # Send message based on whether attachments are present
+        if attachments:
+            # Send message with attachments
+            for event in provider.send_message_with_attachment(
+                active_organization_id,
+                chat,
+                message,
+                list(attachments),
+                timezone
+            ):
+                handle_message_event(event)
+        else:
+            # Send regular message
+            for event in provider.send_message(
+                active_organization_id,
+                chat,
+                message,
+                timezone,
+                model
+            ):
+                handle_message_event(event)
 
         click.echo()  # Print a newline at the end of the response
 
+    except click.BadParameter as e:
+        # File validation errors
+        click.echo(f"Error with attachments: {str(e)}")
+    except ProviderError as e:
+        if "file type not supported" in str(e).lower():
+            click.echo("Error: Unsupported file type")
+        elif "file too large" in str(e).lower():
+            click.echo("Error: File size exceeds provider limits")
+        else:
+            click.echo(f"Provider error: {str(e)}")
     except Exception as e:
         click.echo(f"Failed to send message: {str(e)}")
 
