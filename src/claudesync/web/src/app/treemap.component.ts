@@ -25,16 +25,13 @@ export class TreemapComponent implements OnDestroy {
     if (data) {
       this.originalTreeData = data.treemap;
       this.updateTreemap();
-      const plotlyData = this.flattenTree(data.treemap);
-      this.renderTreemap(plotlyData);
-      this.updateFilesList(data.treemap);
     }
   }
 
   @Output() reloadRequired = new EventEmitter<void>();
 
   selectedNode: SelectedNode | null = null;
-  showOnlyIncluded = false;
+  showOnlyIncluded = true;
   isLoading = false;
   showFileList = false
   private destroy$ = new Subject<void>();
