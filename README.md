@@ -38,8 +38,7 @@ source .venv/bin/activate
 
 Make sure, that the virtual environment is _gitignored_ by adding a `.gitignore` into the `.venv` directory:
 ```
-# .gitignore in .venv
-*
+echo "*" > .venv/.gitignore
 ```
 
 2. Install ClaudeSync fork with _simulate-push_ feature using pip:
