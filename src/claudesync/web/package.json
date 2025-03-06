@@ -18,6 +18,9 @@
     "@angular/platform-browser": "16.1.6",
     "@angular/platform-browser-dynamic": "16.1.6",
     "@angular/router": "16.1.6",
+    "@monaco-editor/react": "^4.7.0",
+    "monaco-editor": "^0.41.0",
+    "ngx-monaco-editor-v2": "^16.0.1",
     "rxjs": "6.6.7",
     "tslib": "2.3.1",
     "zone.js": "0.13.1"

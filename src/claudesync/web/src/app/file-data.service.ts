@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, tap } from 'rxjs/operators';
-import {Project} from './project-dropdown.component';
+import { Project } from './project-dropdown.component';
 
 export interface SyncStats {
   filesToSync: number;
@@ -111,11 +111,33 @@ export class FileDataService {
     );
   }
 
-  updateConfig(config: { action: string, pattern: string }): Observable<any> {
-    return this.http.post(`${this.baseUrl}/update-config`, config);
+  updateConfigIncrementally(config: { action: string, pattern: string }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/update-config-incrementally`, config);
   }
 
   push(): Observable<any> {
     return this.http.post(`${this.baseUrl}/push`, {});
+  }
+
+  /**
+   * Saves project configuration changes to the backend
+   * @param content The updated project configuration JSON string
+   * @returns Observable of the API response
+   */
+  saveProjectConfig(content: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/replace-project-config`, { content }).pipe(
+      tap(() => this.clearCache()) // Clear cache when config changes
+    );
+  }
+
+  /**
+   * Saves .claudeignore changes to the backend
+   * @param content The updated .claudeignore content
+   * @returns Observable of the API response
+   */
+  saveClaudeIgnore(content: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/save-claudeignore`, { content }).pipe(
+      tap(() => this.clearCache()) // Clear cache when config changes
+    );
   }
 }

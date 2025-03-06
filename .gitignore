@@ -182,6 +182,7 @@ myenv/
 src/.claudesync
 
 src/web-src-copy
+out/
 
 .DS_Store
 **/.DS_Store

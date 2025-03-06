@@ -78,10 +78,6 @@ clean_builds() {
     fi
 
     # Clean Python builds
-    if [ -d "dist" ]; then
-        rm -rf dist
-        log_info "Cleaned Python dist directory"
-    fi
     if [ -d "build" ]; then
         rm -rf build
         log_info "Cleaned Python build directory"
@@ -146,10 +142,10 @@ build_python() {
 
     # Install build dependencies
     log_info "Installing build dependencies..."
-    pip3 install --upgrade pip || {
-        log_error "Failed to upgrade pip"
-        exit 1
-    }
+    #pip3 install --upgrade pip || {
+    #    log_error "Failed to upgrade pip"
+    #    exit 1
+    #}
     pip3 install build wheel || {
         log_error "Failed to install build dependencies"
         exit 1

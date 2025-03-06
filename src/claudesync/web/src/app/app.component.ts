@@ -7,12 +7,20 @@ import {finalize} from 'rxjs/operators';
 import {Project, ProjectDropdownComponent} from './project-dropdown.component';
 import {NotificationService} from './notification.service'
 import {ToastNotificationsComponent} from './toast-notifications.component';
+import { EditableConfigComponent } from './editable-config.component';
 
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, HttpClientModule, TreemapComponent, ProjectDropdownComponent, ToastNotificationsComponent],
+  imports: [
+    CommonModule,
+    HttpClientModule,
+    TreemapComponent,
+    ProjectDropdownComponent,
+    ToastNotificationsComponent,
+    EditableConfigComponent
+  ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
   providers: [FileDataService]
@@ -122,25 +130,39 @@ export class AppComponent implements OnInit {
   }
 
   reload() {
-    this.isLoading = true;
+    // Only set isLoading to true if it wasn't already true
+    const wasLoading = this.isLoading;
+    if (!wasLoading) {
+      this.isLoading = true;
+    }
+
     this.fileDataService.refreshCache()
       .subscribe({
         next: (data) => {
-          this.syncData = data;
+          // Create a new object reference to trigger change detection
+          this.syncData = {...data};  // Use spread to create a new reference
           this.projectConfig = data.project;
           this.claudeignore = data.claudeignore;
           this.stats = data.stats;
-          this.isLoading = false;
+
+          // Only set isLoading to false if we were the ones who set it to true
+          if (!wasLoading) {
+            this.isLoading = false;
+          }
         },
         error: (error) => {
           console.error('Error loading data:', error);
-          this.isLoading = false;
+          if (!wasLoading) {
+            this.isLoading = false;
+          }
         }
       });
   }
 
-  getProjectConfigAsJson() {
-    return this.projectConfig ? JSON.stringify(this.projectConfig, null, 2) : '';
+  getProjectConfigAsJson(): string {
+    return this.projectConfig
+      ? JSON.stringify(this.projectConfig, null, 2)
+      : '{}';
   }
 
   push() {
@@ -162,6 +184,71 @@ export class AppComponent implements OnInit {
           const errorMessage = error.error?.message || 'Failed to push files. Please try again.';
           this.notificationService.error(errorMessage);
           console.error('Error pushing to backend:', error);
+        }
+      });
+  }
+
+  saveProjectConfig(newContent: string) {
+    console.debug('Saving project config', newContent.substring(0, 100) + '...');
+
+    this.isLoading = true;
+    this.fileDataService.saveProjectConfig(newContent)
+      .pipe(finalize(() => this.isLoading = false))
+      .subscribe({
+        next: () => {
+          // Update the local project config
+          try {
+            this.projectConfig = JSON.parse(newContent);
+            this.notificationService.success('Project configuration updated successfully');
+            // Trigger a reload to refresh the view
+            this.reload();
+
+            // Additional line to ensure treemap gets refreshed
+            if (this.treemapComponent) {
+              setTimeout(() => this.treemapComponent.updateTreemap(), 100);
+            }
+          } catch (error) {
+            this.notificationService.error('Error parsing updated configuration');
+            console.error('JSON parse error:', error);
+          }
+        },
+        error: (error) => {
+          // More specific error messages based on status codes
+          if (error.status === 400) {
+            this.notificationService.error(error.error?.error || 'Invalid configuration format');
+          } else if (error.status === 403) {
+            this.notificationService.error('Permission denied when saving configuration');
+          } else {
+            this.notificationService.error('Failed to save project configuration');
+          }
+          console.error('Configuration save error:', error);
+        }
+      });
+  }
+
+  saveClaudeIgnore(newContent: string) {
+    console.debug('Saving project config', newContent.substring(0, 100) + '...');
+
+    this.isLoading = true;
+    this.fileDataService.saveClaudeIgnore(newContent)
+      .pipe(finalize(() => this.isLoading = false))
+      .subscribe({
+        next: () => {
+          this.claudeignore = newContent;
+          this.notificationService.success('.claudeignore updated successfully');
+          // Trigger a reload to refresh the view
+          this.reload();
+        },
+        error: (error) => {
+          // More specific error messages based on status codes
+          if (error.status === 400) {
+            this.notificationService.error(error.error?.error || 'Invalid .claudeignore format');
+          } else if (error.status === 403) {
+            this.notificationService.error('Permission denied when saving .claudeignore');
+          } else {
+            this.notificationService.error('Failed to save .claudeignore');
+          }
+          console.error('Claudeignore save error:', error);
         }
       });
   }

@@ -16,13 +16,14 @@ declare const Plotly: any;
 @Component({
   selector: 'app-treemap',
   standalone: true,
-  imports: [CommonModule, FormsModule, FilePreviewComponent, ModalComponent, NodeActionsMenuComponent],
+  imports: [CommonModule, FormsModule, FilePreviewComponent, ModalComponent],
   templateUrl: './treemap.component.html',
   styleUrls: ['./treemap.component.css']
 })
 export class TreemapComponent implements OnDestroy {
   @Input() set syncData(data: SyncData | null) {
     if (data) {
+      console.debug('TreemapComponent received new syncData');
       this.originalTreeData = data.treemap;
       this.updateTreemap();
     }
@@ -92,7 +93,7 @@ export class TreemapComponent implements OnDestroy {
     };
   }
 
-  private updateTreemap() {
+  public updateTreemap() {
     if (!this.originalTreeData) return;
 
     const filteredData = this.filterTree(this.originalTreeData);
@@ -514,28 +515,28 @@ Status: %{customdata.included}<br>
         break;
 
       case 'addToIncludes':
-        this.updateConfig({
+        this.updateConfigIncrementally({
           action: 'addInclude',
           pattern: path
         });
         break;
 
       case 'removeFromIncludes':
-        this.updateConfig({
+        this.updateConfigIncrementally({
           action: 'removeInclude',
           pattern: path
         });
         break;
 
       case 'addToExcludes':
-        this.updateConfig({
+        this.updateConfigIncrementally({
           action: 'addExclude',
           pattern: path
         });
         break;
 
       case 'removeFromExcludes':
-        this.updateConfig({
+        this.updateConfigIncrementally({
           action: 'removeExclude',
           pattern: path
         });
@@ -547,8 +548,8 @@ Status: %{customdata.included}<br>
     }
   }
 
-  private updateConfig(config: { action: string, pattern: string }) {
-    this.fileDataService.updateConfig(config)
+  private updateConfigIncrementally(config: { action: string, pattern: string }) {
+    this.fileDataService.updateConfigIncrementally(config)
       .subscribe({
         next: (response) => {
           // Instead of refreshing cache here, emit up to parent

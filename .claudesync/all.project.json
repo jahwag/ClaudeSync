@@ -1,12 +1,14 @@
 {
-  "project_name": "ClaudeSync - All",
+  "project_name": "ClaudeSync-all",
+  "project_description": "All files of the Claudesync project",
   "includes": [
-    "src/claudesync/cli/simulate.py",
-    "src/claudesync/web/package.json",
-    "src/claudesync/web/angular.json",
-    "src/claudesync/web/tsconfig.json",
-    "src/claudesync/web/src/**",
-    "*.py",
-    "*.md"
-  ]
+    "**"
+  ],
+  "excludes": [
+    "src/claudesync/web/dist",
+    "tests",
+    "deprecated"
+  ],
+  "use_ignore_files": true,
+  "push_roots": []
 }

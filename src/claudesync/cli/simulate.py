@@ -290,7 +290,7 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
             return
 
-        if parsed_path.path == '/api/update-config':
+        if parsed_path.path == '/api/update-config-incrementally':
             try:
                 content_length = int(self.headers.get('Content-Length', 0))
                 if content_length == 0:
@@ -302,25 +302,43 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
                 except json.JSONDecodeError as e:
                     return self._send_error_response(400, f"Invalid JSON in request body: {str(e)}")
 
-                return self._handle_update_config(data)
+                return self._handle_incremental_config_update(data)
             except Exception as e:
                 logger.error(f"Error processing update config request: {str(e)}\n{traceback.format_exc()}")
                 return self._send_error_response(500, f"Internal server error: {str(e)}")
 
-        if parsed_path.path == '/api/push':
-            return self._handle_push()
+        if parsed_path.path == '/api/replace-project-config':
+            return self._handle_full_config_replacement()
+
+        if parsed_path.path == '/api/save-claudeignore':
+            return self._handle_save_claudeignore()
 
         # Handle other POST requests (if any)
         self._send_error_response(404, "Not Found")
 
-    def _handle_update_config(self, data):
-        """Handle POST request to update project configuration.
+    def _handle_incremental_config_update(self, data):
+        """
+        Perform surgical, incremental updates to the project configuration.
 
-        Supports operations:
-        - addInclude: Add a pattern to includes
-        - removeInclude: Remove a pattern from includes
-        - addExclude: Add a pattern to excludes
-        - removeExclude: Remove a pattern from excludes
+        This method allows targeted modifications to specific configuration lists
+        (like includes/excludes) without replacing the entire configuration. It's
+        designed for quick, precise adjustments to the project's synchronization settings.
+
+        Update actions include:
+        - Adding a pattern to includes
+        - Removing a pattern from excludes
+        - Dynamically modifying configuration in a granular manner
+
+        Args:
+            data (dict): A dictionary containing:
+                - 'action': The type of update (e.g., 'addInclude', 'removeExclude')
+                - 'pattern': The specific pattern to add or remove
+
+        Returns:
+            dict: A response indicating the result of the configuration update
+
+        Raises:
+            ValueError: If the update action is invalid or cannot be performed
         """
         try:
             # Validate request data
@@ -414,6 +432,117 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
         except Exception as e:
             logger.error(f"Error updating config: {str(e)}\n{traceback.format_exc()}")
+            return self._send_error_response(500, f"Internal server error: {str(e)}")
+
+    def _handle_full_config_replacement(self):
+        """
+        Handle replacing the entire project configuration with a new one.
+        """
+        try:
+            # Read the request body
+            content_length = int(self.headers.get('Content-Length', 0))
+            if content_length == 0:
+                return self._send_error_response(400, "Request body is required")
+
+            request_body = self.rfile.read(content_length)
+            try:
+                data = json.loads(request_body)
+                content = data.get('content')
+
+                if not content:
+                    return self._send_error_response(400, "No configuration content provided")
+
+                # Validate JSON
+                try:
+                    json_config = json.loads(content)
+
+                    # Additional validation - check for required fields
+                    required_fields = ['project_name', 'includes', 'excludes']
+                    for field in required_fields:
+                        if field not in json_config:
+                            return self._send_error_response(400, f"Missing required field: {field}")
+
+                except json.JSONDecodeError as e:
+                    return self._send_error_response(400, f"Invalid JSON configuration: {str(e)}")
+
+                # Get active project
+                active_project_path, _ = self.config.get_active_project()
+                if not active_project_path:
+                    return self._send_error_response(400, "No active project found")
+
+                # Determine the project config file path
+                project_config_path = self.config.config_dir / f"{active_project_path}.project.json"
+
+                # Write the updated configuration
+                with open(project_config_path, 'w') as f:
+                    f.write(content)
+
+                # Send success response
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'success': True,
+                    'message': 'Project configuration updated successfully'
+                }).encode())
+
+                logger.debug(f"Updated project configuration for {active_project_path}")
+
+            except json.JSONDecodeError as e:
+                return self._send_error_response(400, f"Invalid request body: {str(e)}")
+
+        except Exception as e:
+            logger.error(f"Error saving project configuration: {str(e)}\n{traceback.format_exc()}")
+            return self._send_error_response(500, f"Internal server error: {str(e)}")
+
+
+    def _handle_save_claudeignore(self):
+        """
+        Handle saving updated .claudeignore content.
+        """
+        try:
+            # Read the request body
+            content_length = int(self.headers.get('Content-Length', 0))
+            if content_length == 0:
+                return self._send_error_response(400, "Request body is required")
+
+            request_body = self.rfile.read(content_length)
+            try:
+                data = json.loads(request_body)
+                content = data.get('content')
+
+                if content is None:
+                    return self._send_error_response(400, "No .claudeignore content provided")
+
+                # Get project root
+                project_root = self.config.get_project_root()
+                if not project_root:
+                    return self._send_error_response(500, "Could not determine project root")
+
+                claudeignore_path = Path(project_root) / '.claudeignore'
+
+                # Write the updated .claudeignore
+                with open(claudeignore_path, 'w') as f:
+                    f.write(content)
+
+                # Send success response
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'success': True,
+                    'message': '.claudeignore updated successfully'
+                }).encode())
+
+                logger.debug(f"Updated .claudeignore at {claudeignore_path}")
+
+            except json.JSONDecodeError as e:
+                return self._send_error_response(400, f"Invalid request body: {str(e)}")
+
+        except Exception as e:
+            logger.error(f"Error saving .claudeignore: {str(e)}\n{traceback.format_exc()}")
             return self._send_error_response(500, f"Internal server error: {str(e)}")
 
     def _send_error_response(self, status_code: int, message: str):

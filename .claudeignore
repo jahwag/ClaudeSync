@@ -3,11 +3,13 @@ node_modules/
 .venv-sync/
 .angular/
 .git/
+.github/
 .idea/
 .vscode/
 *.zip
 pkg/
 tables*.mmd
+out/
 
 # Only frontend - ignore all python files
 util.py
