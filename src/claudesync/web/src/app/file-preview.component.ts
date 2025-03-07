@@ -11,5 +11,4 @@ import { CommonModule } from '@angular/common';
 export class FilePreviewComponent {
   @Input() content: string | null = null;
   @Input() error: string | null = null;
-  @Input() isLoading = false;
 }

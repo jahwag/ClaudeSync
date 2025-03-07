@@ -33,7 +33,6 @@ export class TreemapComponent implements OnDestroy {
 
   selectedNode: SelectedNode | null = null;
   showOnlyIncluded = true;
-  isLoading = false;
   showFileList = false
   private destroy$ = new Subject<void>();
   private baseUrl = 'http://localhost:4201/api';
@@ -41,7 +40,6 @@ export class TreemapComponent implements OnDestroy {
   selectedFile: FileInfo | null = null;
   fileContent: string | null = null;
   fileContentError: string | null = null;
-  isLoadingContent = false;
 
   private originalTreeData: any = null;
 
@@ -468,7 +466,6 @@ Status: %{customdata.included}<br>
   }
 
   viewFileContent(file: FileInfo) {
-    this.isLoadingContent = true;
     this.selectedFile = file;
     this.fileContent = null;
     this.fileContentError = null;
@@ -483,12 +480,10 @@ Status: %{customdata.included}<br>
           } else {
             this.fileContent = response.content;
           }
-          this.isLoadingContent = false;
         },
         error: (error) => {
           console.error('Error loading file content:', error);
           this.fileContentError = 'Failed to load file content';
-          this.isLoadingContent = false;
         }
       });
   }

@@ -28,7 +28,6 @@ import { EditableConfigComponent } from './editable-config.component';
 export class AppComponent implements OnInit {
   configVisible = false;
   claudeignore = '';
-  isLoading = false;
   stats: SyncStats = {
     filesToSync: 0,
     totalSize: '0 B'
@@ -52,9 +51,7 @@ export class AppComponent implements OnInit {
   }
 
   loadProjects() {
-    this.isLoading = true;
     this.fileDataService.getProjects()
-      .pipe(finalize(() => this.isLoading = false))
       .subscribe({
         next: (response: any) => {
           this.projects = response.projects.sort((a: any, b: any) => a.path.localeCompare(b.path));
@@ -77,7 +74,6 @@ export class AppComponent implements OnInit {
 
   onProjectChange(projectPath: string) {
     this.selectedProject = projectPath;
-    this.isLoading = true;
 
     this.setSelectedProjectUrl();
 
@@ -92,7 +88,6 @@ export class AppComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error setting active project:', error);
-          this.isLoading = false;
         }
       });
   }
@@ -108,7 +103,6 @@ export class AppComponent implements OnInit {
   }
 
   loadData() {
-    this.isLoading = true;
     this.fileDataService.getSyncData()
       .subscribe({
         next: (data) => {
@@ -116,11 +110,9 @@ export class AppComponent implements OnInit {
           this.projectConfig = data.project;
           this.claudeignore = data.claudeignore;
           this.stats = data.stats;
-          this.isLoading = false;
         },
         error: (error) => {
           console.error('Error loading data:', error);
-          this.isLoading = false;
         }
       });
   }
@@ -130,12 +122,6 @@ export class AppComponent implements OnInit {
   }
 
   reload() {
-    // Only set isLoading to true if it wasn't already true
-    const wasLoading = this.isLoading;
-    if (!wasLoading) {
-      this.isLoading = true;
-    }
-
     this.fileDataService.refreshCache()
       .subscribe({
         next: (data) => {
@@ -144,17 +130,9 @@ export class AppComponent implements OnInit {
           this.projectConfig = data.project;
           this.claudeignore = data.claudeignore;
           this.stats = data.stats;
-
-          // Only set isLoading to false if we were the ones who set it to true
-          if (!wasLoading) {
-            this.isLoading = false;
-          }
         },
         error: (error) => {
           console.error('Error loading data:', error);
-          if (!wasLoading) {
-            this.isLoading = false;
-          }
         }
       });
   }
@@ -166,9 +144,7 @@ export class AppComponent implements OnInit {
   }
 
   push() {
-    this.isLoading = true;
     this.fileDataService.push()
-      .pipe(finalize(() => this.isLoading = false))
       .subscribe({
         next: (response) => {
           // Show success notification with the response message
@@ -191,9 +167,7 @@ export class AppComponent implements OnInit {
   saveProjectConfig(newContent: string) {
     console.debug('Saving project config', newContent.substring(0, 100) + '...');
 
-    this.isLoading = true;
     this.fileDataService.saveProjectConfig(newContent)
-      .pipe(finalize(() => this.isLoading = false))
       .subscribe({
         next: () => {
           // Update the local project config
@@ -229,9 +203,7 @@ export class AppComponent implements OnInit {
   saveClaudeIgnore(newContent: string) {
     console.debug('Saving project config', newContent.substring(0, 100) + '...');
 
-    this.isLoading = true;
     this.fileDataService.saveClaudeIgnore(newContent)
-      .pipe(finalize(() => this.isLoading = false))
       .subscribe({
         next: () => {
           this.claudeignore = newContent;
