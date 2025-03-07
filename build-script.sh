@@ -158,6 +158,20 @@ build_python() {
         exit 1
     }
 
+    # Create a copy of the newest wheel with a static name
+    log_info "Creating static named copy of the latest wheel..."
+    latest_wheel=$(ls -t dist/*.whl | head -1)
+    if [ -n "$latest_wheel" ]; then
+        cp "$latest_wheel" "dist/claudesync_fork-latest-py3-none-any.whl" || {
+            log_error "Failed to create static named wheel file"
+            exit 1
+        }
+        log_info "Created static named wheel file: dist/claudesync_fork-latest-py3-none-any.whl (from $latest_wheel)"
+    else
+        log_error "No wheel file found in dist directory"
+        exit 1
+    fi
+
     # Deactivate virtual environment (if we're in one)
     if [ -n "$VIRTUAL_ENV" ]; then
         # Some shells might not have deactivate function
