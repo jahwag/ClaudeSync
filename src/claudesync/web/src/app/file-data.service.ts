@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { map, tap } from 'rxjs/operators';
-import { Project } from './project-dropdown.component';
+import {Injectable} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {Observable, of} from 'rxjs';
+import {map, tap} from 'rxjs/operators';
+import {Project} from './project-dropdown.component';
+import {LoadingService} from './loading.service';
 
 export interface SyncStats {
   filesToSync: number;
@@ -42,15 +43,16 @@ export class FileDataService {
   private baseUrl = 'http://localhost:4201/api';
   private cachedData: SyncData | null = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private loadingService: LoadingService) {}
 
   private getSyncDataFromApi(): Observable<SyncData> {
-    return this.http.get<SyncData>(`${this.baseUrl}/sync-data`).pipe(
-      tap(data => {
-        this.cachedData = data;
-        console.debug('Cached sync data updated');
-      })
-    );
+    return this.loadingService.withLoading(
+      this.http.get<SyncData>(`${this.baseUrl}/sync-data`).pipe(
+        tap(data => {
+          this.cachedData = data;
+          console.debug('Cached sync data updated');
+        })
+      ));
   }
 
   getSyncData(): Observable<SyncData> {
@@ -94,29 +96,38 @@ export class FileDataService {
     console.debug('Cache cleared');
   }
 
-  // File content is not cached as it's requested on-demand
   getFileContent(filePath: string): Observable<FileContentResponse> {
-    return this.http.get<FileContentResponse>(`${this.baseUrl}/file-content`, {
-      params: { path: filePath }
-    });
+    return this.loadingService.withLoading(
+      this.http.get<FileContentResponse>(`${this.baseUrl}/file-content`, {
+        params: { path: filePath }
+      })
+    );
   }
 
   getProjects(): Observable<Project[]> {
-    return this.http.get<Project[]>(`${this.baseUrl}/projects`);
+    return this.loadingService.withLoading(
+      this.http.get<Project[]>(`${this.baseUrl}/projects`)
+    );
   }
 
   setActiveProject(projectPath: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/set-active-project`, { path: projectPath }).pipe(
-      tap(() => this.clearCache()) // Clear cache when project changes
+    return this.loadingService.withLoading(
+      this.http.post(`${this.baseUrl}/set-active-project`, { path: projectPath }).pipe(
+        tap(() => this.clearCache())
+      )
     );
   }
 
   updateConfigIncrementally(config: { action: string, pattern: string }): Observable<any> {
-    return this.http.post(`${this.baseUrl}/update-config-incrementally`, config);
+    return this.loadingService.withLoading(
+      this.http.post(`${this.baseUrl}/update-config-incrementally`, config)
+    );
   }
 
   push(): Observable<any> {
-    return this.http.post(`${this.baseUrl}/push`, {});
+    return this.loadingService.withLoading(
+      this.http.post(`${this.baseUrl}/push`, {})
+    );
   }
 
   /**
@@ -125,8 +136,10 @@ export class FileDataService {
    * @returns Observable of the API response
    */
   saveProjectConfig(content: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/replace-project-config`, { content }).pipe(
-      tap(() => this.clearCache()) // Clear cache when config changes
+    return this.loadingService.withLoading(
+      this.http.post(`${this.baseUrl}/replace-project-config`, { content }).pipe(
+        tap(() => this.clearCache())
+      )
     );
   }
 
@@ -136,8 +149,10 @@ export class FileDataService {
    * @returns Observable of the API response
    */
   saveClaudeIgnore(content: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/save-claudeignore`, { content }).pipe(
-      tap(() => this.clearCache()) // Clear cache when config changes
+    return this.loadingService.withLoading(
+      this.http.post(`${this.baseUrl}/save-claudeignore`, { content }).pipe(
+        tap(() => this.clearCache())
+      )
     );
   }
 }

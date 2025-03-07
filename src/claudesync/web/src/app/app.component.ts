@@ -3,11 +3,12 @@ import {CommonModule} from '@angular/common';
 import {HttpClientModule} from '@angular/common/http';
 import {FileDataService, ProjectConfig, SyncData, SyncStats} from './file-data.service';
 import {TreemapComponent} from './treemap.component';
-import {finalize} from 'rxjs/operators';
 import {Project, ProjectDropdownComponent} from './project-dropdown.component';
 import {NotificationService} from './notification.service'
 import {ToastNotificationsComponent} from './toast-notifications.component';
-import { EditableConfigComponent } from './editable-config.component';
+import {EditableConfigComponent} from './editable-config.component';
+import {GlobalLoadingComponent} from './global-loading.component';
+
 
 
 @Component({
@@ -19,7 +20,8 @@ import { EditableConfigComponent } from './editable-config.component';
     TreemapComponent,
     ProjectDropdownComponent,
     ToastNotificationsComponent,
-    EditableConfigComponent
+    EditableConfigComponent,
+    GlobalLoadingComponent
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],

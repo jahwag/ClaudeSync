@@ -1,10 +1,6 @@
 <div class="file-preview">
-  <div class="loading-spinner" *ngIf="isLoading">
-    <div class="spinner"></div>
-    <p>Loading file content...</p>
-  </div>
   <div class="error-message" *ngIf="error">
     {{error}}
   </div>
-  <pre class="content" *ngIf="content && !isLoading">{{content}}</pre>
+  <pre class="content" *ngIf="content">{{content}}</pre>
 </div>

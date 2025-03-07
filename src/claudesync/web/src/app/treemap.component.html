@@ -1,5 +1,5 @@
 <div class="treemap-container">
-  <div [class.content-blur]="isLoading">
+  <div>
     <!-- Header and treemap content -->
     <div class="header-container">
       <h2>File Distribution</h2>
@@ -88,10 +88,9 @@
     [isOpen]="!!selectedFile"
     [title]="selectedFile ? 'File Preview: ' + selectedFile.name : ''"
     (closeModal)="closeFileContent()">
-    <app-file-preview
+    <app-file-preview>
       [content]="fileContent"
       [error]="fileContentError"
-      [isLoading]="isLoadingContent">
     </app-file-preview>
   </app-modal>
 </div>
