@@ -2,11 +2,11 @@
     position: relative;
     margin-bottom: 1rem;
   }
-  
+
   .code-block-wrapper {
     position: relative;
   }
-  
+
   .code-block {
     cursor: pointer;
     padding: 1rem;
@@ -21,25 +21,11 @@
     word-break: break-word;
     color: #334155;
   }
-  
+
   .editable-indicator:hover {
     background-color: #e2e8f0;
   }
-  
-  .editable-indicator:hover::before {
-    content: "Click to edit";
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    background-color: #4f46e5;
-    color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
-    opacity: 0.9;
-    z-index: 10;
-  }
-  
+
   .edit-button {
     position: absolute;
     top: 0.5rem;
@@ -58,11 +44,11 @@
     transition: opacity 0.2s;
     z-index: 5;
   }
-  
+
   .code-block-wrapper:hover .edit-button {
     opacity: 1;
   }
-  
+
   .edit-button .icon {
     width: 1rem;
     height: 1rem;
@@ -72,25 +58,25 @@
     stroke-linejoin: round;
     fill: none;
   }
-  
+
   .editor-container {
     border: 1px solid #e5e7eb;
     border-radius: 0.375rem;
     overflow: hidden;
   }
-  
+
   .editor-header {
     padding: 0.5rem 1rem;
     background-color: #f8fafc;
     border-bottom: 1px solid #e5e7eb;
   }
-  
+
   .edit-mode-indicator {
     font-size: 0.875rem;
     font-weight: 500;
     color: #4f46e5;
   }
-  
+
   .editor-actions {
     display: flex;
     justify-content: flex-end;
@@ -99,7 +85,7 @@
     background-color: #f8fafc;
     border-top: 1px solid #e5e7eb;
   }
-  
+
   .btn {
     display: inline-flex;
     align-items: center;
@@ -113,31 +99,31 @@
     transition: all 0.2s;
     border: none;
   }
-  
+
   .btn-primary {
     background-color: #4f46e5;
     color: white;
   }
-  
+
   .btn-primary:hover:not(:disabled) {
     background-color: #4338ca;
   }
-  
+
   .btn-primary:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
-  
+
   .btn-secondary {
     background-color: #f1f5f9;
     color: #1e293b;
     border: 1px solid #e2e8f0;
   }
-  
+
   .btn-secondary:hover {
     background-color: #e2e8f0;
   }
-  
+
   .validation-error {
     display: flex;
     align-items: center;
@@ -148,7 +134,7 @@
     background-color: #fef2f2;
     border-top: 1px solid #fee2e2;
   }
-  
+
   .error-icon {
     width: 1rem;
     height: 1rem;
