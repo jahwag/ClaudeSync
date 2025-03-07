@@ -313,6 +313,9 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
         if parsed_path.path == '/api/save-claudeignore':
             return self._handle_save_claudeignore()
 
+        if parsed_path.path == '/api/push':
+            return self._handle_push()
+
         # Handle other POST requests (if any)
         self._send_error_response(404, "Not Found")
 
@@ -325,8 +328,8 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
         designed for quick, precise adjustments to the project's synchronization settings.
 
         Update actions include:
-        - Adding a pattern to includes
-        - Removing a pattern from excludes
+        - Adding or removing a pattern to includes
+        - Adding or removing a pattern from excludes
         - Dynamically modifying configuration in a granular manner
 
         Args:
