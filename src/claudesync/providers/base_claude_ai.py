@@ -267,7 +267,7 @@ class BaseClaudeAIProvider(BaseProvider):
     def _make_request(self, method, endpoint, data=None):
         raise NotImplementedError("This method should be implemented by subclasses")
 
-    def create_chat(self, organization_id, chat_name="", project_uuid=None, model=None):
+    def create_chat(self, organization_id, chat_name="", project_uuid=None, model=None, is_thinking=True):
         data = {
             "uuid": self._generate_uuid(),
             "name": chat_name,
@@ -275,6 +275,9 @@ class BaseClaudeAIProvider(BaseProvider):
         }
         if model is not None:
             data["model"] = model
+        
+        if is_thinking:
+            data["paprika_mode"] = "extended"
 
         return self._make_request(
             "POST", f"/organizations/{organization_id}/chat_conversations", data
