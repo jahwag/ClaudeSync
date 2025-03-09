@@ -40,7 +40,7 @@ We're excited that you're interested in contributing to ClaudeSync! This documen
 
 1. Commit your changes:
    ```
-   git commit -am "Add a brief description of your changes"
+   git commit -s -am "Add a brief description of your changes"
    ```
 2. Push to your fork:
    ```
