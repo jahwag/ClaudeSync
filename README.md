@@ -165,8 +165,8 @@ The `xxx.project.json` file contains several properties that control how files a
 
 - `project_name`: The display name of the project shown in Claude.ai.
 - `project_description`: A brief description of what the project is about.
-- `includes`: An array of file path patterns to include in the synchronization. These can use glob patterns like `*.js` or specify directories like `src/components`.
-- `excludes`: An array of file path patterns to exclude from synchronization. These patterns override matching patterns in the `includes` array.
+- `includes`: An array of file path patterns to include in the synchronization. These can use glob patterns like `*.js` or specify directories like `src/components`. Paths are relative to the project root, not to the push roots.
+- `excludes`: An array of file path patterns to exclude from synchronization. These patterns override matching patterns in the `includes` array. Paths are relative to the project root, not to the push roots.
 - `use_ignore_files`: Boolean value (true/false) that determines whether to use `.gitignore` and `.claudeignore` files for additional exclusion rules.
 - `push_roots`: An array of root directories to start the file search from. This is useful for large repositories where you only want to focus on specific subdirectories. Only files within these directories will be considered for synchronization, regardless of include patterns.
 

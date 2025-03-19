@@ -3,6 +3,7 @@
   "includes": [
     "*.py",
     "*.sh",
-    "*.md"
+    "*.md",
+    "*.toml"
   ]
 }
