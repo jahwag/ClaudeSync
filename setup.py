@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="claudesync-fork",
-    version="0.1.7",
+    version="0.1.8",
     description="Synchronize local files with Claude AI projects",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",

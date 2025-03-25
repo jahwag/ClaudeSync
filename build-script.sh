@@ -23,7 +23,6 @@ log_error() {
     echo "${RED}[ERROR]${NC} $1"
 }
 
-
 # Function to activate virtual environment based on platform
 activate_venv() {
     if [ -f ".venv/Scripts/activate" ]; then
@@ -34,6 +33,87 @@ activate_venv() {
         log_error "Could not find virtual environment activation script"
         exit 1
     fi
+}
+
+# Determine current and next version
+determine_version() {
+    log_info "Determining version..."
+
+    # Check if version was provided as argument
+    if [ -n "$1" ]; then
+        NEW_VERSION="$1"
+        log_info "Using provided version: ${NEW_VERSION}"
+    else
+        # Try to determine current version from setup.py
+        CURRENT_VERSION=$(grep -o 'version="[0-9]\+\.[0-9]\+\.[0-9]\+"' setup.py | cut -d'"' -f2)
+
+        if [ -z "$CURRENT_VERSION" ]; then
+            # Try to determine from dist directory
+            if [ -d "dist" ]; then
+                # Find the latest wheel file and extract its version
+                LATEST_WHEEL=$(ls -t dist/claudesync_fork-*.whl 2>/dev/null | head -1)
+                if [ -n "$LATEST_WHEEL" ]; then
+                    CURRENT_VERSION=$(echo "$LATEST_WHEEL" | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1)
+                fi
+            fi
+        fi
+
+        if [ -z "$CURRENT_VERSION" ]; then
+            log_warn "Could not determine current version. Defaulting to 0.1.0"
+            CURRENT_VERSION="0.1.0"
+        fi
+
+        # Parse version components
+        MAJOR=$(echo "$CURRENT_VERSION" | cut -d. -f1)
+        MINOR=$(echo "$CURRENT_VERSION" | cut -d. -f2)
+        PATCH=$(echo "$CURRENT_VERSION" | cut -d. -f3)
+
+        # Increment patch version
+        PATCH=$((PATCH + 1))
+        NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+
+        log_info "Current version: ${CURRENT_VERSION}, New version: ${NEW_VERSION}"
+    fi
+
+    # Export for use in other functions
+    export CURRENT_VERSION
+    export NEW_VERSION
+}
+
+# Update version in setup.py
+update_setup_py() {
+    log_info "Updating version in setup.py to ${NEW_VERSION}..."
+
+    # Use sed to update the version in setup.py
+    if [ "$(uname)" = "Darwin" ]; then
+        # macOS requires an empty string for -i
+        sed -i '' "s/version=\"[0-9]\+\.[0-9]\+\.[0-9]\+\"/version=\"${NEW_VERSION}\"/g" setup.py
+    else
+        # Linux
+        sed -i "s/version=\"[0-9]\+\.[0-9]\+\.[0-9]\+\"/version=\"${NEW_VERSION}\"/g" setup.py
+    fi
+
+    log_info "Updated version in setup.py"
+}
+
+# Update version in README.md
+update_readme() {
+    log_info "Updating version in README.md..."
+
+    # Define the pattern to look for (installation link with version)
+    PATTERN="pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-[0-9]\+\.[0-9]\+\.[0-9]\+-py3-none-any\.whl"
+    REPLACEMENT="pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-${NEW_VERSION}-py3-none-any.whl"
+
+    # Use sed to update the version in README.md
+    if [ "$(uname)" = "Darwin" ]; then
+        # macOS requires an empty string for -i
+        sed -i '' "s|${PATTERN}|${REPLACEMENT}|g" README.md
+    else
+        # Linux
+        sed -i "s|${PATTERN}|${REPLACEMENT}|g" README.md
+    fi
+
+    log_info "Updated version in README.md"
 }
 
 # Check required tools
@@ -119,7 +199,6 @@ build_frontend() {
 build_python() {
     log_info "Building Python package..."
 
-
     #setting utf-8 needed for windows
     export PYTHONUTF8=1
     export PYTHONIOENCODING=utf8
@@ -158,20 +237,6 @@ build_python() {
         exit 1
     }
 
-    # Create a copy of the newest wheel with a static name
-    log_info "Creating static named copy of the latest wheel..."
-    latest_wheel=$(ls -t dist/*.whl | head -1)
-    if [ -n "$latest_wheel" ]; then
-        cp "$latest_wheel" "dist/claudesync_fork-latest-py3-none-any.whl" || {
-            log_error "Failed to create static named wheel file"
-            exit 1
-        }
-        log_info "Created static named wheel file: dist/claudesync_fork-latest-py3-none-any.whl (from $latest_wheel)"
-    else
-        log_error "No wheel file found in dist directory"
-        exit 1
-    fi
-
     # Deactivate virtual environment (if we're in one)
     if [ -n "$VIRTUAL_ENV" ]; then
         # Some shells might not have deactivate function
@@ -185,9 +250,67 @@ build_python() {
     log_info "Python build completed successfully"
 }
 
+# Display version info after build
+display_version_info() {
+    log_info "Build completed for version ${NEW_VERSION}"
+    log_info "Built packages:"
+    ls -lh dist/claudesync_fork-${NEW_VERSION}*
+
+    log_info "Installation command:"
+    echo "pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-${NEW_VERSION}-py3-none-any.whl"
+}
+
+# Display usage information
+display_usage() {
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  -v, --version VERSION   Specify version number (format: X.Y.Z)"
+    echo "  -h, --help              Display this help message"
+    echo ""
+    echo "Examples:"
+    echo "  $0                      # Auto-increment version"
+    echo "  $0 -v 1.0.0             # Set specific version 1.0.0"
+}
+
+# Parse command line arguments
+parse_args() {
+    VERSION=""
+
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            -v|--version)
+                VERSION="$2"
+                shift 2
+                ;;
+            -h|--help)
+                display_usage
+                exit 0
+                ;;
+            *)
+                log_error "Unknown option: $1"
+                display_usage
+                exit 1
+                ;;
+        esac
+    done
+
+    return 0
+}
+
 # Main build process
 main() {
     log_info "Starting ClaudeSync build process..."
+
+    # Parse command line arguments
+    parse_args "$@"
+
+    # Determine version
+    determine_version "$VERSION"
+
+    # Update version in files
+    update_setup_py
+    update_readme
 
     # Check requirements
     check_requirements
@@ -200,6 +323,9 @@ main() {
 
     # Build Python package
     build_python
+
+    # Display version info
+    display_version_info
 
     log_info "Build process completed successfully!"
     log_info "Built packages can be found in the 'dist' directory"

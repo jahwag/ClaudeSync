@@ -31,7 +31,7 @@ python3 -m venv .venv
 
 # Activate the virtual environment
 # On Windows:
-.venv\Scripts\activate
+source .venv\Scripts\activate
 # On macOS/Linux:
 source .venv/bin/activate
 ```
@@ -44,7 +44,7 @@ echo "*" > .venv/.gitignore
 2. Install ClaudeSync fork with _simulate-push_ feature using pip:
 
 ```bash
-pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-latest-py3-none-any.whl
+pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.8-py3-none-any.whl
 ```
 
 ## Authentication
@@ -297,19 +297,19 @@ These templates can significantly improve your productivity when working with Cl
 ### Unix based
 
 ```bash
-rm -rf .venv
-python3 -m venv .venv
-source .venv/bin/activate
-pip install <link>
+rm -rf .venv; \
+python3 -m venv .venv; \
+source .venv/bin/activate; \
+pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.8-py3-none-any.whl
 ```
 
 ### Windows git bash
 
 ```bash
-rm -rf .venv
-python3 -m venv .venv
-source .venv/Scripts/activate
-pip install <link>
+rm -rf .venv; \
+python3 -m venv .venv; \ 
+source .venv/Scripts/activate; \
+pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.8-py3-none-any.whl
 ```
 
 ## Support
