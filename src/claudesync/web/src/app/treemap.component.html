@@ -76,10 +76,54 @@
 
     <div id="file-treemap" class="treemap-visualization"></div>
 
-    <!-- Rest of the existing template -->
     <!-- File List Section -->
     <div class="file-list" *ngIf="showFileList">
-      <!-- Existing file list content -->
+      <div class="file-list-header">
+        <div class="file-count">{{getIncludedFilesCount()}} files to sync</div>
+
+        <div class="search-container">
+          <input
+            type="text"
+            [(ngModel)]="filterText"
+            placeholder="Search files..."
+            class="search-input">
+          <button
+            *ngIf="filterText"
+            (click)="clearFilter()"
+            class="clear-search-btn">×</button>
+        </div>
+      </div>
+
+      <div class="file-list-table">
+        <table>
+          <thead>
+          <tr>
+            <th>Filename</th>
+            <th>Path</th>
+            <th>Size</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr *ngFor="let file of filteredFiles">
+            <td>{{file.name}}</td>
+            <td>{{file.path}}</td>
+            <td>{{formatSize(file.size)}}</td>
+            <td [class.included]="file.included">
+              {{file.included ? 'Included' : 'Excluded'}}
+            </td>
+            <td>
+              <button
+                class="preview-btn"
+                (click)="viewFileContent(file)">
+                Preview
+              </button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
