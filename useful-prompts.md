@@ -50,7 +50,7 @@ Ask me questions that need to be answered before coming up with a master plan of
 
 ### Implement Masterplan
 ```
-I want to implement what is described in `master-plan.md`. What are next steps in implementing the master plan? Give me a high-level overview first.
+I want to implement what is described in `master-plan.md`. What are next steps in implementing the master plan? Give me a high-level overview first. (do not include detailled code)
 ```
 **Purpose**: Breaks down a comprehensive plan into actionable steps, and implement them step-by-step.
 
