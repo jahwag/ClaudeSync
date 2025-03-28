@@ -19,31 +19,27 @@ Before installing ClaudeSync, ensure you have:
 - A terminal or command prompt
 - SSH key for secure credential storage. Follow [GitHub's guide](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) to generate and add your SSH key.
 
-## Installation
+## Installation and Upgrading
 
 The recommendation is to install ClaudeSync in a virtual python environment in the folder you want to synchronize with Claude.ai.
 
-1. Create and activate a virtual environment:
+### Unix based
 
 ```bash
-# Create a new virtual environment
-python3 -m venv .venv
-
-# Activate the virtual environment
-# On Windows:
-source .venv\Scripts\activate
-# On macOS/Linux:
-source .venv/bin/activate
+rm -rf .venv; \
+python3 -m venv .venv; \
+echo "*" > .venv/.gitignore; \
+source .venv/bin/activate; \
+pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.8-py3-none-any.whl
 ```
 
-Make sure, that the virtual environment is _gitignored_ by adding a `.gitignore` into the `.venv` directory:
-```
-echo "*" > .venv/.gitignore
-```
-
-2. Install ClaudeSync fork with _simulate-push_ feature using pip:
+### Windows git bash
 
 ```bash
+rm -rf .venv; \
+python3 -m venv .venv; \
+echo "*" > .venv/.gitignore; \ 
+source .venv/Scripts/activate; \
 pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.8-py3-none-any.whl
 ```
 
@@ -291,26 +287,6 @@ For effective communication with Claude AI, check out the [Useful Prompts](usefu
 - Summarizing conversations
 
 These templates can significantly improve your productivity when working with Claude AI projects.
-
-## Upgrade to a newer version of ClaudeSync
-
-### Unix based
-
-```bash
-rm -rf .venv; \
-python3 -m venv .venv; \
-source .venv/bin/activate; \
-pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.8-py3-none-any.whl
-```
-
-### Windows git bash
-
-```bash
-rm -rf .venv; \
-python3 -m venv .venv; \ 
-source .venv/Scripts/activate; \
-pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.8-py3-none-any.whl
-```
 
 ## Support
 
