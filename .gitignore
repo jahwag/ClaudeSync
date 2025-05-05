@@ -186,3 +186,9 @@ out/
 
 .DS_Store
 **/.DS_Store
+
+#claudesync
+.claudesync/*.project_id.json
+.claudesync/active_project.json
+.venv
+.github
