@@ -18,3 +18,44 @@ processPkg.py
 .gitignore
 .editorconfig
 *.iml
+
+# Compiled output
+src/claudesync/web/dist
+src/claudesync/web/tmp
+src/claudesync/web/out-tsc
+src/claudesync/web/bazel-out
+
+# Node
+src/claudesync/web/node_modules
+src/claudesync/web/npm-debug.log
+src/claudesync/web/yarn-error.log
+
+# IDEs and editors
+src/claudesync/web/.idea/
+src/claudesync/web/.project
+src/claudesync/web/.classpath
+src/claudesync/web/.c9/
+src/claudesync/web/.launch
+src/claudesync/web/.settings/
+src/claudesync/web/.sublime-workspace
+
+# Visual Studio Code
+src/claudesync/web/.vscode/*
+src/claudesync/web/!.vscode/settings.json
+src/claudesync/web/!.vscode/tasks.json
+src/claudesync/web/!.vscode/launch.json
+src/claudesync/web/!.vscode/extensions.json
+src/claudesync/web/.history/*
+
+# Miscellaneous
+src/claudesync/web/.angular/cache
+src/claudesync/web/.sass-cache/
+src/claudesync/web/connect.lock
+src/claudesync/web/coverage
+src/claudesync/web/libpeerconnection.log
+src/claudesync/web/testem.log
+src/claudesync/web/typings
+
+# System files
+src/claudesync/web/.DS_Store
+src/claudesync/web/Thumbs.db

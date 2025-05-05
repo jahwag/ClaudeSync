@@ -140,6 +140,14 @@ def create(ctx, template, name, internal_name, description, organization, no_git
     claudesync_dir = current_dir / ".claudesync"
     os.makedirs(claudesync_dir, exist_ok=True)
 
+    # Check if project config already exists
+    project_config_path = claudesync_dir / f"{internal_name}.project.json"
+    project_config_exists = project_config_path.exists()
+
+    if project_config_exists:
+        click.echo(f"Found existing project configuration: {project_config_path}")
+        click.echo("Existing configuration will be preserved.")
+
     try:
         # Create the project remotely
         new_project = provider_instance.create_project(organization_id, name, description)
@@ -152,27 +160,33 @@ def create(ctx, template, name, internal_name, description, organization, no_git
             "project_id": new_project["uuid"],
         }
 
-        # Create project configuration file
-        if template:
-            # Use configuration from template
-            project_config = {
-                "project_name": new_project["name"],
-                "project_description": description,
-                "includes": template_config.get('includes', []),
-                "excludes": template_config.get('excludes', []),
-                "use_ignore_files": template_config.get('use_ignore_files', True),
-                "push_roots": template_config.get('push_roots', [])
-            }
-        else:
-            # Use default configuration
-            project_config = {
-                "project_name": new_project["name"],
-                "project_description": description,
-                "includes": [],
-                "excludes": [],
-                "use_ignore_files": True,
-                "push_roots": []
-            }
+        # Only create project configuration file if it doesn't exist
+        if not project_config_exists:
+            if template:
+                # Use configuration from template
+                project_config = {
+                    "project_name": new_project["name"],
+                    "project_description": description,
+                    "includes": template_config.get('includes', []),
+                    "excludes": template_config.get('excludes', []),
+                    "use_ignore_files": template_config.get('use_ignore_files', True),
+                    "push_roots": template_config.get('push_roots', [])
+                }
+            else:
+                # Use default configuration
+                project_config = {
+                    "project_name": new_project["name"],
+                    "project_description": description,
+                    "includes": [],
+                    "excludes": [],
+                    "use_ignore_files": True,
+                    "push_roots": []
+                }
+
+            # Save files configuration
+            project_config_path = claudesync_dir / f"{internal_name}.project.json"
+            with open(project_config_path, 'w') as f:
+                json.dump(project_config, f, indent=2)
 
         # Determine if internal_name contains a path
         config_path = Path(internal_name)
@@ -185,10 +199,6 @@ def create(ctx, template, name, internal_name, description, organization, no_git
         with open(project_id_config_path, 'w') as f:
             json.dump(project_id_config, f, indent=2)
 
-        # Save files configuration
-        project_config_path = claudesync_dir / f"{internal_name}.project.json"
-        with open(project_config_path, 'w') as f:
-            json.dump(project_config, f, indent=2)
 
         # Set as active project
         config.set_active_project(internal_name, new_project["uuid"])
@@ -196,13 +206,11 @@ def create(ctx, template, name, internal_name, description, organization, no_git
         click.echo("\nProject created and set as active:")
         click.echo(f"  - Project location: {current_dir}")
         click.echo(f"  - Project ID config: {project_id_config_path}")
-        click.echo(f"  - Project config: {project_config_path}")
+        click.echo(f"  - Project config: {project_config_path} ({'preserved' if project_config_exists else 'created'})")
         click.echo(f"  - Remote URL: https://claude.ai/project/{new_project['uuid']}")
 
     except (ProviderError, ConfigurationError) as e:
         click.echo(f"Failed to create project: {str(e)}")
-
-# Add this to src/claudesync/cli/project.py, right after the @project.command() create function
 
 @project.command()
 @click.argument("project-path", required=True)
