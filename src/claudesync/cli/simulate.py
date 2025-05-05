@@ -715,6 +715,20 @@ def simulate_push(config, port, no_browser):
     """Launch a visualization of files to be synchronized."""
     logger.debug("Starting simulate command")
 
+    # Import the ensure_gitignore_entries function
+    from claudesync.cli.project import ensure_gitignore_entries
+
+    # Ensure .gitignore entries are set
+    try:
+        # Get the .claudesync directory path
+        claudesync_dir = config.config_dir
+        if claudesync_dir:
+            # Get the active project for more specific pattern
+            active_project_path, _ = config.get_active_project()
+            ensure_gitignore_entries(claudesync_dir, active_project_path)
+    except Exception as e:
+        logger.warning(f"Could not ensure .gitignore entries: {str(e)}")
+
     web_dir = os.path.join(os.path.dirname(__file__), '../web/dist/claudesync-simulate')
     logger.debug(f"Web directory path: {web_dir}")
 

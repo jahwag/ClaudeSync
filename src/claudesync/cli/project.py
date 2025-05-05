@@ -34,6 +34,60 @@ def get_default_internal_name():
     except ConfigurationError:
         return 'all'  # Return 'all' if no .claudesync directory exists yet
 
+def ensure_gitignore_entries(claudesync_dir, internal_name=None):
+    """
+    Ensure project_id.json patterns are in .gitignore
+
+    Args:
+        claudesync_dir (Path): Path to .claudesync directory
+        internal_name (str, optional): If provided, also add specific pattern
+
+    Returns:
+        bool: True if .gitignore was updated, False otherwise
+    """
+    gitignore_path = claudesync_dir.parent / '.gitignore'
+    entries_to_add = [
+        '.claudesync/*.project_id.json',
+        '.claudesync/active_project.json',
+        '.venv',
+        '.github'
+    ]
+
+    # If specific internal_name provided, add more specific pattern
+    if internal_name and '/' in internal_name:
+        # For nested project paths like 'subdir/project'
+        path_parts = internal_name.split('/')
+        nested_path = '/'.join(path_parts[:-1])
+        entries_to_add.append(f'.claudesync/{nested_path}/*.project_id.json')
+
+    # Create .gitignore if it doesn't exist
+    if not gitignore_path.exists():
+        with open(gitignore_path, 'w') as f:
+            f.write('\n'.join(entries_to_add) + '\n')
+        return True
+
+    # Check if entries already exist
+    with open(gitignore_path, 'r') as f:
+        content = f.read()
+        lines = content.splitlines()
+
+    # Find entries to add (those not already in .gitignore)
+    new_entries = [entry for entry in entries_to_add
+                   if entry not in lines]
+
+    # Add new entries if needed
+    if new_entries:
+        with open(gitignore_path, 'a') as f:
+            # Add a newline if file doesn't end with one
+            if content and not content.endswith('\n'):
+                f.write('\n')
+
+            f.write('\n#claudesync\n')
+            f.write('\n'.join(new_entries) + '\n')
+        return True
+
+    return False  # No changes made
+
 @project.command()
 @click.option(
     "--template",
@@ -199,15 +253,20 @@ def create(ctx, template, name, internal_name, description, organization, no_git
         with open(project_id_config_path, 'w') as f:
             json.dump(project_id_config, f, indent=2)
 
-
         # Set as active project
         config.set_active_project(internal_name, new_project["uuid"])
+
+        # Ensure .gitignore has entries to exclude ID files
+        gitignore_updated = ensure_gitignore_entries(claudesync_dir, internal_name)
 
         click.echo("\nProject created and set as active:")
         click.echo(f"  - Project location: {current_dir}")
         click.echo(f"  - Project ID config: {project_id_config_path}")
         click.echo(f"  - Project config: {project_config_path} ({'preserved' if project_config_exists else 'created'})")
         click.echo(f"  - Remote URL: https://claude.ai/project/{new_project['uuid']}")
+
+        if gitignore_updated:
+            click.echo(f"  - Added entries to .gitignore to prevent sharing project IDs")
 
     except (ProviderError, ConfigurationError) as e:
         click.echo(f"Failed to create project: {str(e)}")
