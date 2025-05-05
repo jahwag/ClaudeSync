@@ -18,6 +18,8 @@ from ..utils import get_local_files, load_gitignore, load_claudeignore
 from ..configmanager import FileConfigManager
 from typing import Dict, List, Optional, TypedDict
 from .sync_logic import push_files
+from claudesync.utils import load_gitignore, load_claudeignore
+
 
 
 logger = logging.getLogger(__name__)
@@ -315,6 +317,9 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
 
         if parsed_path.path == '/api/push':
             return self._handle_push()
+
+        if parsed_path.path == '/api/resolve-dropped-files':
+            return self._handle_resolve_dropped_files()
 
         # Handle other POST requests (if any)
         self._send_error_response(404, "Not Found")
@@ -706,6 +711,115 @@ class SyncDataHandler(http.server.SimpleHTTPRequestHandler):
             }).encode())
         except Exception as e:
             self._send_error_response(500, str(e))
+
+    def _handle_resolve_dropped_files(self):
+        """
+        Handle resolving dropped files to their project paths.
+
+        This endpoint accepts file content and scans the project
+        directory to find matches, returning the relative paths.
+        """
+        try:
+            # Read the request body
+            content_length = int(self.headers.get('Content-Length', 0))
+            if content_length == 0:
+                return self._send_error_response(400, "Request body is required")
+
+            request_body = self.rfile.read(content_length)
+            try:
+                data = json.loads(request_body)
+                files = data.get('files', [])
+
+                if not files or not isinstance(files, list):
+                    return self._send_error_response(400, "Invalid or empty files array")
+
+                # Get project root
+                project_root = self.config.get_project_root()
+                if not project_root:
+                    return self._send_error_response(500, "Could not determine project root")
+
+                # Process files and find matches
+                results = self._find_file_matches(project_root, files)
+
+                # Send success response
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_cors_headers()
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'success': True,
+                    'results': results
+                }).encode())
+
+            except json.JSONDecodeError as e:
+                return self._send_error_response(400, f"Invalid JSON in request body: {str(e)}")
+
+        except Exception as e:
+            logger.error(f"Error resolving dropped files: {str(e)}\n{traceback.format_exc()}")
+            return self._send_error_response(500, f"Internal server error: {str(e)}")
+
+
+    def _find_file_matches(self, project_root, files):
+        """
+        Find file matches in the project directory based on filename only.
+        Also considers patterns from .gitignore and .claudeignore.
+
+        Args:
+            project_root (str): Path to the project root directory
+            files (list): List of dictionaries with file info
+
+        Returns:
+            list: List of match results with original names and resolved paths
+        """
+        results = []
+
+        # Load .gitignore and .claudeignore patterns
+        gitignore = load_gitignore(project_root)
+        claudeignore = load_claudeignore(project_root)
+
+        for file_info in files:
+            name = file_info.get('name', '')
+
+            if not name:
+                results.append({
+                    'originalName': name,
+                    'resolved': False,
+                    'error': 'Missing filename'
+                })
+                continue
+
+            # Find all files with matching name
+            name_matches = []
+            for root, _, filenames in os.walk(project_root):
+                for filename in filenames:
+                    if filename == name:
+                        full_path = os.path.join(root, filename)
+                        # Get relative path and ensure forward slashes
+                        rel_path = os.path.relpath(full_path, project_root)
+                        rel_path = rel_path.replace('\\', '/')
+
+                        # Skip files matching .gitignore or .claudeignore patterns
+                        if gitignore and gitignore.match_file(rel_path):
+                            continue
+                        if claudeignore and claudeignore.match_file(rel_path):
+                            continue
+
+                        name_matches.append(rel_path)
+
+            if name_matches:
+                results.append({
+                    'originalName': name,
+                    'resolved': True,
+                    'paths': name_matches
+                })
+            else:
+                results.append({
+                    'originalName': name,
+                    'resolved': False,
+                    'error': 'No matching file found in project'
+                })
+
+        return results
 
 @click.command()
 @click.option('--port', default=4201, help='Port to run the server on')

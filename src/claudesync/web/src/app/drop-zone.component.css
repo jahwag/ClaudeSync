@@ -1,0 +1,78 @@
+/* drop-zone.component.css */
+.drop-zone {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100px;
+  border: 2px dashed transparent;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.drop-zone.active {
+  border-color: #4f46e5;
+  background-color: rgba(79, 70, 229, 0.05);
+}
+
+.drop-zone.show-indicator:not(.active) {
+  border-color: #e2e8f0;
+}
+
+.drop-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.drop-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.drop-zone.active .drop-indicator {
+  opacity: 1;
+}
+
+.drop-zone.show-indicator .drop-indicator {
+  background-color: rgba(255, 255, 255, 0.7);
+  opacity: 0.7;
+}
+
+.drop-zone.active.show-indicator .drop-indicator {
+  opacity: 1;
+}
+
+.drop-message {
+  text-align: center;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.drop-icon {
+  color: #4f46e5;
+}
+
+.drop-text {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #1e293b;
+}

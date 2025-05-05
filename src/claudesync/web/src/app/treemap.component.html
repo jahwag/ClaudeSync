@@ -74,7 +74,11 @@
       </div>
     </div>
 
+    <app-drop-zone (filesDropped)="onFilesDropped($event)" [showDropIndicator]="false">
+
     <div id="file-treemap" class="treemap-visualization"></div>
+
+    </app-drop-zone>
 
     <!-- File List Section -->
     <div class="file-list" *ngIf="showFileList">

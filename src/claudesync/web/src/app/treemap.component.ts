@@ -10,13 +10,15 @@ import {FilePreviewComponent} from './file-preview.component';
 import {ModalComponent} from './modal.component';
 import {Subject, Subscription} from 'rxjs';
 import { NodeActionsMenuComponent } from './node-actions-menu.component';
+import { DropZoneComponent, DroppedFile } from './drop-zone.component';
+import { NotificationService } from './notification.service';
 
 declare const Plotly: any;
 
 @Component({
   selector: 'app-treemap',
   standalone: true,
-  imports: [CommonModule, FormsModule, FilePreviewComponent, ModalComponent],
+  imports: [CommonModule, FormsModule, FilePreviewComponent, ModalComponent, DropZoneComponent],
   templateUrl: './treemap.component.html',
   styleUrls: ['./treemap.component.css']
 })
@@ -50,7 +52,11 @@ export class TreemapComponent implements OnDestroy {
 
   private currentSubscription?: Subscription;
 
-  constructor(private http: HttpClient, private fileDataService: FileDataService) {}
+  constructor(
+    private http: HttpClient,
+    private fileDataService: FileDataService,
+    private notificationService: NotificationService
+  ) {}
 
   ngOnDestroy() {
     this.currentSubscription?.unsubscribe();
@@ -554,5 +560,74 @@ Status: %{customdata.included}<br>
           console.error('Error updating configuration:', error);
         }
       });
+  }
+
+  onFilesDropped(files: DroppedFile[]): void {
+    if (!files.length) return;
+
+    this.notificationService.info(`Processing ${files.length} file(s)...`);
+
+    this.fileDataService.resolveDroppedFiles(files)
+      .subscribe({
+        next: (response) => {
+          if (!response.success) {
+            this.notificationService.error('Failed to process files');
+            return;
+          }
+
+          const results = response.results || [];
+          const resolvedFiles = results.filter((r: any) => r.resolved);
+          const unresolvedFiles = results.filter((r: any) => !r.resolved);
+
+          // Process successful matches
+          if (resolvedFiles.length > 0) {
+            // Add resolved paths to includes
+            this.processResolvedFiles(resolvedFiles);
+            this.notificationService.success(
+              `Successfully matched and added ${resolvedFiles.length} file(s)`
+            );
+          }
+
+          // Notify about unresolved files
+          if (unresolvedFiles.length > 0) {
+            this.notificationService.warning(
+              `Could not match ${unresolvedFiles.length} file(s) to project content`
+            );
+          }
+        },
+        error: (error) => {
+          console.error('Error processing dropped files:', error);
+          this.notificationService.error('Failed to process dropped files');
+        }
+      });
+  }
+
+  private processResolvedFiles(resolvedFiles: any[]): void {
+    // Extract all unique paths from resolved files
+    const pathsToAdd: string[] = [];
+
+    resolvedFiles.forEach(file => {
+      // For each file that was resolved, extract the paths
+      (file.paths || []).forEach((path: string) => {
+        if (!pathsToAdd.includes(path)) {
+          pathsToAdd.push(path);
+        }
+      });
+    });
+
+    // Add each path to the includes list
+    pathsToAdd.forEach((path, index) => {
+      setTimeout(() => {
+        this.updateConfigIncrementally({
+          action: 'addInclude',
+          pattern: path
+        });
+      }, index * 200); // Stagger updates to avoid race conditions
+    });
+
+    // After all paths are added, trigger a reload
+    setTimeout(() => {
+      this.reloadRequired.emit();
+    }, pathsToAdd.length * 200 + 300);
   }
 }

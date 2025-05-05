@@ -1,0 +1,26 @@
+<!-- drop-zone.component.html -->
+<div class="drop-zone"
+     [class.active]="isDragging"
+     [class.show-indicator]="showDropIndicator"
+     (dragover)="onDragOver($event)"
+     (dragleave)="onDragLeave($event)"
+     (dragenter)="onDragEnter($event)"
+     (drop)="onDrop($event)">
+
+  <!-- Drop zone content -->
+  <div class="drop-content">
+    <ng-content></ng-content>
+  </div>
+
+  <!-- Drop indicator -->
+  <div class="drop-indicator" *ngIf="isDragging || showDropIndicator">
+    <div class="drop-message">
+      <svg viewBox="0 0 24 24" width="32" height="32" class="drop-icon">
+        <path d="M12 2L4.5 20.3H19.5L12 2Z" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 13L12 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="12" cy="8" r="1" fill="currentColor"/>
+      </svg>
+      <span class="drop-text">{{ acceptMessage }}</span>
+    </div>
+  </div>
+</div>

@@ -4,6 +4,7 @@ import {Observable, of} from 'rxjs';
 import {map, tap} from 'rxjs/operators';
 import {Project} from './project-dropdown.component';
 import {LoadingService} from './loading.service';
+import {DroppedFile} from './drop-zone.component';
 
 export interface SyncStats {
   filesToSync: number;
@@ -153,6 +154,12 @@ export class FileDataService {
       this.http.post(`${this.baseUrl}/save-claudeignore`, { content }).pipe(
         tap(() => this.clearCache())
       )
+    );
+  }
+
+  resolveDroppedFiles(files: DroppedFile[]): Observable<any> {
+    return this.loadingService.withLoading(
+      this.http.post(`${this.baseUrl}/resolve-dropped-files`, { files })
     );
   }
 }
