@@ -30,7 +30,7 @@ rm -rf .venv; \
 python3 -m venv .venv; \
 echo "*" > .venv/.gitignore; \
 source .venv/bin/activate; \
-pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.9-py3-none-any.whl
+pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.10-py3-none-any.whl
 ```
 
 ### Windows git bash
@@ -40,7 +40,7 @@ rm -rf .venv; \
 python3 -m venv .venv; \
 echo "*" > .venv/.gitignore; \ 
 source .venv/Scripts/activate; \
-pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.9-py3-none-any.whl
+pip install https://github.com/tbuechner/ClaudeSync/raw/refs/heads/master/dist/claudesync_fork-0.1.10-py3-none-any.whl
 ```
 
 ## Authentication
