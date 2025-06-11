@@ -38,7 +38,7 @@ class BaseConfigManager(ABC):
             "max_file_size": 32 * 1024,
             "two_way_sync": False,
             "prune_remote_files": True,
-            "claude_api_url": "https://api.claude.ai/api",
+            "claude_api_url": "https://claude.ai/api",
             "compression_algorithm": "none",
             "submodule_detect_filenames": [
                 "pom.xml",
