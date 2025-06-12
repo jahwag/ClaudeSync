@@ -49,7 +49,7 @@ class BaseClaudeAIProvider(BaseProvider):
 
     @property
     def base_url(self):
-        return self.config.get("claude_api_url", "https://api.claude.ai/api")
+        return self.config.get("claude_api_url", "https://claude.ai/api")
 
     def _configure_logging(self):
         log_level = self.config.get("log_level", "INFO")
