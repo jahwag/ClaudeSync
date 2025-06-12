@@ -178,6 +178,7 @@ class BaseClaudeAIProvider(BaseProvider):
             if (
                 {"chat", "claude_pro"}.issubset(set(org.get("capabilities", [])))
                 or {"chat", "raven"}.issubset(set(org.get("capabilities", [])))
+                or {"chat", "claude_max"}.issubset(set(org.get("capabilities", [])))
             )
         ]
 
