@@ -100,9 +100,12 @@ def upgrade(ctx):
 @click.option(
     "--uberproject", is_flag=True, help="Include submodules in the parent project sync"
 )
+@click.option(
+    "--dryrun", is_flag=True, default=False, help="Just show what files would be sent"
+)
 @click.pass_obj
 @handle_errors
-def push(config, category, uberproject):
+def push(config, category, uberproject, dryrun):
     """Synchronize the project files, optionally including submodules in the parent project."""
     provider = validate_and_get_provider(config, require_project=True)
 
@@ -156,6 +159,12 @@ def push(config, category, uberproject):
             local_files = get_local_files(
                 config, local_path, category, include_submodules=False
             )
+
+        if dryrun:
+            for file in local_files.keys():
+                click.echo(f"Would send file: {file}")
+            click.echo("Not sending files due to dry run mode.")
+            return
 
         sync_manager.sync(local_files, remote_files)
         click.echo(
