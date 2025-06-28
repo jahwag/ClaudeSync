@@ -6,7 +6,7 @@ import click_completion.core
 import json
 import subprocess
 import urllib.request
-from pkg_resources import get_distribution
+import importlib.metadata
 
 from claudesync.cli.chat import chat
 from claudesync.configmanager import FileConfigManager, InMemoryConfigManager
@@ -55,7 +55,7 @@ def install_completion(shell):
 @click.pass_context
 def upgrade(ctx):
     """Upgrade ClaudeSync to the latest version and reset configuration, preserving sessionKey."""
-    current_version = get_distribution("claudesync").version
+    current_version = importlib.metadata.version("claudesync")
 
     # Check for the latest version
     try:
