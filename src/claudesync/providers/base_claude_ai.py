@@ -265,6 +265,123 @@ class BaseClaudeAIProvider(BaseProvider):
         data = {"conversation_uuids": conversation_uuids}
         return self._make_request("POST", endpoint, data)
 
+    def get_sessions(self, organization_id):
+        """Get all web sessions from the v1 API endpoint."""
+        # The sessions endpoint is at /v1/sessions, not under /api
+        # Requires x-organization-uuid header
+        return self._make_request_v1(
+            "GET", "/v1/sessions", organization_id=organization_id
+        )
+
+    def get_environments(self, organization_id):
+        """Get all environments from the v1 API endpoint."""
+        # Get environments for the organization
+        endpoint = f"/v1/environment_providers/private/organizations/{organization_id}/environments"
+        return self._make_request_v1("GET", endpoint, organization_id=organization_id)
+
+    def get_code_repos(self, organization_id, skip_status=True):
+        """Get all code repositories available for Claude Code sessions.
+
+        Args:
+            organization_id: The organization UUID
+            skip_status: Whether to skip fetching repository status (default: True)
+
+        Returns:
+            dict: Contains 'repos' array with repository information
+        """
+        endpoint = f"/organizations/{organization_id}/code/repos"
+        params = "?skip_status=true" if skip_status else ""
+        return self._make_request("GET", f"{endpoint}{params}")
+
+    def archive_session(self, organization_id, session_id):
+        """Archive a session by its ID."""
+        # Requires x-organization-uuid header
+        return self._make_request_v1(
+            "POST",
+            f"/v1/sessions/{session_id}/archive",
+            organization_id=organization_id,
+        )
+
+    def create_session(
+        self,
+        organization_id,
+        title,
+        environment_id,
+        git_repo_url=None,
+        git_repo_owner=None,
+        git_repo_name=None,
+        branch_name=None,
+        model="claude-sonnet-4-5-20250929",
+    ):
+        """Create a new Claude Code web session.
+
+        Args:
+            organization_id: The organization UUID
+            title: Session title
+            environment_id: Environment UUID (e.g., env_011CUPDTyMiRVMf18tfu2VUa)
+            git_repo_url: Optional git repository URL
+            git_repo_owner: Optional git repository owner (e.g., "Bytelope")
+            git_repo_name: Optional git repository name (e.g., "uppdragsradarn3")
+            branch_name: Optional branch name to create
+            model: Model to use (default: claude-sonnet-4-5-20250929)
+
+        Returns:
+            dict: Created session with id, title, session_context, etc.
+        """
+        endpoint = "/v1/sessions"
+
+        data = {
+            "title": title,
+            "environment_id": environment_id,
+            "session_context": {"model": model},
+        }
+
+        # Add git repository source if URL provided
+        if git_repo_url:
+            data["session_context"]["sources"] = [
+                {"type": "git_repository", "url": git_repo_url}
+            ]
+
+        # Add git repository outcome if repo details provided
+        if git_repo_owner and git_repo_name:
+            # If no branch name specified, generate a simple one
+            # The API will append the session ID automatically
+            if not branch_name:
+                # Generate from title: lowercase, replace spaces/special chars with hyphens
+                import re
+
+                safe_title = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+                # Limit to reasonable length
+                safe_title = safe_title[:50]
+                branch_name = f"claude/{safe_title}"
+
+            git_info = {
+                "type": "github",
+                "repo": f"{git_repo_owner}/{git_repo_name}",
+                "branches": [branch_name],
+            }
+
+            data["session_context"]["outcomes"] = [
+                {"type": "git_repository", "git_info": git_info}
+            ]
+
+        return self._make_request_v1(
+            "POST", endpoint, data=data, organization_id=organization_id
+        )
+
+    def _make_request_v1(self, method, endpoint, data=None, organization_id=None):
+        """Make a request to the v1 API (not under /api prefix).
+
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            endpoint: API endpoint path
+            data: Optional request data
+            organization_id: Optional organization UUID for x-organization-uuid header
+        """
+        # This method should be implemented by subclasses to handle v1 API requests
+        # that are not under the /api prefix
+        raise NotImplementedError("This method should be implemented by subclasses")
+
     def _make_request(self, method, endpoint, data=None):
         raise NotImplementedError("This method should be implemented by subclasses")
 
@@ -290,6 +407,11 @@ class BaseClaudeAIProvider(BaseProvider):
     def _make_request_stream(self, method, endpoint, data=None):
         # This method should be implemented by subclasses to return a response object
         # that can be used with sseclient
+        raise NotImplementedError("This method should be implemented by subclasses")
+
+    def _make_request_stream_v1(self, method, endpoint, organization_id=None):
+        """Make a streaming request to the v1 API."""
+        # This method should be implemented by subclasses
         raise NotImplementedError("This method should be implemented by subclasses")
 
     def send_message(
@@ -319,3 +441,96 @@ class BaseClaudeAIProvider(BaseProvider):
                 yield {"error": event.data}
             if event.event == "done":
                 break
+
+    def _parse_sse_event(self, event):
+        """Parse a single SSE event and return the data."""
+        if not event.data or event.data.strip() == "":
+            return None
+        try:
+            return json.loads(event.data)
+        except json.JSONDecodeError:
+            self.logger.warning(f"Failed to parse event data: {event.data}")
+            return {"error": "Failed to parse JSON", "raw_data": event.data}
+
+    def stream_session_events(self, organization_id, session_id):
+        """Stream events from a Claude Code session.
+
+        Args:
+            organization_id: The organization UUID
+            session_id: The session ID to stream events from
+
+        Yields:
+            dict: Event data from the session stream
+        """
+        import signal
+
+        endpoint = f"/v1/sessions/{session_id}/events"
+        self.logger.debug(f"Opening SSE stream to {endpoint}")
+
+        def timeout_handler(signum, frame):
+            raise TimeoutError("No events received within timeout period")
+
+        response = self._make_request_stream_v1("GET", endpoint, organization_id)
+        client = sseclient.SSEClient(response)
+
+        # Set timeout for first event
+        old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(30)
+
+        try:
+            for event_num, event in enumerate(client.events()):
+                if event_num == 0:
+                    signal.alarm(0)
+                    signal.signal(signal.SIGALRM, old_handler)
+
+                parsed_data = self._parse_sse_event(event)
+                if parsed_data:
+                    yield parsed_data
+
+                if event.event in ("error", "done"):
+                    if event.event == "error":
+                        yield {"error": event.data}
+                    break
+        except TimeoutError:
+            yield {
+                "error": "timeout",
+                "message": "No events received from session within 30 seconds",
+            }
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, old_handler)
+
+    def send_session_input(self, organization_id, session_id, prompt):
+        """Send input/prompt to a Claude Code session.
+
+        This is used to send an initial prompt or user input to a session.
+        The session will process the input and emit events through the event stream.
+
+        Args:
+            organization_id: The organization UUID
+            session_id: The session ID
+            prompt: The text prompt to send to Claude
+
+        Returns:
+            dict: Response from the API (typically session state or acknowledgment)
+        """
+        # Try different possible endpoints - the actual endpoint is not documented
+        possible_endpoints = [
+            (f"/v1/sessions/{session_id}/prompt", {"prompt": prompt}),
+            (f"/v1/sessions/{session_id}/message", {"message": prompt}),
+            (f"/v1/sessions/{session_id}/messages", {"content": prompt}),
+            (f"/v1/sessions/{session_id}/input", {"input": prompt}),
+        ]
+
+        last_error = None
+        for endpoint, data in possible_endpoints:
+            try:
+                return self._make_request_v1("POST", endpoint, data, organization_id)
+            except Exception as e:
+                last_error = e
+                # Try next endpoint
+                continue
+
+        # If all endpoints failed, raise the last error
+        if last_error:
+            raise last_error

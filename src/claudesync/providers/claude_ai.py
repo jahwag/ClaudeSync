@@ -12,13 +12,19 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
     def __init__(self, config=None):
         super().__init__(config)
 
-    def _make_request(self, method, endpoint, data=None):
-        url = f"{self.base_url}{endpoint}"
+    def _make_request_internal(  # noqa: C901
+        self, method, endpoint, data, base_url, extra_headers=None
+    ):
+        """Internal method to make HTTP requests with specified base URL."""
+        url = f"{base_url}{endpoint}"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
             "Content-Type": "application/json",
             "Accept-Encoding": "gzip",
         }
+
+        if extra_headers:
+            headers.update(extra_headers)
 
         session_key, expiry = self.config.get_session_key("claude.ai")
         cookies = {
@@ -75,6 +81,9 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             self.logger.error(f"Response content: {content_str}")
             raise ProviderError(f"Invalid JSON response from API: {str(json_err)}")
 
+    def _make_request(self, method, endpoint, data=None):
+        return self._make_request_internal(method, endpoint, data, self.base_url)
+
     def handle_http_error(self, e):
         self.logger.debug(f"Request failed: {str(e)}")
         self.logger.debug(f"Response status code: {e.code}")
@@ -116,6 +125,24 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
             self.logger.error(error_msg)
             raise ProviderError(error_msg)
 
+    def _make_request_v1(self, method, endpoint, data=None, organization_id=None):
+        """Make a request to the v1 API (not under /api prefix)."""
+        # For v1 endpoints, we use the root URL without the /api prefix
+        base_url = self.base_url.replace("/api", "")
+
+        # Add required Anthropic headers for v1 API
+        extra_headers = {
+            "anthropic-version": "2023-06-01",
+        }
+
+        # Add organization header if provided
+        if organization_id:
+            extra_headers["x-organization-uuid"] = organization_id
+
+        return self._make_request_internal(
+            method, endpoint, data, base_url, extra_headers
+        )
+
     def _make_request_stream(self, method, endpoint, data=None):
         url = f"{self.base_url}{endpoint}"
         session_key, _ = self.config.get_session_key("claude.ai")
@@ -129,6 +156,33 @@ class ClaudeAIProvider(BaseClaudeAIProvider):
         req = urllib.request.Request(url, method=method, headers=headers)
         if data:
             req.data = json.dumps(data).encode("utf-8")
+
+        try:
+            return urllib.request.urlopen(req)
+        except urllib.error.HTTPError as e:
+            self.handle_http_error(e)
+        except urllib.error.URLError as e:
+            raise ProviderError(f"API request failed: {str(e)}")
+
+    def _make_request_stream_v1(self, method, endpoint, organization_id=None):
+        """Make a streaming request to the v1 API."""
+        # For v1 endpoints, use root URL without /api prefix
+        base_url = self.base_url.replace("/api", "")
+        url = f"{base_url}{endpoint}"
+
+        session_key, _ = self.config.get_session_key("claude.ai")
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:129.0) Gecko/20100101 Firefox/129.0",
+            "Accept": "text/event-stream",
+            "anthropic-version": "2023-06-01",
+            "Cookie": f"sessionKey={session_key}",
+        }
+
+        # Add organization header if provided
+        if organization_id:
+            headers["x-organization-uuid"] = organization_id
+
+        req = urllib.request.Request(url, method=method, headers=headers)
 
         try:
             return urllib.request.urlopen(req)
