@@ -34,6 +34,21 @@ class MockClaudeAIHandler(BaseHTTPRequestHandler):
                 }
             )
             self.wfile.write(response.encode())
+        elif "/events" in parsed_path.path and "/sessions/" in parsed_path.path:
+            # Handle session events streaming
+            self.send_response(200)
+            self.send_header("Content-type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            # Send mock session events
+            self.wfile.write(b'data: {"type":"session_status","status":"running"}\n\n')
+            self.wfile.write(
+                b'data: {"type":"message","content":"Starting Claude Code session..."}\n\n'
+            )
+            self.wfile.write(
+                b'data: {"type":"message","content":"Environment initialized"}\n\n'
+            )
+            self.wfile.write(b"event: done\n\n")
         else:
             print(f"Received GET request: {self.path}")
             # time.sleep(0.01)  # Add a small delay to simulate network latency
@@ -94,7 +109,7 @@ class MockClaudeAIHandler(BaseHTTPRequestHandler):
             else:
                 self.send_error(404, "Not Found")
 
-    def do_POST(self):
+    def do_POST(self):  # noqa: C901
         content_length = int(self.headers["Content-Length"])
         parsed_path = urlparse(self.path)
 
@@ -114,6 +129,56 @@ class MockClaudeAIHandler(BaseHTTPRequestHandler):
                 b'data: {"completion": "I apologize for the confusion. You\'re right."}\n\n'
             )
             self.wfile.write(b"event: done\n\n")
+        elif parsed_path.path == "/v1/sessions":
+            # Handle session creation
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode("utf-8"))
+
+            title = data.get("title", "Test Session")
+            environment_id = data.get("environment_id", "env_test")
+            session_context = data.get("session_context", {})
+
+            # Create mock session response
+            session_id = "session_test123"
+            response_data = {
+                "id": session_id,
+                "title": title,
+                "environment_id": environment_id,
+                "session_status": "running",
+                "session_context": session_context,
+                "type": "session",
+                "created_at": "2025-11-16T08:09:45.536149996Z",
+                "updated_at": "2025-11-16T08:09:45.536149996Z",
+            }
+
+            # If git repository outcomes were provided, ensure branch name is set
+            if "outcomes" in session_context:
+                for outcome in session_context["outcomes"]:
+                    if outcome.get("type") == "git_repository":
+                        git_info = outcome.get("git_info", {})
+                        if "branches" not in git_info or not git_info["branches"]:
+                            # Auto-generate branch name if not provided
+                            git_info["branches"] = [f"claude/test-session-{session_id}"]
+
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(response_data).encode())
+        elif "/sessions/" in parsed_path.path and parsed_path.path.endswith("/input"):
+            # Handle session input (sending prompt to session)
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode("utf-8"))
+
+            # Just acknowledge the input was received
+            response_data = {
+                "status": "accepted",
+                "input_received": data.get("input", ""),
+            }
+
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(response_data).encode())
         else:
             # time.sleep(0.01)  # Add a small delay to simulate network latency
             content_length = int(self.headers["Content-Length"])

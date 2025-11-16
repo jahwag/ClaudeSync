@@ -159,6 +159,95 @@ class TestClaudeAIProvider(unittest.TestCase):
             self.provider.handle_http_error(mock_error)
         self.assertIn("403 Forbidden error", str(context.exception))
 
+    def test_create_session_with_branch(self):
+        result = self.provider.create_session(
+            organization_id="org1",
+            title="Test Session",
+            environment_id="env_test",
+            git_repo_url="https://github.com/test/repo",
+            git_repo_owner="test",
+            git_repo_name="repo",
+            branch_name="claude/test-branch",
+        )
+        self.assertIn("id", result)
+        self.assertIn("title", result)
+        self.assertIn("session_status", result)
+        self.assertEqual(result["title"], "Test Session")
+        self.assertEqual(result["session_status"], "running")
+        self.assertEqual(result["environment_id"], "env_test")
+
+        # Check git repository context
+        outcomes = result.get("session_context", {}).get("outcomes", [])
+        self.assertTrue(len(outcomes) > 0)
+        git_outcome = outcomes[0]
+        self.assertEqual(git_outcome["type"], "git_repository")
+        self.assertIn("branches", git_outcome["git_info"])
+        self.assertEqual(git_outcome["git_info"]["branches"][0], "claude/test-branch")
+
+    def test_create_session_auto_branch(self):
+        # Test session creation with auto-generated branch name
+        result = self.provider.create_session(
+            organization_id="org1",
+            title="Auto Branch Session",
+            environment_id="env_test",
+            git_repo_url="https://github.com/test/repo",
+            git_repo_owner="test",
+            git_repo_name="repo",
+            # No branch_name specified - should auto-generate
+        )
+        self.assertEqual(result["title"], "Auto Branch Session")
+        self.assertEqual(result["session_status"], "running")
+
+        # Check that branch was auto-generated
+        outcomes = result.get("session_context", {}).get("outcomes", [])
+        self.assertTrue(len(outcomes) > 0)
+        git_outcome = outcomes[0]
+        self.assertEqual(git_outcome["type"], "git_repository")
+        self.assertIn("branches", git_outcome["git_info"])
+        # Branch should be auto-generated with session ID
+        self.assertTrue(git_outcome["git_info"]["branches"][0].startswith("claude/"))
+
+    def test_create_session_minimal(self):
+        # Test session creation with minimal parameters (no git context)
+        result = self.provider.create_session(
+            organization_id="org1",
+            title="Minimal Session",
+            environment_id="env_test",
+        )
+        self.assertEqual(result["title"], "Minimal Session")
+        self.assertEqual(result["session_status"], "running")
+        self.assertIn("session_context", result)
+        # Should not have outcomes or sources without git context
+        session_context = result.get("session_context", {})
+        self.assertNotIn("sources", session_context)
+        self.assertNotIn("outcomes", session_context)
+
+    def test_stream_session_events(self):
+        # Test streaming events from a session
+        events = list(
+            self.provider.stream_session_events(
+                organization_id="org1", session_id="session_test123"
+            )
+        )
+        # Should receive at least 3 events from mock server
+        self.assertGreaterEqual(len(events), 3)
+        # Check first event
+        self.assertEqual(events[0]["type"], "session_status")
+        self.assertEqual(events[0]["status"], "running")
+        # Check subsequent events
+        self.assertEqual(events[1]["type"], "message")
+        self.assertIn("Starting Claude Code", events[1]["content"])
+
+    def test_send_session_input(self):
+        # Test sending input/prompt to a session
+        result = self.provider.send_session_input(
+            organization_id="org1",
+            session_id="session_test123",
+            prompt="Hello, please help me fix a bug",
+        )
+        self.assertEqual(result["status"], "accepted")
+        self.assertEqual(result["input_received"], "Hello, please help me fix a bug")
+
 
 if __name__ == "__main__":
     unittest.main()
