@@ -219,7 +219,13 @@ def message(config, message, chat, timezone, model):
         for event in provider.send_message(
             active_organization_id, chat, message, timezone, model
         ):
-            if "completion" in event:
+            # Handle new API format (content_block_delta with text_delta)
+            if event.get("type") == "content_block_delta":
+                delta = event.get("delta", {})
+                if delta.get("type") == "text_delta":
+                    click.echo(delta.get("text", ""), nl=False)
+            # Handle legacy format (for backward compatibility)
+            elif "completion" in event:
                 click.echo(event["completion"], nl=False)
             elif "content" in event:
                 click.echo(event["content"], nl=False)

@@ -423,6 +423,7 @@ class BaseClaudeAIProvider(BaseProvider):
         data = {
             "prompt": prompt,
             "timezone": timezone,
+            "rendering_mode": "messages",
             "attachments": [],
             "files": [],
         }
