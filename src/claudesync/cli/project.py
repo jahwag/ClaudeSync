@@ -183,6 +183,25 @@ def archive(config, archive_all, yes):
     single_project_archival(projects, yes, provider, active_organization_id)
 
 
+def _save_project_selection(config, selected_project):
+    """Save project selection to config and display confirmation."""
+    config.set("active_project_id", selected_project["id"], local=True)
+    config.set("active_project_name", selected_project["name"], local=True)
+    click.echo(
+        f"Selected project: {selected_project['name']} (ID: {selected_project['id']})"
+    )
+
+    # Create .claudesync directory in the current working directory if it doesn't exist
+    os.makedirs(".claudesync", exist_ok=True)
+    claudesync_dir = os.path.abspath(".claudesync")
+    config_file_path = os.path.join(claudesync_dir, "config.local.json")
+    config._save_local_config()
+
+    click.echo("\nProject created:")
+    click.echo(f"  - Project location: {os.getcwd()}")
+    click.echo(f"  - Project config location: {config_file_path}")
+
+
 def single_project_archival(projects, yes, provider, active_organization_id):
     click.echo("Available projects to archive:")
     for idx, project in enumerate(projects, 1):
@@ -210,6 +229,10 @@ def single_project_archival(projects, yes, provider, active_organization_id):
     help="Include submodule projects in the selection",
 )
 @click.option(
+    "--project-id",
+    help="UUID of the project to set as active (skips interactive selection)",
+)
+@click.option(
     "--provider",
     type=click.Choice(["claude.ai"]),  # Add more providers as they become available
     default="claude.ai",
@@ -217,7 +240,7 @@ def single_project_archival(projects, yes, provider, active_organization_id):
 )
 @click.pass_context
 @handle_errors
-def set(ctx, show_all, provider):
+def set(ctx, show_all, project_id, provider):
     """Set the active project for syncing."""
     config = ctx.obj
 
@@ -255,6 +278,20 @@ def set(ctx, show_all, provider):
         click.echo("No active projects found.")
         return
 
+    # Non-interactive mode: if project_id is provided, use it directly
+    if project_id:
+        selected_project = next(
+            (p for p in selectable_projects if p["id"] == project_id), None
+        )
+        if selected_project:
+            _save_project_selection(config, selected_project)
+        else:
+            click.echo(f"Project with ID {project_id} not found in available projects.")
+            if not show_all:
+                click.echo("Tip: Use --all flag to include submodule projects.")
+        return
+
+    # Interactive mode: display list and prompt for selection
     click.echo("Available projects:")
     for idx, project in enumerate(selectable_projects, 1):
         project_type = (
@@ -269,21 +306,7 @@ def set(ctx, show_all, provider):
     )
     if 1 <= selection <= len(selectable_projects):
         selected_project = selectable_projects[selection - 1]
-        config.set("active_project_id", selected_project["id"], local=True)
-        config.set("active_project_name", selected_project["name"], local=True)
-        click.echo(
-            f"Selected project: {selected_project['name']} (ID: {selected_project['id']})"
-        )
-
-        # Create .claudesync directory in the current working directory if it doesn't exist
-        os.makedirs(".claudesync", exist_ok=True)
-        claudesync_dir = os.path.abspath(".claudesync")
-        config_file_path = os.path.join(claudesync_dir, "config.local.json")
-        config._save_local_config()
-
-        click.echo("\nProject created:")
-        click.echo(f"  - Project location: {os.getcwd()}")
-        click.echo(f"  - Project config location: {config_file_path}")
+        _save_project_selection(config, selected_project)
     else:
         click.echo("Invalid selection. Please try again.")
 
