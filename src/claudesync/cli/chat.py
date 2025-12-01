@@ -180,6 +180,24 @@ def init(config, name, project):
         click.echo(f"Failed to create chat conversation: {str(e)}")
 
 
+def process_message_event(event):
+    """Process a single streaming event from the message response."""
+    # Handle new API format (content_block_delta with text_delta)
+    if event.get("type") == "content_block_delta":
+        delta = event.get("delta", {})
+        if delta.get("type") == "text_delta":
+            click.echo(delta.get("text", ""), nl=False)
+    # Handle legacy format (for backward compatibility)
+    elif "completion" in event:
+        click.echo(event["completion"], nl=False)
+    elif "content" in event:
+        click.echo(event["content"], nl=False)
+    elif "error" in event:
+        click.echo(f"\nError: {event['error']}")
+    elif "message_limit" in event:
+        click.echo(f"\nRemaining messages: {event['message_limit']['remaining']}")
+
+
 @chat.command()
 @click.argument("message", nargs=-1, required=True)
 @click.option("--chat", help="UUID of the chat to send the message to")
@@ -219,16 +237,7 @@ def message(config, message, chat, timezone, model):
         for event in provider.send_message(
             active_organization_id, chat, message, timezone, model
         ):
-            if "completion" in event:
-                click.echo(event["completion"], nl=False)
-            elif "content" in event:
-                click.echo(event["content"], nl=False)
-            elif "error" in event:
-                click.echo(f"\nError: {event['error']}")
-            elif "message_limit" in event:
-                click.echo(
-                    f"\nRemaining messages: {event['message_limit']['remaining']}"
-                )
+            process_message_event(event)
 
         click.echo()  # Print a newline at the end of the response
 
