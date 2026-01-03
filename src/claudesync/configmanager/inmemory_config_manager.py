@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime
 
 from claudesync.configmanager import BaseConfigManager
@@ -17,6 +18,9 @@ class InMemoryConfigManager(BaseConfigManager):
         Initializes the in-memory configuration manager with default settings.
         """
         super().__init__()
+        # Mirror FileConfigManager behavior by starting with default global config
+        # so callers can rely on default values being present.
+        self.global_config = copy.deepcopy(self._get_default_config())
         self.session_keys = {}
 
     def _load_global_config(self):
@@ -26,8 +30,9 @@ class InMemoryConfigManager(BaseConfigManager):
         Since this is an in-memory implementation, this method doesn't load from any external source.
         Instead, it relies on the initial in-memory defaults or previous modifications made during runtime.
         """
-        # No action needed for in-memory implementation
-        pass
+        # Ensure defaults exist even if the object was constructed in an unusual way.
+        if not self.global_config:
+            self.global_config = copy.deepcopy(self._get_default_config())
 
     def _load_local_config(self):
         """
@@ -106,6 +111,19 @@ class InMemoryConfigManager(BaseConfigManager):
                 return data["session_key"], data["expiry"]
         return None, None
 
+    def clear_all_session_keys(self):
+        """Remove all stored session keys (in-memory)."""
+        self.session_keys = {}
+
+    def get_providers_with_session_keys(self):
+        """Return providers that have a non-expired session key."""
+        providers = []
+        for provider in list(self.session_keys.keys()):
+            session_key, expiry = self.get_session_key(provider)
+            if session_key and expiry and expiry > datetime.now():
+                providers.append(provider)
+        return providers
+
     def load_from_file_config(self, file_config_manager):
         self.global_config = file_config_manager.global_config.copy()
         self.local_config = file_config_manager.local_config.copy()
@@ -131,4 +149,6 @@ class InMemoryConfigManager(BaseConfigManager):
         return self.local_config.get("active_provider")
 
     def get_local_path(self):
-        return "."
+        # In tests / ephemeral usage we may not have a real ".claudesync" dir;
+        # when a local_path is explicitly set, honor it.
+        return self.local_config.get("local_path") or "."
