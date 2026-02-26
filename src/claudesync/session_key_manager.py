@@ -16,7 +16,6 @@ class SessionKeyManager:
     def _find_ssh_key(self, configured_path=None):
         """
         Locate an SSH private key for session encryption.
-        
         Priority:
           1. If configured_path points to a specific file, check it first
           2. If configured_path is a directory, search it alongside ~/.ssh
