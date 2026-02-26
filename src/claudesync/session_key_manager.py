@@ -48,7 +48,9 @@ class SessionKeyManager:
                     print(f"* Configured ssh_key_path not found: {configured_path}")
                 else:
                     # Looks like a directory that doesn't exist
-                    print(f"* Configured ssh_key_path directory not found: {configured_path}")
+                    print(
+                        f"* Configured ssh_key_path directory not found: {configured_path}"
+                    )
 
         # Search all candidate directories for supported key names
         for search_dir in search_dirs:
@@ -64,8 +66,12 @@ class SessionKeyManager:
         print('  ssh-keygen -t ed25519 -C "your_email@example.com"')
         print("* If you don't specify a custom ssh_key_path in config,")
         print("* have created a key, and are still seeing this message,")
-        print("  be sure to name your key 'id_ed25519' or 'id_ecdsa' so it's found automatically.")
-        print("* Or set ssh_key_path with the full key name in your .claudesync/config.local.json")
+        print(
+            "  be sure to name your key 'id_ed25519' or 'id_ecdsa' so it's found automatically."
+        )
+        print(
+            "* Or set ssh_key_path with the full key name in your .claudesync/config.local.json"
+        )
         return input("Enter the full path to your new Ed25519 private key: ")
 
     def _get_key_type(self):
