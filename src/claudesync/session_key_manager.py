@@ -8,22 +8,66 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
 class SessionKeyManager:
-    def __init__(self):
-        self.ssh_key_path = self._find_ssh_key()
+    def __init__(self, ssh_key_path=None):
         self.logger = logging.getLogger(__name__)
+        # Allow config-provided ssh_key_path to guide key discovery
+        self.ssh_key_path = self._find_ssh_key(ssh_key_path)
 
-    def _find_ssh_key(self):
-        ssh_dir = Path.home() / ".ssh"
+    def _find_ssh_key(self, configured_path=None):
+        """
+        Locate an SSH private key for session encryption.
+        Priority:
+          1. If configured_path points to a specific file, check it first
+          2. If configured_path is a directory, search it alongside ~/.ssh
+          3. Fall back to ~/.ssh with default key names
+          4. Prompt the user as a last resort
+        """
+        default_ssh_dir = Path.home() / ".ssh"
         key_names = ["id_ed25519", "id_ecdsa"]
-        for key_name in key_names:
-            key_path = ssh_dir / key_name
-            if key_path.exists():
-                return str(key_path)
+        search_dirs = [default_ssh_dir]
+
+        if configured_path:
+            configured = Path(configured_path)
+
+            if configured.is_file():
+                # Config points directly to a key file — use it immediately
+                return str(configured)
+
+            if configured.is_dir():
+                # Config is a directory — search it in addition to ~/.ssh
+                if configured != default_ssh_dir:
+                    search_dirs.insert(0, configured)
+            else:
+                # Path doesn't exist — warn and fall through to defaults
+                self.logger.warning(
+                    "Configured ssh_key_path not found: %s", configured_path
+                )
+
+        # Search all candidate directories for supported key names
+        for search_dir in search_dirs:
+            for key_name in key_names:
+                key_path = search_dir / key_name
+                if key_path.exists():
+                    return str(key_path)
 
         # If no supported key is found, prompt the user to generate an Ed25519 key
-        print("* No supported SSH key found. RSA keys are no longer supported.")
-        print("* Please generate an Ed25519 key using the following command:")
-        print('ssh-keygen -t ed25519 -C "your_email@example.com"')
+        self.logger.warning(
+            "* No supported SSH key found. RSA keys are no longer supported."
+        )
+        self.logger.warning(
+            "* Please generate an Ed25519 key using the following command:"
+        )
+        self.logger.warning('  ssh-keygen -t ed25519 -C "your_email@example.com"')
+        self.logger.warning(
+            "* If you have NOT specified a custom ssh_key_path in config,"
+        )
+        self.logger.warning("* have created a key, and are still seeing this message,")
+        self.logger.warning(
+            "  be sure to name your key 'id_ed25519' or 'id_ecdsa' so it's found automatically."
+        )
+        self.logger.warning(
+            "* Or set ssh_key_path with the full key name in your .claudesync/config.local.json"
+        )
         return input("Enter the full path to your new Ed25519 private key: ")
 
     def _get_key_type(self):

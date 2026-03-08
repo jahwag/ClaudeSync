@@ -187,7 +187,7 @@ class FileConfigManager(BaseConfigManager):
             expiry (datetime): The expiry datetime for the session key.
         """
         try:
-            session_key_manager = SessionKeyManager()
+            session_key_manager = SessionKeyManager(self.get("ssh_key_path"))
             encrypted_session_key, encryption_method = (
                 session_key_manager.encrypt_session_key(provider, session_key)
             )
@@ -236,7 +236,7 @@ class FileConfigManager(BaseConfigManager):
             return None, None
 
         try:
-            session_key_manager = SessionKeyManager()
+            session_key_manager = SessionKeyManager(self.get("ssh_key_path"))
             session_key = session_key_manager.decrypt_session_key(
                 provider, encryption_method, encrypted_key
             )
