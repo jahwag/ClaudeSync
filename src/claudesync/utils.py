@@ -51,7 +51,7 @@ def load_gitignore(base_path):
     gitignore_path = os.path.join(base_path, ".gitignore")
     if os.path.exists(gitignore_path):
         with open(gitignore_path, "r") as f:
-            return pathspec.PathSpec.from_lines("gitwildmatch", f)
+            return pathspec.PathSpec.from_lines("gitignore", f)
     return None
 
 
@@ -201,7 +201,7 @@ def get_local_files(config, local_path, category=None, include_submodules=False)
     if category:
         patterns = categories[category]["patterns"]
 
-    spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
+    spec = pathspec.PathSpec.from_lines("gitignore", patterns)
 
     submodules = config.get("submodules", [])
     submodule_paths = [sm["relative_path"] for sm in submodules]
@@ -366,7 +366,7 @@ def load_claudeignore(base_path):
     claudeignore_path = os.path.join(base_path, ".claudeignore")
     if os.path.exists(claudeignore_path):
         with open(claudeignore_path, "r") as f:
-            return pathspec.PathSpec.from_lines("gitwildmatch", f)
+            return pathspec.PathSpec.from_lines("gitignore", f)
     return None
 
 
