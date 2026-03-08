@@ -16,12 +16,16 @@ We're excited that you're interested in contributing to ClaudeSync! This documen
 
 ## Setting Up the Development Environment
 
-1. Ensure you have Python 3.6 or later installed.
+1. Ensure you have Python 3.10 or later installed.
 2. Install the development dependencies:
    ```
    pip install -r requirements.txt
    ```
-3. Install the package in editable mode:
+3. Install linting tools (required by CI but not in requirements.txt):
+   ```
+   pip install black flake8
+   ```
+4. Install the package in editable mode:
    ```
    pip install -e .
    ```
@@ -36,21 +40,67 @@ We're excited that you're interested in contributing to ClaudeSync! This documen
    ```
 4. Update the documentation if you've made changes to the API or added new features.
 
+## Code Style
+
+We use [Black](https://black.readthedocs.io/) for formatting and [flake8](https://flake8.pycqa.org/) for linting. Run both locally before pushing:
+
+```
+black .
+flake8 . --max-line-length=127 --extend-ignore=E203,E701 --max-complexity=10
+```
+
+These flags match the CI configuration exactly. The build will fail if either check fails.
+
+Use `logging`/`logger` for all output — do **not** use `print()`.
+
+## Version Bump
+
+Every PR must include a version bump in `pyproject.toml`:
+
+```toml
+[project]
+version = "x.y.z"
+```
+
+Increment the patch version for bug fixes, the minor version for new features, and the major version for breaking changes. PRs without a version bump cannot be released.
+
+## Signed Commits
+
+All commits require **both**:
+
+- `-s` — DCO sign-off, certifying you wrote or have the right to submit the code
+- `-S` — cryptographic signature (GPG or SSH), producing a verified badge on GitHub
+
+```
+git commit -s -S -am "Add a brief description of your changes"
+```
+
+Set up commit signing: https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits
+
+PRs with unverified commits will not be merged.
+
+## PR Checklist
+
+Before submitting a pull request, confirm all of the following:
+
+- [ ] Tests pass: `python -m unittest discover tests`
+- [ ] Black check passes: `black --check .`
+- [ ] flake8 passes: `flake8 . --max-line-length=127 --extend-ignore=E203,E701 --max-complexity=10`
+- [ ] Version bumped in `pyproject.toml`
+- [ ] All commits signed off and cryptographically signed (`git commit -s -S`)
+- [ ] No `print()` calls — use `logger` instead
+
 ## Submitting Changes
 
 1. Commit your changes:
    ```
-   git commit -s -am "Add a brief description of your changes"
+   git commit -s -S -am "Add a brief description of your changes"
    ```
 2. Push to your fork:
    ```
    git push origin feature/your-feature-name
    ```
 3. Submit a pull request through the GitHub website.
-
-## Code Style
-
-We follow the black style guide for Python code. Please ensure your code adheres to this style.
 
 ## Reporting Bugs
 
